@@ -54,7 +54,7 @@ public class ARActivity extends AppCompatActivity {
     private List<AnchorNode> anchorNodeList = new ArrayList<>();
 
     private AnchorNode anchorNode;
-    private Node node;
+    private Node centerNode;
 
     private float centerX;
     private float centerY;
@@ -186,22 +186,11 @@ public class ARActivity extends AppCompatActivity {
 //                                }
 //                                makeCenterCube(anchor);
 
-                                if(node != null) {
-                                    node.setLocalPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
+                                if(centerNode != null) {
+                                    centerNode.setLocalPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
                                 }
                                 else {
-                                    MaterialFactory
-                                            .makeOpaqueWithColor(this, new Color(android.graphics.Color.RED))
-                                            .thenAccept(material -> {
-                                                ModelRenderable modelRenderable = ShapeFactory.makeCube(new Vector3(0.05f, 0.05f, 0.05f), new Vector3(0f, 0.05f, 0f), material);
-
-                                                Node node = new Node();
-                                                node.setRenderable(modelRenderable);
-                                                node.setLocalPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
-                                                // Create the transformable andy and add it to the anchor.
-                                                arSceneView.getScene().addChild(node);
-                                                this.node = node;
-                                            });
+                                    makeCenterCube(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
                                 }
 
 
@@ -213,22 +202,7 @@ public class ARActivity extends AppCompatActivity {
     private void makeCube(Anchor anchor) {
 
         MaterialFactory
-                .makeOpaqueWithColor(this, new Color(android.graphics.Color.RED))
-                .thenAccept(material -> {
-                    ModelRenderable modelRenderable = ShapeFactory.makeCube(new Vector3(0.05f, 0.05f, 0.05f), new Vector3(0f, 0.05f, 0f), material);
-
-                    AnchorNode anchorNode = new AnchorNode(anchor);
-                    anchorNode.setRenderable(modelRenderable);
-                    arSceneView.getScene().addChild(anchorNode);
-
-                    anchorNodeList.add(anchorNode);
-                });
-    }
-
-    private void makeCenterCube(Anchor anchor) {
-
-        MaterialFactory
-                .makeOpaqueWithColor(this, new Color(android.graphics.Color.RED))
+                .makeOpaqueWithColor(this, new Color(android.graphics.Color.WHITE))
                 .thenAccept(material -> {
                     ModelRenderable modelRenderable = ShapeFactory.makeCube(new Vector3(0.05f, 0.05f, 0.05f), new Vector3(0f, 0.05f, 0f), material);
 
@@ -236,6 +210,22 @@ public class ARActivity extends AppCompatActivity {
                     anchorNode.setRenderable(modelRenderable);
                     arSceneView.getScene().addChild(anchorNode);
                     this.anchorNode = anchorNode;
+                });
+    }
+
+    private void makeCenterCube(float tx, float ty, float tz) {
+
+        MaterialFactory
+                .makeOpaqueWithColor(this, new Color(android.graphics.Color.RED))
+                .thenAccept(material -> {
+                    ModelRenderable modelRenderable = ShapeFactory.makeCube(new Vector3(0.05f, 0.05f, 0.05f), new Vector3(0f, 0.05f, 0f), material);
+
+                    Node node = new Node();
+                    node.setRenderable(modelRenderable);
+                    node.setLocalPosition(new Vector3(tx, ty, tz));
+                    // Create the transformable andy and add it to the anchor.
+                    arSceneView.getScene().addChild(node);
+                    this.centerNode = node;
                 });
     }
 
