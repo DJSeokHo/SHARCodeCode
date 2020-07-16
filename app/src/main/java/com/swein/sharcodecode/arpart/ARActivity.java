@@ -1,10 +1,13 @@
 package com.swein.sharcodecode.arpart;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,6 +29,7 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.HitTestResult;
+import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Color;
 import com.google.ar.sceneform.rendering.MaterialFactory;
@@ -49,10 +53,23 @@ public class ARActivity extends AppCompatActivity {
 
     private List<AnchorNode> anchorNodeList = new ArrayList<>();
 
+    private AnchorNode anchorNode;
+    private Node node;
+
+    private float centerX;
+    private float centerY;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_a_r);
+
+        WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
+        DisplayMetrics dm = new DisplayMetrics();
+        wm.getDefaultDisplay().getMetrics(dm);
+        centerX = (float)dm.widthPixels * 0.5f;
+        centerY= (float)dm.heightPixels * 0.5f;
+
 
         arSceneView = findViewById(R.id.arSceneView);
         textView = findViewById(R.id.textView);
@@ -85,7 +102,8 @@ public class ARActivity extends AppCompatActivity {
                                 }
                             }
 
-                            List<HitResult> hitTestResultList = frame.hitTest(event.getX(), event.getY());
+//                            List<HitResult> hitTestResultList = frame.hitTest(event.getX(), event.getY());
+                            List<HitResult> hitTestResultList = frame.hitTest(centerX, centerY);
 
                             for (HitResult hitResult : hitTestResultList) {
                                 Anchor anchor = hitResult.getTrackable().createAnchor(hitResult.getHitPose());
@@ -152,6 +170,43 @@ public class ARActivity extends AppCompatActivity {
                                     textView.setVisibility(View.GONE);
                                 }
                             }
+
+                            List<HitResult> hitTestResultList = frame.hitTest(centerX, centerY);
+
+                            for (HitResult hitResult : hitTestResultList) {
+//                                Anchor anchor = hitResult.getTrackable().createAnchor(hitResult.getHitPose());
+////                                Anchor anchor = hitResult.createAnchor();
+
+                                // real-time distance
+//                                ILog.iLogDebug(TAG, hitResult.getDistance());
+
+//                                if(anchorNode != null) {
+//                                    arSceneView.getScene().removeChild(anchorNode);
+//                                    anchorNode = null;
+//                                }
+//                                makeCenterCube(anchor);
+
+                                if(node != null) {
+                                    node.setLocalPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
+                                }
+                                else {
+                                    MaterialFactory
+                                            .makeOpaqueWithColor(this, new Color(android.graphics.Color.RED))
+                                            .thenAccept(material -> {
+                                                ModelRenderable modelRenderable = ShapeFactory.makeCube(new Vector3(0.05f, 0.05f, 0.05f), new Vector3(0f, 0.05f, 0f), material);
+
+                                                Node node = new Node();
+                                                node.setRenderable(modelRenderable);
+                                                node.setLocalPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
+                                                // Create the transformable andy and add it to the anchor.
+                                                arSceneView.getScene().addChild(node);
+                                                this.node = node;
+                                            });
+                                }
+
+
+                                break;
+                            }
                         });
     }
 
@@ -160,13 +215,27 @@ public class ARActivity extends AppCompatActivity {
         MaterialFactory
                 .makeOpaqueWithColor(this, new Color(android.graphics.Color.RED))
                 .thenAccept(material -> {
-                    ModelRenderable modelRenderable = ShapeFactory.makeCube(new Vector3(0.01f, 0.01f, 0.01f), new Vector3(0f, 0.01f, 0f), material);
+                    ModelRenderable modelRenderable = ShapeFactory.makeCube(new Vector3(0.05f, 0.05f, 0.05f), new Vector3(0f, 0.05f, 0f), material);
 
                     AnchorNode anchorNode = new AnchorNode(anchor);
                     anchorNode.setRenderable(modelRenderable);
                     arSceneView.getScene().addChild(anchorNode);
 
                     anchorNodeList.add(anchorNode);
+                });
+    }
+
+    private void makeCenterCube(Anchor anchor) {
+
+        MaterialFactory
+                .makeOpaqueWithColor(this, new Color(android.graphics.Color.RED))
+                .thenAccept(material -> {
+                    ModelRenderable modelRenderable = ShapeFactory.makeCube(new Vector3(0.05f, 0.05f, 0.05f), new Vector3(0f, 0.05f, 0f), material);
+
+                    AnchorNode anchorNode = new AnchorNode(anchor);
+                    anchorNode.setRenderable(modelRenderable);
+                    arSceneView.getScene().addChild(anchorNode);
+                    this.anchorNode = anchorNode;
                 });
     }
 
