@@ -53,7 +53,6 @@ public class ARActivity extends AppCompatActivity {
 
     private List<AnchorNode> anchorNodeList = new ArrayList<>();
 
-    private AnchorNode anchorNode;
     private Node centerNode;
 
     private float centerX;
@@ -209,7 +208,7 @@ public class ARActivity extends AppCompatActivity {
                     AnchorNode anchorNode = new AnchorNode(anchor);
                     anchorNode.setRenderable(modelRenderable);
                     arSceneView.getScene().addChild(anchorNode);
-                    this.anchorNode = anchorNode;
+                    anchorNodeList.add(anchorNode);
                 });
     }
 
