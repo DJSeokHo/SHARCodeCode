@@ -7,6 +7,7 @@ import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.ar.core.ArCoreApk;
@@ -85,7 +86,11 @@ public class MainActivity extends BasicPermissionActivity {
             finish();
         }
 
-        findViewById(R.id.button).setOnClickListener(view -> startAR());
+        Button button = findViewById(R.id.button);
+
+        button.setOnClickListener(view -> startAR());
+
+        button.performClick();
     }
 
     private void checkDeviceSupportAR() {
