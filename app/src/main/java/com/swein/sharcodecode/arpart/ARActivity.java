@@ -28,6 +28,7 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
+import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.HitTestResult;
 import com.google.ar.sceneform.Node;
@@ -42,7 +43,6 @@ import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.rendering.Texture;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
-import com.swein.sharcodecode.bean.LineBean;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.toast.ToastUtil;
 
@@ -65,8 +65,8 @@ public class ARActivity extends FragmentActivity {
     private FrameLayout frameLayoutTooCloseTooFar;
     private TextView textViewTooCloseTooFar;
 
-    private List<LineBean> lineBeanList = new ArrayList<>();
-    private List<Node> nodeList = new ArrayList<>();
+//    private List<LineBean> lineBeanList = new ArrayList<>();
+//    private List<Node> nodeList = new ArrayList<>();
 
     private Node centerPoint;
 
@@ -74,6 +74,9 @@ public class ARActivity extends FragmentActivity {
 
     private Node tempLineNode;
     private FaceToCameraNode tempTextNode;
+
+    private List<AnchorNode> floorPolygon = new ArrayList<>();
+    private Node tempNode;
 
     private float screenCenterX;
     private float screenCenterY;
@@ -157,30 +160,29 @@ public class ARActivity extends FragmentActivity {
 
                         if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
 
+//                            if(tempTextNode != null) {
+//                                arSceneView.getScene().removeChild(tempTextNode);
+//                            }
+//
+//                            if(tempLineNode != null) {
+//                                arSceneView.getScene().removeChild(tempLineNode);
+//                            }
+//
+//                            tempTextNode = null;
+//                            tempLineNode = null;
+
+
                             Anchor anchor = hitResult.createAnchor();
+                            AnchorNode anchorNode = createAnchorNode(anchor, pointMaterial, shadow);
+                            arSceneView.getScene().addChild(anchorNode);
 
-                            ILog.iLogDebug(TAG, "t " + anchor.getPose().tx() + " " + anchor.getPose().ty() + " " + anchor.getPose().tz());
-                            ILog.iLogDebug(TAG, "q " + anchor.getPose().qx() + " " + anchor.getPose().qy() + " " + anchor.getPose().qz());
+                            floorPolygon.add(anchorNode);
 
-                            ILog.iLogDebug(TAG, hitResult.getDistance());
+                            tempNode = createNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+                            arSceneView.getScene().addChild(tempNode);
 
-                            if(tempTextNode != null) {
-                                arSceneView.getScene().removeChild(tempTextNode);
-                            }
-
-                            if(tempLineNode != null) {
-                                arSceneView.getScene().removeChild(tempLineNode);
-                            }
-
-                            tempTextNode = null;
-                            tempLineNode = null;
-
-
-                            Node anchorNode = makePoint(anchor);
-                            nodeList.add(anchorNode);
-
-                            if(nodeList.size() >= 2) {
-                                drawLine(nodeList.get(nodeList.size() - 2), nodeList.get(nodeList.size() - 1));
+                            if(floorPolygon.size() >= 2) {
+                                drawLine(floorPolygon.get(floorPolygon.size() - 2), floorPolygon.get(floorPolygon.size() - 1));
                             }
 //                            LineBean lineBean = new LineBean();
 //                            lineBeanList.add(lineBean);
@@ -274,14 +276,11 @@ public class ARActivity extends FragmentActivity {
 
                             makeCenterPoint(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
 
-                            if(nodeList.isEmpty()) {
+                            if(tempNode == null) {
                                 break;
                             }
 
-                            Node lastNodeFromNodeList = (Node) nodeList.get(nodeList.size() - 1);
-                            if(lastNodeFromNodeList != null) {
-                                drawTempLine(lastNodeFromNodeList, centerPoint);
-                            }
+                            drawTempLine(tempNode, centerPoint);
 
                             break;
                         }
@@ -335,19 +334,28 @@ public class ARActivity extends FragmentActivity {
         });
     }
 
-    private Node makePoint(Anchor anchor) {
+    private AnchorNode createAnchorNode(Anchor anchor, Material material, boolean shadow) {
 
-        ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), pointMaterial);
+        ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
         modelRenderable.setShadowReceiver(shadow);
         modelRenderable.setShadowCaster(shadow);
 
-//        AnchorNode anchorNode = new AnchorNode(anchor);
-        Node anchorNode = new Node();
-        anchorNode.setWorldPosition(new Vector3(anchor.getPose().tx(), anchor.getPose().ty(), anchor.getPose().tz()));
+        AnchorNode anchorNode = new AnchorNode(anchor);
         anchorNode.setRenderable(modelRenderable);
-        arSceneView.getScene().addChild(anchorNode);
 
         return anchorNode;
+    }
+
+    private Node createNode(float tx, float ty, float tz, Material material, boolean shadow) {
+        ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
+        modelRenderable.setShadowReceiver(shadow);
+        modelRenderable.setShadowCaster(shadow);
+        Node node = new Node();
+        node.setRenderable(modelRenderable);
+//            node.setLocalPosition(new Vector3(tx, ty, tz));
+        node.setWorldPosition(new Vector3(tx, ty, tz));
+        // Create the transformable andy and add it to the anchor.
+        return node;
     }
 
     private void makeCenterPoint(float tx, float ty, float tz) {
