@@ -21,14 +21,30 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
+    <FrameLayout
+        android:visibility="gone"
+        android:id="@+id/frameLayoutTooCloseTooFar"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/too_close_bg">
 
-    <TextView
-        android:id="@+id/textViewDistance"
-        android:layout_gravity="center_horizontal"
-        android:textSize="10pt"
-        android:textColor="#fff"
-        android:text="Searching plane..."
+        <TextView
+            android:id="@+id/textViewTooCloseTooFar"
+            android:layout_margin="15dp"
+            android:layout_gravity="center"
+            android:textSize="8pt"
+            android:textColor="#fff"
+            android:text="@string/ar_too_close"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </FrameLayout>
+
+
+    <Button
+        android:id="@+id/buttonBack"
+        android:text="back"
+        android:layout_gravity="bottom"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
-
 </FrameLayout>

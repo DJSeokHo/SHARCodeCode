@@ -8,4 +8,6 @@
     values-round/strings.xml for round devices.
     -->
     <string name="hello_world">Hello Square World!</string>
+    <string name="ar_too_close">사용자와 지면/벽면 사이의 거리가 너무 가깝습니다. 0.5m ~ 2m 유지하는 것 권장합니다.</string>
+    <string name="ar_too_far">사용자와 지면/벽면 사이의 거리가 너무 멀습니다. 0.5m ~ 2m 유지하는 것 권장합니다.</string>
 </resources>

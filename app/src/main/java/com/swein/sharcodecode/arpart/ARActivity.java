@@ -8,9 +8,11 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentActivity;
 
 import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
@@ -26,503 +28,525 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
-import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.HitTestResult;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Quaternion;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Color;
+import com.google.ar.sceneform.rendering.Material;
 import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
+import com.google.ar.sceneform.rendering.PlaneRenderer;
 import com.google.ar.sceneform.rendering.ShapeFactory;
+import com.google.ar.sceneform.rendering.Texture;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
+import com.swein.sharcodecode.bean.LineBean;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.toast.ToastUtil;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-public class ARActivity extends AppCompatActivity {
+public class ARActivity extends FragmentActivity {
+
+    public enum DetectType {
+        HORIZONTAL, VERTICAL
+    }
 
     private final static String TAG = "ARActivity";
 
     private ArSceneView arSceneView;
 
     private TextView textView;
-    private TextView textViewDistance;
+    private FrameLayout frameLayoutTooCloseTooFar;
+    private TextView textViewTooCloseTooFar;
 
-    private AnchorNode startAnchorNode;
-    private AnchorNode endAnchorNode;
-    private TextView textViewSize;
+    private List<LineBean> lineBeanList = new ArrayList<>();
+    private List<Node> nodeList = new ArrayList<>();
 
-    private Node centerNode;
+    private Node centerPoint;
+
+    private Button buttonBack;
 
     private Node tempLineNode;
     private FaceToCameraNode tempTextNode;
 
-    private float centerX;
-    private float centerY;
+    private float screenCenterX;
+    private float screenCenterY;
 
     private boolean shadow = true;
+
+    private ViewRenderable viewRenderableSizeText;
+    private Material pointMaterial;
+    private Material lineMaterial;
+
+    private Plane currentPlan;
+
+    private DetectType detectType = DetectType.VERTICAL;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_a_r);
 
+        initData();
+        findView();
+        setListener();
+
+    }
+
+    private void initData() {
+
+        MaterialFactory
+                .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
+                .thenAccept(material -> {
+                    pointMaterial = material;
+                    lineMaterial = material;
+                });
+
+        ViewRenderable.builder()
+                .setView(this, R.layout.view_renderable_text)
+                .build()
+                .thenAccept(viewRenderable -> {
+
+                    viewRenderableSizeText = viewRenderable;
+                    viewRenderable.setShadowCaster(false);
+                    viewRenderable.setShadowReceiver(false);
+                });
+
         WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
         DisplayMetrics dm = new DisplayMetrics();
         wm.getDefaultDisplay().getMetrics(dm);
-        centerX = (float)dm.widthPixels * 0.5f;
-        centerY= (float)dm.heightPixels * 0.5f;
+        screenCenterX = (float)dm.widthPixels * 0.5f;
+        screenCenterY = (float)dm.heightPixels * 0.5f;
+    }
 
+    private void findView() {
 
         arSceneView = findViewById(R.id.arSceneView);
         textView = findViewById(R.id.textView);
-        textViewDistance = findViewById(R.id.textViewDistance);
+        frameLayoutTooCloseTooFar = findViewById(R.id.frameLayoutTooCloseTooFar);
+        textViewTooCloseTooFar = findViewById(R.id.textViewTooCloseTooFar);
+        buttonBack = findViewById(R.id.buttonBack);
+    }
 
+    private void setListener() {
         // Set a touch listener on the Scene to listen for taps.
         arSceneView.getScene().setOnTouchListener(
-                        (HitTestResult hitTestResult, MotionEvent event) -> {
+                (HitTestResult hitTestResult, MotionEvent event) -> {
 
 //                            ILog.iLogDebug(TAG, "tab");
 //                            ILog.iLogDebug(TAG, hitTestResult.getDistance());
 
-                            Frame frame = arSceneView.getArFrame();
-                            if (frame == null) {
-                                return false;
+                    Frame frame = arSceneView.getArFrame();
+                    if (frame == null) {
+                        return false;
+                    }
+
+                    if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
+                        return false;
+                    }
+
+                    List<HitResult> hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
+
+                    for (HitResult hitResult : hitTestResultList) {
+
+                        if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
+
+                            Anchor anchor = hitResult.createAnchor();
+
+                            ILog.iLogDebug(TAG, "t " + anchor.getPose().tx() + " " + anchor.getPose().ty() + " " + anchor.getPose().tz());
+                            ILog.iLogDebug(TAG, "q " + anchor.getPose().qx() + " " + anchor.getPose().qy() + " " + anchor.getPose().qz());
+
+                            ILog.iLogDebug(TAG, hitResult.getDistance());
+
+                            if(tempTextNode != null) {
+                                arSceneView.getScene().removeChild(tempTextNode);
                             }
 
-                            if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
-                                return false;
+                            if(tempLineNode != null) {
+                                arSceneView.getScene().removeChild(tempLineNode);
                             }
 
-                            // 循环 Detect 每一帧
-                            for (Plane plane : frame.getUpdatedTrackables(Plane.class)) {
-                                if (plane.getTrackingState() == TrackingState.TRACKING) {
-                                    // find plane
-//                                    ILog.iLogDebug(TAG, "cennter pose " + plane.getCenterPose());
-//                                    ILog.iLogDebug(TAG, plane.getExtentX());
-//                                    ILog.iLogDebug(TAG, plane.getExtentZ());
-//                                    ILog.iLogDebug(TAG, plane.getPolygon());
-//                                    ILog.iLogDebug(TAG, hitTestResult.getDistance());
-                                }
+                            tempTextNode = null;
+                            tempLineNode = null;
+
+
+                            Node anchorNode = makePoint(anchor);
+                            nodeList.add(anchorNode);
+
+                            if(nodeList.size() >= 2) {
+                                drawLine(nodeList.get(nodeList.size() - 2), nodeList.get(nodeList.size() - 1));
                             }
-
-                            List<HitResult> hitTestResultList = frame.hitTest(centerX, centerY);
-
-                            for (HitResult hitResult : hitTestResultList) {
-
-                                if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
-
-                                    Anchor anchor = hitResult.getTrackable().createAnchor(hitResult.getHitPose());
-
-                                    ILog.iLogDebug(TAG, "t " + anchor.getPose().tx() + " " + anchor.getPose().ty() + " " + anchor.getPose().tz());
-                                    ILog.iLogDebug(TAG, "q " + anchor.getPose().qx() + " " + anchor.getPose().qy() + " " + anchor.getPose().qz());
-
-                                    ILog.iLogDebug(TAG, hitResult.getDistance());
-
-                                    makeCube(anchor, () -> {
-
-                                        if(tempTextNode != null) {
-                                            arSceneView.getScene().removeChild(tempTextNode);
-                                        }
-
-                                        if(tempLineNode != null) {
-                                            arSceneView.getScene().removeChild(tempLineNode);
-                                        }
-
-                                        textViewSize = null;
-                                        tempTextNode = null;
-                                        tempLineNode = null;
-
-                                        if (startAnchorNode != null && endAnchorNode != null) {
-//                                    float dx = startAnchorNode.getAnchor().getPose().tx() - endAnchorNode.getAnchor().getPose().tx();
-//                                    float dy = startAnchorNode.getAnchor().getPose().ty() - endAnchorNode.getAnchor().getPose().ty();
-//                                    float dz = startAnchorNode.getAnchor().getPose().tz() - endAnchorNode.getAnchor().getPose().tz();
-
-//                                            float dx = startAnchorNode.getWorldPosition().x - endAnchorNode.getWorldPosition().x;
-//                                            float dy = startAnchorNode.getWorldPosition().y - endAnchorNode.getWorldPosition().y;
-//                                            float dz = startAnchorNode.getWorldPosition().z - endAnchorNode.getWorldPosition().z;
+//                            LineBean lineBean = new LineBean();
+//                            lineBeanList.add(lineBean);
 //
-//                                            float distanceMeters = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-                                            drawLine(startAnchorNode, endAnchorNode);
-                                        }
-                                    });
-
-
-                                    break;
-                                }
-                            }
-
-                            // Otherwise return false so that the touch event can propagate to the scene.
-                            return false;
-                        });
-
-        // Set an update listener on the Scene that will hide the loading message once a Plane is
-        // detected.
-        arSceneView.getScene().addOnUpdateListener(
-                        frameTime -> {
-                            // get camera frame when find a plan
-                            Frame frame = arSceneView.getArFrame();
-                            if (frame == null) {
-                                return;
-                            }
-
-                            if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
-                                return;
-                            }
-
-
-                            Collection<Plane> planeCollection = frame.getUpdatedTrackables(Plane.class);
-
-                            for (Plane plane : planeCollection) {
-
-                                if (plane.getTrackingState() == TrackingState.TRACKING) {
-                                    // find plane
-                                    textView.setVisibility(View.GONE);
-
-                                    if (plane.getTrackingState() == TrackingState.TRACKING) {
-
-                                        if(plane.getType() == Plane.Type.VERTICAL) {
-                                            // A vertical plane (e.g. a wall).
-                                            textViewDistance.setTextColor(android.graphics.Color.RED);
-                                        }
-                                        else if(plane.getType() == Plane.Type.HORIZONTAL_DOWNWARD_FACING){
-                                            // A horizontal plane facing downward (e.g. a ceiling).
-                                            textViewDistance.setTextColor(android.graphics.Color.GREEN);
-                                        }
-                                        else if(plane.getType() == Plane.Type.HORIZONTAL_UPWARD_FACING){
-                                            // A horizontal plane facing upward (e.g. floor or tabletop).
-                                            textViewDistance.setTextColor(android.graphics.Color.BLUE);
-                                        }
-
-                                        break;
-                                    }
-                                }
-                            }
-
-                            List<HitResult> hitTestResultList = frame.hitTest(centerX, centerY);
-
-                            for (HitResult hitResult : hitTestResultList) {
-
-                                if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
-
-//                                    if(startAnchorNode != null && endAnchorNode == null) {
+//                            if(lineBean.startNode == null && lineBean.endNode == null) {
+//                                lineBean.startNode = anchorNode;
+//                            }
+//                            else if(lineBean.startNode != null && lineBean.endNode == null) {
+//                                lineBean.endNode = anchorNode;
+//                            }
 //
-//                                        ILog.iLogDebug(TAG, "height ?? " + hitResult.getHitPose().ty());
-////                                        makeVerticalCenterCube(startAnchorNode.getWorldPosition().x, hitResult.getHitPose().ty(), startAnchorNode.getWorldPosition().z, () -> {
-//                                        makeVerticalCenterCube(startAnchorNode.getWorldPosition().x, hitResult.getHitPose().ty(), startAnchorNode.getWorldPosition().z, () -> {
-////                                                drawTempVerticalLine(startAnchorNode, centerNode, distanceMeters, true);
-////                                            drawTempVerticalLine(startAnchorNode, centerNode);
-//
-//                                            drawTempVerticalLine(startAnchorNode, centerNode, true);
-//                                        });
-//
-//                                        return;
-//                                    }
+//                            if(lineBean.startNode != null && lineBean.endNode != null) {
+//                                lineBean.calculateLength();
+//                                lineBean.state = LineBean.STATE_READY;
+//                            }
 
-                                    makeCenterCube(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), () -> {
+//                            if (startAnchorNode != null && endAnchorNode != null) {
+//                                drawLine(startAnchorNode, endAnchorNode);
+//                            }
 
-                                        if(startAnchorNode != null && endAnchorNode == null) {
-//                                    float dx = startAnchorNode.getAnchor().getPose().tx() - centerNode.getWorldPosition().x;
-//                                    float dy = startAnchorNode.getAnchor().getPose().ty() - centerNode.getWorldPosition().y;
-//                                    float dz = startAnchorNode.getAnchor().getPose().tz() - centerNode.getWorldPosition().z;
-//
-//                                            float dx = startAnchorNode.getWorldPosition().x - centerNode.getWorldPosition().x;
-//                                            float dy = startAnchorNode.getWorldPosition().y - centerNode.getWorldPosition().y;
-//                                            float dz = startAnchorNode.getWorldPosition().z - centerNode.getWorldPosition().z;
-//
-//                                            float distanceMeters = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+//                            for(int i = 0; i < lineBeanList.size(); i++) {
+//                                if(lineBeanList.get(i).state == LineBean.STATE_READY) {
+//                                    drawLine(lineBeanList.get(i).startNode, lineBeanList.get(i).endNode);
+//                                    lineBeanList.get(i).state = LineBean.STATE_FINISHED;
+//                                    break;
+//                                }
+//                            }
 
-                                            boolean drawableText = false;
-                                            for (Plane plane : planeCollection) {
-                                                if (plane.getTrackingState() == TrackingState.TRACKING) {
-                                                    drawableText = plane.getType() == Plane.Type.HORIZONTAL_UPWARD_FACING;
-                                                    break;
-                                                }
-                                            }
+                            break;
+                        }
+                    }
 
-                                            drawTempLine(startAnchorNode, centerNode, drawableText);
-                                        }
-
-                                        textViewDistance.setText(String.valueOf(hitResult.getDistance()));
-
-                                    });
-
-                                    break;
-                                }
-
-                            }
-                        });
-    }
-
-    private void makeCube(Anchor anchor, Runnable runnable) {
-
-        MaterialFactory
-                .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
-                .thenAccept(material -> {
-
-                    ModelRenderable modelRenderable = ShapeFactory.makeCylinder(0.01f, 0.0001f, Vector3.zero(), material);
-                    modelRenderable.setShadowReceiver(shadow);
-                    modelRenderable.setShadowCaster(shadow);
-
-                    AnchorNode anchorNode = new AnchorNode(anchor);
-                    anchorNode.setRenderable(modelRenderable);
-                    arSceneView.getScene().addChild(anchorNode);
-
-                    processAnchorNode(anchorNode);
-
-                    runnable.run();
+                    return false;
                 });
+
+        arSceneView.getScene().addOnUpdateListener(
+                frameTime -> {
+                    // get camera frame when find a plan
+                    Frame frame = arSceneView.getArFrame();
+
+                    if (frame == null) {
+                        return;
+                    }
+
+                    if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
+                        return;
+                    }
+
+                    updatePlanRenderer();
+
+                    Collection<Plane> planeCollection = frame.getUpdatedTrackables(Plane.class);
+
+                    if(!planeCollection.isEmpty()) {
+                        textView.setVisibility(View.GONE);
+                    }
+
+                    for (Plane plane : planeCollection) {
+
+                        if(plane.getType() == Plane.Type.VERTICAL && plane.getTrackingState() == TrackingState.TRACKING) {
+                            // A vertical plane (e.g. a wall).
+//                            textViewDistance.setTextColor(android.graphics.Color.RED);
+                            currentPlan = plane;
+                        }
+                        else if(plane.getType() == Plane.Type.HORIZONTAL_DOWNWARD_FACING && plane.getTrackingState() == TrackingState.TRACKING) {
+                            // A horizontal plane facing downward (e.g. a ceiling).
+//                            textViewDistance.setTextColor(android.graphics.Color.GREEN);
+                        }
+                        else if(plane.getType() == Plane.Type.HORIZONTAL_UPWARD_FACING && plane.getTrackingState() == TrackingState.TRACKING) {
+                            // A horizontal plane facing upward (e.g. floor or tabletop).
+//                            textViewDistance.setTextColor(android.graphics.Color.BLUE);
+                            currentPlan = plane;
+                        }
+
+                        break;
+                    }
+
+                    if(currentPlan == null) {
+                        return;
+                    }
+
+                    List<HitResult> hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
+                    for (HitResult hitResult : hitTestResultList) {
+                        if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
+//                            if(currentPlan.isPoseInPolygon(hitResult.getHitPose()) && currentPlan.isPoseInExtents(hitResult.getHitPose())) {
+//
+//
+//                            }
+                            ILog.iLogDebug(TAG, hitResult.getDistance());
+
+                            toggleDistanceHint(hitResult.getDistance());
+
+                            makeCenterPoint(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
+
+                            if(nodeList.isEmpty()) {
+                                break;
+                            }
+
+                            Node lastNodeFromNodeList = (Node) nodeList.get(nodeList.size() - 1);
+                            if(lastNodeFromNodeList != null) {
+                                drawTempLine(lastNodeFromNodeList, centerPoint);
+                            }
+
+                            break;
+                        }
+
+                    }
+                });
+
+        buttonBack.setOnClickListener(view -> {
+
+        });
+
     }
 
-    private void processAnchorNode(AnchorNode anchorNode) {
-
-        if(startAnchorNode == null && endAnchorNode == null) {
-            startAnchorNode = anchorNode;
+    private void toggleDistanceHint(float distance) {
+        if(distance < 0.5) {
+            frameLayoutTooCloseTooFar.setVisibility(View.VISIBLE);
+            textViewTooCloseTooFar.setText(R.string.ar_too_close);
         }
-        else if(startAnchorNode != null && endAnchorNode == null) {
-            endAnchorNode = anchorNode;
-        }
-        else if(startAnchorNode != null && endAnchorNode != null) {
-
-            arSceneView.getScene().removeChild(startAnchorNode);
-            arSceneView.getScene().removeChild(endAnchorNode);
-
-            startAnchorNode = null;
-            endAnchorNode = null;
-            startAnchorNode = anchorNode;
-        }
-    }
-
-    private void makeCenterCube(float tx, float ty, float tz, Runnable runnable) {
-
-        if(centerNode != null) {
-            centerNode.setLocalPosition(new Vector3(tx, ty, tz));
-            runnable.run();
+        else if(distance > 10) {
+            frameLayoutTooCloseTooFar.setVisibility(View.VISIBLE);
+            textViewTooCloseTooFar.setText(R.string.ar_too_far);
         }
         else {
-            MaterialFactory
-                    .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
-                    .thenAccept(material -> {
-
-                        ModelRenderable modelRenderable = ShapeFactory.makeCylinder(0.01f, 0.0001f, Vector3.zero(), material);
-                        modelRenderable.setShadowReceiver(shadow);
-                        modelRenderable.setShadowCaster(shadow);
-                        Node node = new Node();
-                        node.setRenderable(modelRenderable);
-                        node.setLocalPosition(new Vector3(tx, ty, tz));
-                        // Create the transformable andy and add it to the anchor.
-                        arSceneView.getScene().addChild(node);
-                        this.centerNode = node;
-                        runnable.run();
-                    });
+            textViewTooCloseTooFar.setText("");
+            frameLayoutTooCloseTooFar.setVisibility(View.GONE);
         }
     }
 
-    private void makeVerticalCenterCube(float tx, float ty, float tz, Runnable runnable) {
+    private void updatePlanRenderer() {
+        PlaneRenderer planeRenderer = arSceneView.getPlaneRenderer();
 
-        if(centerNode != null) {
-            centerNode.setLocalPosition(new Vector3(tx, ty, tz));
-            runnable.run();
-        }
-        else {
-            MaterialFactory
-                    .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
-                    .thenAccept(material -> {
+//        planeRenderer.getMaterial().thenAccept(material -> {
+//            material.setFloat3(PlaneRenderer.MATERIAL_SPOTLIGHT_RADIUS, 1000f, 1000f, 1000f);
+//            material.setFloat3(PlaneRenderer.MATERIAL_COLOR, new Color(1f, 1f, 1f, 1f));
+//        });
 
-                        ModelRenderable modelRenderable = ShapeFactory.makeCylinder(0.01f, 0.0001f, Vector3.zero(), material);
-                        modelRenderable.setShadowReceiver(shadow);
-                        modelRenderable.setShadowCaster(shadow);
-                        Node node = new Node();
-                        node.setRenderable(modelRenderable);
-                        node.setLocalPosition(new Vector3(tx, ty, tz));
-                        // Create the transformable andy and add it to the anchor.
-                        arSceneView.getScene().addChild(node);
-                        this.centerNode = node;
-                        runnable.run();
-                    });
-        }
-    }
+        // Build texture sampler
+        Texture.Sampler sampler = Texture.Sampler.builder()
+                .setMinFilter(Texture.Sampler.MinFilter.LINEAR)
+                .setMagFilter(Texture.Sampler.MagFilter.LINEAR)
+                .setWrapMode(Texture.Sampler.WrapMode.REPEAT).build();
 
-    private void drawLine(Node startNode, Node endNode) {
+        // Build texture with sampler
+        CompletableFuture<Texture> trigrid = Texture.builder()
+                .setSource(this, R.drawable.t_t)
+                .setSampler(sampler).build();
 
-        ILog.iLogDebug(TAG, "draw line");
-        Vector3 startVector3 = startNode.getWorldPosition();
-        Vector3 endVector3 = endNode.getWorldPosition();
-
-        Vector3 difference = Vector3.subtract(startVector3, endVector3);
-        Vector3 directionFromTopToBottom = difference.normalized();
-        Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
-
-        MaterialFactory
-                .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
-                .thenAccept(material -> {
-
-                    ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.0001f, difference.length()), Vector3.zero(), material);
-                    Node lineNode = new Node();
-                    lineMode.setShadowCaster(shadow);
-                    lineMode.setShadowReceiver(shadow);
-                    lineNode.setParent(startNode);
-                    lineNode.setRenderable(lineMode);
-                    lineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
-                    lineNode.setWorldRotation(rotationFromAToB);
-
-                    ILog.iLogDebug(TAG, "line length is " + difference.length());
-
-                    ViewRenderable.builder()
-                            .setView(this, R.layout.view_renderable_text)
-                            .build()
-                            .thenAccept(viewRenderable -> {
-
-                                ((TextView)viewRenderable.getView()).setText(String.format("%.1fCM", difference.length() * 100));
-                                viewRenderable.setShadowCaster(false);
-                                viewRenderable.setShadowReceiver(false);
-
-                                FaceToCameraNode faceToCameraNode = new FaceToCameraNode();
-                                faceToCameraNode.setParent(lineNode);
-
-                                faceToCameraNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
-                                faceToCameraNode.setLocalPosition(new Vector3(0f, 0.01f, 0f));
-                                faceToCameraNode.setRenderable(viewRenderable);
-                            });
+        planeRenderer.getMaterial().thenAcceptBoth(trigrid, (material, texture) -> {
+            material.setTexture(PlaneRenderer.MATERIAL_TEXTURE, texture);
+            material.setFloat(PlaneRenderer.MATERIAL_SPOTLIGHT_RADIUS, 1000f);
         });
     }
 
-    private void drawTempLine(Node startNode, Node endNode, boolean updateText) {
+    private Node makePoint(Anchor anchor) {
+
+        ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), pointMaterial);
+        modelRenderable.setShadowReceiver(shadow);
+        modelRenderable.setShadowCaster(shadow);
+
+//        AnchorNode anchorNode = new AnchorNode(anchor);
+        Node anchorNode = new Node();
+        anchorNode.setWorldPosition(new Vector3(anchor.getPose().tx(), anchor.getPose().ty(), anchor.getPose().tz()));
+        anchorNode.setRenderable(modelRenderable);
+        arSceneView.getScene().addChild(anchorNode);
+
+        return anchorNode;
+    }
+
+    private void makeCenterPoint(float tx, float ty, float tz) {
+
+        if(centerPoint != null) {
+            centerPoint.setLocalPosition(new Vector3(tx, ty, tz));
+        }
+        else {
+            ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), pointMaterial);
+            modelRenderable.setShadowReceiver(shadow);
+            modelRenderable.setShadowCaster(shadow);
+            Node node = new Node();
+            node.setRenderable(modelRenderable);
+//            node.setLocalPosition(new Vector3(tx, ty, tz));
+            node.setWorldPosition(new Vector3(tx, ty, tz));
+            // Create the transformable andy and add it to the anchor.
+            arSceneView.getScene().addChild(node);
+            this.centerPoint = node;
+        }
+    }
+
+//    private void makeVerticalCenterCube(float tx, float ty, float tz, Runnable runnable) {
+//
+//        if(centerPoint != null) {
+//            centerPoint.setLocalPosition(new Vector3(tx, ty, tz));
+//            runnable.run();
+//        }
+//        else {
+//            MaterialFactory
+//                    .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
+//                    .thenAccept(material -> {
+//
+//                        ModelRenderable modelRenderable = ShapeFactory.makeCylinder(0.01f, 0.0001f, Vector3.zero(), material);
+//                        modelRenderable.setShadowReceiver(shadow);
+//                        modelRenderable.setShadowCaster(shadow);
+//                        Node node = new Node();
+//                        node.setRenderable(modelRenderable);
+//                        node.setLocalPosition(new Vector3(tx, ty, tz));
+//                        // Create the transformable andy and add it to the anchor.
+//                        arSceneView.getScene().addChild(node);
+//                        this.centerPoint = node;
+//                        runnable.run();
+//                    });
+//        }
+//    }
+
+    private void drawLine(Node startNode, Node endNode) {
 
         Vector3 startVector3 = startNode.getWorldPosition();
         Vector3 endVector3 = endNode.getWorldPosition();
 
         Vector3 difference = Vector3.subtract(startVector3, endVector3);
-        ILog.iLogDebug(TAG, "difference length " + difference.length());
+        Vector3 directionFromTopToBottom = difference.normalized();
+        Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
+
+        ModelRenderable lineModelRenderable = ShapeFactory.makeCube(new Vector3(0.005f, 0.0001f, difference.length()), Vector3.zero(), lineMaterial);
+        lineModelRenderable.setShadowCaster(shadow);
+        lineModelRenderable.setShadowReceiver(shadow);
+
+        Node lineNode = new Node();
+        lineNode.setParent(startNode);
+        lineNode.setRenderable(lineModelRenderable);
+        lineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
+        lineNode.setWorldRotation(rotationFromAToB);
+
+        ViewRenderable.builder()
+                .setView(this, R.layout.view_renderable_text)
+                .build()
+                .thenAccept(viewRenderable -> {
+
+                    ((TextView)viewRenderable.getView()).setText(String.format("%.1fCM", difference.length() * 100));
+                    viewRenderable.setShadowCaster(false);
+                    viewRenderable.setShadowReceiver(false);
+
+                    FaceToCameraNode faceToCameraNode = new FaceToCameraNode();
+                    faceToCameraNode.setParent(lineNode);
+
+                    faceToCameraNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
+                    faceToCameraNode.setLocalPosition(new Vector3(0f, 0.05f, 0f));
+                    faceToCameraNode.setRenderable(viewRenderable);
+                });
+    }
+
+    private void drawTempLine(Node startNode, Node endNode) {
+
+        Vector3 startVector3 = startNode.getWorldPosition();
+        Vector3 endVector3 = endNode.getWorldPosition();
+
+        Vector3 difference = Vector3.subtract(startVector3, endVector3);
+
         Vector3 directionFromTopToBottom = difference.normalized();
         Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
 
         if(tempLineNode != null) {
 
-            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), tempLineNode.getRenderable().getMaterial());
+            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), lineMaterial);
+            lineMode.setShadowCaster(shadow);
+            lineMode.setShadowReceiver(shadow);
+
+            tempLineNode.setRenderable(lineMode);
+            tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
+            tempLineNode.setWorldRotation(rotationFromAToB);
+        }
+        else {
+            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), lineMaterial);
+            lineMode.setShadowCaster(shadow);
+            lineMode.setShadowReceiver(shadow);
+
+            tempLineNode = new Node();
+            tempLineNode.setParent(startNode);
+            tempLineNode.setRenderable(lineMode);
+            tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
+            tempLineNode.setWorldRotation(rotationFromAToB);
+        }
+
+        if(tempTextNode != null) {
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.1fCM", difference.length() * 100));
+        }
+        else {
+            if(tempLineNode != null) {
+
+                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.1fCM", difference.length() * 100));
+
+                tempTextNode = new FaceToCameraNode();
+                tempTextNode.setParent(tempLineNode);
+
+                tempTextNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
+                tempTextNode.setLocalPosition(new Vector3(0f, 0.05f, 0f));
+                tempTextNode.setRenderable(viewRenderableSizeText);
+
+            }
+        }
+    }
+
+//    private void drawTempVerticalLine(Node startNode, Node endNode, boolean updateText) {
+//
+//        Vector3 startVector3 = startNode.getWorldPosition();
+//        Vector3 endVector3 = endNode.getWorldPosition();
+//
+//        Vector3 difference = Vector3.subtract(startVector3, endVector3);
+//        ILog.iLogDebug(TAG, "difference length " + difference.length());
+//        Vector3 directionFromTopToBottom = difference.normalized();
+//        Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
+//
+//        if(tempLineNode != null) {
+//
+////            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), tempLineNode.getRenderable().getMaterial());
 //            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, difference.length(), 0.005f), Vector3.zero(), tempLineNode.getRenderable().getMaterial());
-            lineMode.setShadowCaster(shadow);
-            lineMode.setShadowReceiver(shadow);
-
-            tempLineNode.setRenderable(lineMode);
-            tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
-            tempLineNode.setWorldRotation(rotationFromAToB);
-        }
-        else {
-            MaterialFactory
-                    .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
-                    .thenAccept(material -> {
-
-                        ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), material);
-                        lineMode.setShadowCaster(shadow);
-                        lineMode.setShadowReceiver(shadow);
-
-                        tempLineNode = new Node();
-                        tempLineNode.setParent(startNode);
-                        tempLineNode.setRenderable(lineMode);
-                        tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
-                        tempLineNode.setWorldRotation(rotationFromAToB);
-                    });
-        }
-
-        if(tempTextNode != null) {
-            textViewSize.setText(String.format("%.1fCM", difference.length() * 100));
-        }
-        else {
-            if(updateText && tempLineNode != null) {
-                ViewRenderable.builder()
-                        .setView(this, R.layout.view_renderable_text)
-                        .build()
-                        .thenAccept(viewRenderable -> {
-
-                            textViewSize = (TextView)viewRenderable.getView();
-                            textViewSize.setText(String.format("%.1fCM", difference.length() * 100));
-                            viewRenderable.setShadowCaster(false);
-                            viewRenderable.setShadowReceiver(false);
-
-                            tempTextNode = new FaceToCameraNode();
-                            tempTextNode.setParent(tempLineNode);
-
-                            tempTextNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
-                            tempTextNode.setLocalPosition(new Vector3(0f, 0.01f, 0f));
-                            tempTextNode.setRenderable(viewRenderable);
-                        });
-            }
-        }
-
-    }
-
-    private void drawTempVerticalLine(Node startNode, Node endNode, boolean updateText) {
-
-        Vector3 startVector3 = startNode.getWorldPosition();
-        Vector3 endVector3 = endNode.getWorldPosition();
-
-        Vector3 difference = Vector3.subtract(startVector3, endVector3);
-        ILog.iLogDebug(TAG, "difference length " + difference.length());
-        Vector3 directionFromTopToBottom = difference.normalized();
-        Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
-
-        if(tempLineNode != null) {
-
-//            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), tempLineNode.getRenderable().getMaterial());
-            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, difference.length(), 0.005f), Vector3.zero(), tempLineNode.getRenderable().getMaterial());
-            lineMode.setShadowCaster(shadow);
-            lineMode.setShadowReceiver(shadow);
-
-            tempLineNode.setRenderable(lineMode);
-            tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
-            tempLineNode.setWorldRotation(rotationFromAToB);
-        }
-        else {
-            MaterialFactory
-                    .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
-                    .thenAccept(material -> {
-
-//                        ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), material);
-                        ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, difference.length(), 0.005f), Vector3.zero(), material);
-                        lineMode.setShadowCaster(shadow);
-                        lineMode.setShadowReceiver(shadow);
-
-                        tempLineNode = new Node();
-                        tempLineNode.setParent(startNode);
-                        tempLineNode.setRenderable(lineMode);
-                        tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
-                        tempLineNode.setWorldRotation(rotationFromAToB);
-                    });
-        }
-
-        if(tempTextNode != null) {
-            textViewSize.setText(String.format("%.1fCM", difference.length() * 100));
-        }
-        else {
-            if(updateText && tempLineNode != null) {
-                ViewRenderable.builder()
-                        .setView(this, R.layout.view_renderable_text)
-                        .build()
-                        .thenAccept(viewRenderable -> {
-
-                            textViewSize = (TextView)viewRenderable.getView();
-                            textViewSize.setText(String.format("%.1fCM", difference.length() * 100));
-                            viewRenderable.setShadowCaster(false);
-                            viewRenderable.setShadowReceiver(false);
-
-                            tempTextNode = new FaceToCameraNode();
-                            tempTextNode.setParent(tempLineNode);
-
-                            tempTextNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
-                            tempTextNode.setLocalPosition(new Vector3(0f, 0.01f, 0f));
-                            tempTextNode.setRenderable(viewRenderable);
-                        });
-            }
-        }
-
-    }
+//            lineMode.setShadowCaster(shadow);
+//            lineMode.setShadowReceiver(shadow);
+//
+//            tempLineNode.setRenderable(lineMode);
+//            tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
+//            tempLineNode.setWorldRotation(rotationFromAToB);
+//        }
+//        else {
+//            MaterialFactory
+//                    .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
+//                    .thenAccept(material -> {
+//
+////                        ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), material);
+//                        ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, difference.length(), 0.005f), Vector3.zero(), material);
+//                        lineMode.setShadowCaster(shadow);
+//                        lineMode.setShadowReceiver(shadow);
+//
+//                        tempLineNode = new Node();
+//                        tempLineNode.setParent(startNode);
+//                        tempLineNode.setRenderable(lineMode);
+//                        tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
+//                        tempLineNode.setWorldRotation(rotationFromAToB);
+//                    });
+//        }
+//
+//        if(tempTextNode != null) {
+//            textViewSize.setText(String.format("%.1fCM", difference.length() * 100));
+//        }
+//        else {
+//            if(updateText && tempLineNode != null) {
+//                ViewRenderable.builder()
+//                        .setView(this, R.layout.view_renderable_text)
+//                        .build()
+//                        .thenAccept(viewRenderable -> {
+//
+//                            textViewSize = (TextView)viewRenderable.getView();
+//                            textViewSize.setText(String.format("%.1fCM", difference.length() * 100));
+//                            viewRenderable.setShadowCaster(false);
+//                            viewRenderable.setShadowReceiver(false);
+//
+//                            tempTextNode = new FaceToCameraNode();
+//                            tempTextNode.setParent(tempLineNode);
+//
+//                            tempTextNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
+//                            tempTextNode.setLocalPosition(new Vector3(0f, 0.01f, 0f));
+//                            tempTextNode.setRenderable(viewRenderable);
+//                        });
+//            }
+//        }
+//
+//    }
 
     private static Session createArSession(Activity activity, boolean installRequested, Config.LightEstimationMode lightEstimationMode) throws UnavailableException {
         Session session;
@@ -540,8 +564,6 @@ public class ARActivity extends AppCompatActivity {
         Config config = new Config(session);
         config.setUpdateMode(Config.UpdateMode.LATEST_CAMERA_IMAGE);
         config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL);
-//        config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
-//        config.setPlaneFindingMode(Config.PlaneFindingMode.VERTICAL);
 
         if(lightEstimationMode != null) {
             config.setLightEstimationMode(lightEstimationMode);

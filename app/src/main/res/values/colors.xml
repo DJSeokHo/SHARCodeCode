@@ -4,4 +4,5 @@
     <color name="colorPrimaryDark">#3700B3</color>
     <color name="colorAccent">#03DAC5</color>
     <color name="toast_custom_background">#6443b5</color>
+    <color name="too_close_bg">#4DFF0000</color>
 </resources>
