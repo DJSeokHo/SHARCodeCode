@@ -3,7 +3,7 @@
     xmlns:Android="http://schemas.android.com/apk/distribution"
     package="com.swein.sharcodecode">
 
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- AR Optional apps must declare minSdkVersion ≥ 14 -->
     <uses-permission android:name="android.permission.CAMERA" />

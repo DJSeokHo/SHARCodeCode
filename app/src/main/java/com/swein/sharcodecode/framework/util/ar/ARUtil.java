@@ -1,6 +1,5 @@
 package com.swein.sharcodecode.framework.util.ar;
 
-import com.google.ar.core.Anchor;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.Node;
 
@@ -23,4 +22,10 @@ public class ARUtil {
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
+    public static double getNodesDistanceMetersWithoutHeight(Node startNode, Node endNode) {
+        float dx = startNode.getWorldPosition().x - endNode.getWorldPosition().x;
+        float dz = startNode.getWorldPosition().z - endNode.getWorldPosition().z;
+
+        return Math.sqrt(dx * dx + dz * dz);
+    }
 }

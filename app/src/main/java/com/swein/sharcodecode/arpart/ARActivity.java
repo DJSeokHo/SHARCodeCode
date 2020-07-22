@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -14,12 +13,12 @@ import android.widget.TextView;
 
 import androidx.fragment.app.FragmentActivity;
 
-import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
+import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
@@ -28,7 +27,6 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
-import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.HitTestResult;
 import com.google.ar.sceneform.Node;
@@ -40,22 +38,18 @@ import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.PlaneRenderer;
 import com.google.ar.sceneform.rendering.ShapeFactory;
-import com.google.ar.sceneform.rendering.Texture;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
+import com.swein.sharcodecode.framework.util.ar.ARUtil;
 import com.swein.sharcodecode.framework.util.debug.ILog;
+import com.swein.sharcodecode.framework.util.device.DeviceUtil;
 import com.swein.sharcodecode.framework.util.toast.ToastUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class ARActivity extends FragmentActivity {
-
-    public enum DetectType {
-        HORIZONTAL, VERTICAL
-    }
 
     private final static String TAG = "ARActivity";
 
@@ -65,17 +59,17 @@ public class ARActivity extends FragmentActivity {
     private FrameLayout frameLayoutTooCloseTooFar;
     private TextView textViewTooCloseTooFar;
 
-//    private List<LineBean> lineBeanList = new ArrayList<>();
-//    private List<Node> nodeList = new ArrayList<>();
-
     private Node centerPoint;
 
     private Button buttonBack;
+    private Button buttonReDetect;
 
     private Node tempLineNode;
     private FaceToCameraNode tempTextNode;
 
-    private List<AnchorNode> floorPolygon = new ArrayList<>();
+    private List<Node> floorPolygon = new ArrayList<>();
+    private List<Node> cellPolygon = new ArrayList<>();
+
     private Node tempNode;
 
     private float screenCenterX;
@@ -87,9 +81,10 @@ public class ARActivity extends FragmentActivity {
     private Material pointMaterial;
     private Material lineMaterial;
 
-    private Plane currentPlan;
+    private boolean isReadyToAutoClose = false;
+    private boolean isAutoClosed = false;
 
-    private DetectType detectType = DetectType.VERTICAL;
+    private Config.PlaneFindingMode planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,6 +130,7 @@ public class ARActivity extends FragmentActivity {
         frameLayoutTooCloseTooFar = findViewById(R.id.frameLayoutTooCloseTooFar);
         textViewTooCloseTooFar = findViewById(R.id.textViewTooCloseTooFar);
         buttonBack = findViewById(R.id.buttonBack);
+        buttonReDetect = findViewById(R.id.buttonReDetect);
     }
 
     private void setListener() {
@@ -160,56 +156,47 @@ public class ARActivity extends FragmentActivity {
 
                         if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
 
-//                            if(tempTextNode != null) {
-//                                arSceneView.getScene().removeChild(tempTextNode);
-//                            }
-//
-//                            if(tempLineNode != null) {
-//                                arSceneView.getScene().removeChild(tempLineNode);
-//                            }
-//
-//                            tempTextNode = null;
-//                            tempLineNode = null;
+                            if(isAutoClosed) {
+                                return false;
+                            }
+
+                            if(isReadyToAutoClose) {
+
+                                drawLine(floorPolygon.get(floorPolygon.size() - 1), floorPolygon.get(0));
+                                DeviceUtil.vibrate(this, 5);
+                                isAutoClosed = true;
+
+                                clearTemp();
+
+                                if(centerPoint != null) {
+                                    arSceneView.getScene().removeChild(centerPoint);
+                                    centerPoint = null;
+                                }
+
+                                createCellPolygon();
+                                return false;
+                            }
 
 
-                            Anchor anchor = hitResult.createAnchor();
-                            AnchorNode anchorNode = createAnchorNode(anchor, pointMaterial, shadow);
-                            arSceneView.getScene().addChild(anchorNode);
+//                            Anchor anchor = hitResult.createAnchor();
+//                            AnchorNode anchorNode = createAnchorNode(anchor, pointMaterial, shadow);
+                            Node node = createNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
 
-                            floorPolygon.add(anchorNode);
+                            arSceneView.getScene().addChild(node);
+                            floorPolygon.add(node);
 
-                            tempNode = createNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
-                            arSceneView.getScene().addChild(tempNode);
+                            DeviceUtil.vibrate(this, 5);
 
                             if(floorPolygon.size() >= 2) {
                                 drawLine(floorPolygon.get(floorPolygon.size() - 2), floorPolygon.get(floorPolygon.size() - 1));
                             }
-//                            LineBean lineBean = new LineBean();
-//                            lineBeanList.add(lineBean);
-//
-//                            if(lineBean.startNode == null && lineBean.endNode == null) {
-//                                lineBean.startNode = anchorNode;
-//                            }
-//                            else if(lineBean.startNode != null && lineBean.endNode == null) {
-//                                lineBean.endNode = anchorNode;
-//                            }
-//
-//                            if(lineBean.startNode != null && lineBean.endNode != null) {
-//                                lineBean.calculateLength();
-//                                lineBean.state = LineBean.STATE_READY;
-//                            }
 
-//                            if (startAnchorNode != null && endAnchorNode != null) {
-//                                drawLine(startAnchorNode, endAnchorNode);
-//                            }
+                            clearTemp();
 
-//                            for(int i = 0; i < lineBeanList.size(); i++) {
-//                                if(lineBeanList.get(i).state == LineBean.STATE_READY) {
-//                                    drawLine(lineBeanList.get(i).startNode, lineBeanList.get(i).endNode);
-//                                    lineBeanList.get(i).state = LineBean.STATE_FINISHED;
-//                                    break;
-//                                }
-//                            }
+
+                            tempNode = createNode(node.getWorldPosition().x, node.getWorldPosition().y, node.getWorldPosition().z,
+                                    pointMaterial, shadow);
+                            arSceneView.getScene().addChild(tempNode);
 
                             break;
                         }
@@ -235,63 +222,230 @@ public class ARActivity extends FragmentActivity {
 
                     Collection<Plane> planeCollection = frame.getUpdatedTrackables(Plane.class);
 
-                    if(!planeCollection.isEmpty()) {
-                        textView.setVisibility(View.GONE);
-                    }
+                    checkPlaneSize(planeCollection);
 
-                    for (Plane plane : planeCollection) {
-
-                        if(plane.getType() == Plane.Type.VERTICAL && plane.getTrackingState() == TrackingState.TRACKING) {
-                            // A vertical plane (e.g. a wall).
-//                            textViewDistance.setTextColor(android.graphics.Color.RED);
-                            currentPlan = plane;
-                        }
-                        else if(plane.getType() == Plane.Type.HORIZONTAL_DOWNWARD_FACING && plane.getTrackingState() == TrackingState.TRACKING) {
-                            // A horizontal plane facing downward (e.g. a ceiling).
-//                            textViewDistance.setTextColor(android.graphics.Color.GREEN);
-                        }
-                        else if(plane.getType() == Plane.Type.HORIZONTAL_UPWARD_FACING && plane.getTrackingState() == TrackingState.TRACKING) {
-                            // A horizontal plane facing upward (e.g. floor or tabletop).
-//                            textViewDistance.setTextColor(android.graphics.Color.BLUE);
-                            currentPlan = plane;
-                        }
-
-                        break;
-                    }
-
-                    if(currentPlan == null) {
+                    if(isAutoClosed) {
                         return;
                     }
 
                     List<HitResult> hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
+
+                    checkPlanType(planeCollection, hitTestResultList);
+
                     for (HitResult hitResult : hitTestResultList) {
                         if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
-//                            if(currentPlan.isPoseInPolygon(hitResult.getHitPose()) && currentPlan.isPoseInExtents(hitResult.getHitPose())) {
-//
-//
-//                            }
-                            ILog.iLogDebug(TAG, hitResult.getDistance());
 
                             toggleDistanceHint(hitResult.getDistance());
 
-                            makeCenterPoint(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
+                            if(centerPoint != null) {
+                                centerPoint.setLocalPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
+                            }
+                            else {
+                                centerPoint = createNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+                                arSceneView.getScene().addChild(centerPoint);
+                            }
 
                             if(tempNode == null) {
-                                break;
+                                return;
                             }
 
                             drawTempLine(tempNode, centerPoint);
 
-                            break;
-                        }
+                            if(floorPolygon.size() < 3) {
+                                return;
+                            }
 
+                            if(checkClose(centerPoint, floorPolygon.get(0))) {
+                                drawTempLine(tempNode, floorPolygon.get(0));
+
+                                if(!isReadyToAutoClose) {
+                                    DeviceUtil.vibrate(this, 5);
+                                }
+
+                                isReadyToAutoClose = true;
+                            }
+                            else {
+                                drawTempLine(tempNode, centerPoint);
+                                isReadyToAutoClose = false;
+                            }
+
+                            return;
+                        }
                     }
                 });
 
-        buttonBack.setOnClickListener(view -> {
+        buttonBack.setOnClickListener(view -> back());
 
-        });
+        buttonReDetect.setOnClickListener(view -> reset());
+    }
 
+    private void back() {
+        if(isAutoClosed) {
+
+            for(Node node : floorPolygon) {
+                arSceneView.getScene().removeChild(node);
+            }
+
+            for(Node node : cellPolygon) {
+                arSceneView.getScene().removeChild(node);
+            }
+
+            floorPolygon.clear();
+            cellPolygon.clear();
+
+            clearTemp();
+
+            if(centerPoint != null) {
+                arSceneView.getScene().removeChild(centerPoint);
+                centerPoint = null;
+            }
+
+
+            isAutoClosed = false;
+            isReadyToAutoClose = false;
+        }
+        else {
+
+            if(floorPolygon.size() == 1) {
+
+                arSceneView.getScene().removeChild(floorPolygon.get(0));
+                floorPolygon.clear();
+
+                clearTemp();
+                if(centerPoint != null) {
+                    arSceneView.getScene().removeChild(centerPoint);
+                    centerPoint = null;
+                }
+            }
+            else if(floorPolygon.size() > 1) {
+
+                List<Node> childList = floorPolygon.get(floorPolygon.size() - 2).getChildren();
+
+                if(!childList.isEmpty()) {
+                    Node childNode = childList.get(0);
+                    childNode.setParent(null);
+                    floorPolygon.get(floorPolygon.size() - 2).removeChild(childNode);
+                }
+
+                arSceneView.getScene().removeChild(floorPolygon.get(floorPolygon.size() - 1));
+                floorPolygon.remove(floorPolygon.size() - 1);
+
+                clearTemp();
+                if(centerPoint != null) {
+                    arSceneView.getScene().removeChild(centerPoint);
+                    centerPoint = null;
+                }
+
+                tempNode = createNode(
+                        floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().x,
+                        floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().y,
+                        floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().z,
+                        pointMaterial, shadow);
+                arSceneView.getScene().addChild(tempNode);
+            }
+        }
+    }
+
+    private void createCellPolygon() {
+        cellPolygon.clear();
+
+        Node node;
+        for(int i = 0; i < floorPolygon.size(); i++) {
+            node = createNode(
+                    floorPolygon.get(i).getWorldPosition().x,
+                    floorPolygon.get(i).getWorldPosition().y + 1,
+                    floorPolygon.get(i).getWorldPosition().z ,
+                    pointMaterial, shadow);
+            cellPolygon.add(node);
+
+            arSceneView.getScene().addChild(node);
+        }
+
+        // draw vertical line
+        for(int i = 0; i < floorPolygon.size(); i++) {
+            drawLine(floorPolygon.get(i), cellPolygon.get(i));
+        }
+
+        // connect node and make line close
+        for(int i = 0; i < cellPolygon.size() - 1; i++) {
+            drawLine(cellPolygon.get(i), cellPolygon.get(i + 1));
+        }
+        drawLine(cellPolygon.get(cellPolygon.size() - 1), cellPolygon.get(0));
+    }
+
+
+    private void calculate() {
+
+    }
+
+    private void clearTemp() {
+        if(tempNode != null) {
+            arSceneView.getScene().removeChild(tempNode);
+            tempNode = null;
+        }
+        if(tempTextNode != null) {
+            arSceneView.getScene().removeChild(tempTextNode);
+            tempTextNode = null;
+        }
+
+        if(tempLineNode != null) {
+            arSceneView.getScene().removeChild(tempLineNode);
+            tempLineNode = null;
+        }
+    }
+
+    private void checkPlanType(Collection<Plane> planeCollection, List<HitResult> hitTestResultList) {
+
+        if(planeCollection.isEmpty() || hitTestResultList.isEmpty()) {
+            return;
+        }
+
+        Pose pose = null;
+
+        for (HitResult hitResult : hitTestResultList) {
+            if (hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
+                pose = hitResult.getHitPose();
+                break;
+            }
+        }
+
+        if(pose == null) {
+            return;
+        }
+
+        for (Plane plane : planeCollection) {
+
+            if(plane.isPoseInPolygon(pose) && plane.isPoseInExtents(pose)) {
+                if(plane.getType() == Plane.Type.VERTICAL && plane.getTrackingState() == TrackingState.TRACKING) {
+                    ILog.iLogDebug(TAG, "wall");
+                    // A vertical plane (e.g. a wall).
+//                            textViewDistance.setTextColor(android.graphics.Color.RED);
+                }
+                else if(plane.getType() == Plane.Type.HORIZONTAL_DOWNWARD_FACING && plane.getTrackingState() == TrackingState.TRACKING) {
+                    // A horizontal plane facing downward (e.g. a ceiling).
+//                            textViewDistance.setTextColor(android.graphics.Color.GREEN);
+                    ILog.iLogDebug(TAG, "ceiling");
+                }
+                else if(plane.getType() == Plane.Type.HORIZONTAL_UPWARD_FACING && plane.getTrackingState() == TrackingState.TRACKING) {
+                    // A horizontal plane facing upward (e.g. floor or tabletop).
+//                            textViewDistance.setTextColor(android.graphics.Color.BLUE);
+                    ILog.iLogDebug(TAG, "floor");
+                }
+            }
+
+            break;
+        }
+    }
+
+    private boolean checkClose(Node startNode, Node endNode) {
+//        if(Vector3.subtract(startNode.getWorldPosition(), endNode.getWorldPosition()).length() < 0.06) {
+        if(ARUtil.getNodesDistanceMetersWithoutHeight(startNode, endNode) < 0.06) {
+            ILog.iLogDebug(TAG, "checkClose nice!!!!!!");
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
     private void toggleDistanceHint(float distance) {
@@ -312,39 +466,39 @@ public class ARActivity extends FragmentActivity {
     private void updatePlanRenderer() {
         PlaneRenderer planeRenderer = arSceneView.getPlaneRenderer();
 
-//        planeRenderer.getMaterial().thenAccept(material -> {
-//            material.setFloat3(PlaneRenderer.MATERIAL_SPOTLIGHT_RADIUS, 1000f, 1000f, 1000f);
-//            material.setFloat3(PlaneRenderer.MATERIAL_COLOR, new Color(1f, 1f, 1f, 1f));
-//        });
-
-        // Build texture sampler
-        Texture.Sampler sampler = Texture.Sampler.builder()
-                .setMinFilter(Texture.Sampler.MinFilter.LINEAR)
-                .setMagFilter(Texture.Sampler.MagFilter.LINEAR)
-                .setWrapMode(Texture.Sampler.WrapMode.REPEAT).build();
-
-        // Build texture with sampler
-        CompletableFuture<Texture> trigrid = Texture.builder()
-                .setSource(this, R.drawable.t_t)
-                .setSampler(sampler).build();
-
-        planeRenderer.getMaterial().thenAcceptBoth(trigrid, (material, texture) -> {
-            material.setTexture(PlaneRenderer.MATERIAL_TEXTURE, texture);
-            material.setFloat(PlaneRenderer.MATERIAL_SPOTLIGHT_RADIUS, 1000f);
+        planeRenderer.getMaterial().thenAccept(material -> {
+            material.setFloat3(PlaneRenderer.MATERIAL_SPOTLIGHT_RADIUS, 1000f, 1000f, 1000f);
+            material.setFloat3(PlaneRenderer.MATERIAL_COLOR, new Color(1f, 1f, 1f, 1f));
         });
+
+//        // Build texture sampler
+//        Texture.Sampler sampler = Texture.Sampler.builder()
+//                .setMinFilter(Texture.Sampler.MinFilter.LINEAR)
+//                .setMagFilter(Texture.Sampler.MagFilter.LINEAR)
+//                .setWrapMode(Texture.Sampler.WrapMode.REPEAT).build();
+//
+//        // Build texture with sampler
+//        CompletableFuture<Texture> trigrid = Texture.builder()
+//                .setSource(this, R.drawable.grid_blue)
+//                .setSampler(sampler).build();
+//
+//        planeRenderer.getMaterial().thenAcceptBoth(trigrid, (material, texture) -> {
+//            material.setTexture(PlaneRenderer.MATERIAL_TEXTURE, texture);
+//            material.setFloat(PlaneRenderer.MATERIAL_SPOTLIGHT_RADIUS, 1000f);
+//        });
     }
 
-    private AnchorNode createAnchorNode(Anchor anchor, Material material, boolean shadow) {
-
-        ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
-        modelRenderable.setShadowReceiver(shadow);
-        modelRenderable.setShadowCaster(shadow);
-
-        AnchorNode anchorNode = new AnchorNode(anchor);
-        anchorNode.setRenderable(modelRenderable);
-
-        return anchorNode;
-    }
+//    private AnchorNode createAnchorNode(Anchor anchor, Material material, boolean shadow) {
+//
+//        ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
+//        modelRenderable.setShadowReceiver(shadow);
+//        modelRenderable.setShadowCaster(shadow);
+//
+//        AnchorNode anchorNode = new AnchorNode(anchor);
+//        anchorNode.setRenderable(modelRenderable);
+//
+//        return anchorNode;
+//    }
 
     private Node createNode(float tx, float ty, float tz, Material material, boolean shadow) {
         ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
@@ -352,29 +506,10 @@ public class ARActivity extends FragmentActivity {
         modelRenderable.setShadowCaster(shadow);
         Node node = new Node();
         node.setRenderable(modelRenderable);
-//            node.setLocalPosition(new Vector3(tx, ty, tz));
-        node.setWorldPosition(new Vector3(tx, ty, tz));
+        node.setLocalPosition(new Vector3(tx, ty, tz));
+//        node.setWorldPosition(new Vector3(tx, ty, tz));
         // Create the transformable andy and add it to the anchor.
         return node;
-    }
-
-    private void makeCenterPoint(float tx, float ty, float tz) {
-
-        if(centerPoint != null) {
-            centerPoint.setLocalPosition(new Vector3(tx, ty, tz));
-        }
-        else {
-            ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), pointMaterial);
-            modelRenderable.setShadowReceiver(shadow);
-            modelRenderable.setShadowCaster(shadow);
-            Node node = new Node();
-            node.setRenderable(modelRenderable);
-//            node.setLocalPosition(new Vector3(tx, ty, tz));
-            node.setWorldPosition(new Vector3(tx, ty, tz));
-            // Create the transformable andy and add it to the anchor.
-            arSceneView.getScene().addChild(node);
-            this.centerPoint = node;
-        }
     }
 
 //    private void makeVerticalCenterCube(float tx, float ty, float tz, Runnable runnable) {
@@ -411,11 +546,12 @@ public class ARActivity extends FragmentActivity {
         Vector3 directionFromTopToBottom = difference.normalized();
         Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
 
-        ModelRenderable lineModelRenderable = ShapeFactory.makeCube(new Vector3(0.005f, 0.0001f, difference.length()), Vector3.zero(), lineMaterial);
+        ModelRenderable lineModelRenderable = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), lineMaterial);
         lineModelRenderable.setShadowCaster(shadow);
         lineModelRenderable.setShadowReceiver(shadow);
 
         Node lineNode = new Node();
+
         lineNode.setParent(startNode);
         lineNode.setRenderable(lineModelRenderable);
         lineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
@@ -437,6 +573,7 @@ public class ARActivity extends FragmentActivity {
                     faceToCameraNode.setLocalPosition(new Vector3(0f, 0.05f, 0f));
                     faceToCameraNode.setRenderable(viewRenderable);
                 });
+
     }
 
     private void drawTempLine(Node startNode, Node endNode) {
@@ -486,6 +623,19 @@ public class ARActivity extends FragmentActivity {
                 tempTextNode.setLocalPosition(new Vector3(0f, 0.05f, 0f));
                 tempTextNode.setRenderable(viewRenderableSizeText);
 
+            }
+        }
+    }
+
+    private void checkPlaneSize(Collection<Plane> planeCollection) {
+        for (Plane plane : planeCollection) {
+
+            if (plane.getTrackingState() == TrackingState.TRACKING) {
+//                                ILog.iLogDebug(TAG, "size ?? " + (plane.getExtentX() * plane.getExtentZ() * 2));
+
+                if((plane.getExtentX() * plane.getExtentZ() * 2) > 3) {
+                    textView.setVisibility(View.GONE);
+                }
             }
         }
     }
@@ -556,7 +706,7 @@ public class ARActivity extends FragmentActivity {
 //
 //    }
 
-    private static Session createArSession(Activity activity, boolean installRequested, Config.LightEstimationMode lightEstimationMode) throws UnavailableException {
+    private static Session createArSession(Activity activity, boolean installRequested, Config.LightEstimationMode lightEstimationMode, Config.PlaneFindingMode planeFindingMode) throws UnavailableException {
         Session session;
         // if we have the camera permission, create the session
         switch (ArCoreApk.getInstance().requestInstall(activity, !installRequested)) {
@@ -571,7 +721,7 @@ public class ARActivity extends FragmentActivity {
         // IMPORTANT!!!  ArSceneView requires the `LATEST_CAMERA_IMAGE` non-blocking update mode.
         Config config = new Config(session);
         config.setUpdateMode(Config.UpdateMode.LATEST_CAMERA_IMAGE);
-        config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL);
+        config.setPlaneFindingMode(planeFindingMode);
 
         if(lightEstimationMode != null) {
             config.setLightEstimationMode(lightEstimationMode);
@@ -602,7 +752,7 @@ public class ARActivity extends FragmentActivity {
         }
         else {
             message = "Failed to create AR session";
-            Log.e(TAG, "Exception: " + sessionException);
+            ILog.iLogError(TAG, "Exception: " + sessionException);
         }
 
         ToastUtil.showCustomShortToastNormal(activity, message);
@@ -621,7 +771,7 @@ public class ARActivity extends FragmentActivity {
             try {
 //                Config.LightEstimationMode lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR;
 //                Session session = createArSession(this, true, lightEstimationMode);
-                Session session = createArSession(this, true, null);
+                Session session = createArSession(this, true, null, planeFindingMode);
 
                 if (session == null) {
                     finish();
@@ -648,6 +798,48 @@ public class ARActivity extends FragmentActivity {
             // loading...finding plane
             textView.setVisibility(View.VISIBLE);
         }
+    }
+
+    private void reset() {
+
+        if (arSceneView == null) {
+            return;
+        }
+
+        arSceneView.pause();
+
+        arSceneView.setupSession(null);
+
+        try {
+//                Config.LightEstimationMode lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR;
+//                Session session = createArSession(this, true, lightEstimationMode);
+            Session session = createArSession(this, true, null, planeFindingMode);
+
+            if (session == null) {
+                finish();
+            }
+            else {
+                arSceneView.setupSession(session);
+            }
+        }
+        catch (UnavailableException e) {
+            handleSessionException(this, e);
+        }
+
+        try {
+            arSceneView.resume();
+        }
+        catch (CameraNotAvailableException ex) {
+            ToastUtil.showCustomShortToastNormal(ARActivity.this, "Unable to get camera");
+            finish();
+            return;
+        }
+
+        if (arSceneView.getSession() != null) {
+            // loading...finding plane
+            textView.setVisibility(View.VISIBLE);
+        }
+
     }
 
     @Override
