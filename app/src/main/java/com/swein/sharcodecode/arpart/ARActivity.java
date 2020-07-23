@@ -13,13 +13,14 @@ import android.widget.TextView;
 
 import androidx.fragment.app.FragmentActivity;
 
+import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
-import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
+import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
@@ -27,6 +28,7 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
+import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.HitTestResult;
 import com.google.ar.sceneform.Node;
@@ -36,7 +38,6 @@ import com.google.ar.sceneform.rendering.Color;
 import com.google.ar.sceneform.rendering.Material;
 import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
-import com.google.ar.sceneform.rendering.PlaneRenderer;
 import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
@@ -67,6 +68,7 @@ public class ARActivity extends FragmentActivity {
     private Node tempLineNode;
     private FaceToCameraNode tempTextNode;
 
+    private List<AnchorNode> bottomAnchorPolygon = new ArrayList<>();
     private List<Node> floorPolygon = new ArrayList<>();
     private List<Node> cellPolygon = new ArrayList<>();
 
@@ -154,7 +156,10 @@ public class ARActivity extends FragmentActivity {
 
                     for (HitResult hitResult : hitTestResultList) {
 
-                        if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
+                        Trackable trackable = hitResult.getTrackable();
+
+                        if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+//                        if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
 
                             if(isAutoClosed) {
                                 return false;
@@ -178,11 +183,15 @@ public class ARActivity extends FragmentActivity {
                             }
 
 
-//                            Anchor anchor = hitResult.createAnchor();
-//                            AnchorNode anchorNode = createAnchorNode(anchor, pointMaterial, shadow);
-                            Node node = createNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+                            Anchor anchor = hitResult.createAnchor();
+                            AnchorNode anchorNode = ARUtil.createAnchorNode(anchor);
+                            anchorNode.setParent(arSceneView.getScene());
+                            bottomAnchorPolygon.add(anchorNode);
 
-                            arSceneView.getScene().addChild(node);
+
+//                            Node node = createNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+                            Node node = ARUtil.createLocalNode(0, 0, 0, pointMaterial, shadow);
+                            node.setParent(anchorNode);
                             floorPolygon.add(node);
 
                             DeviceUtil.vibrate(this, 5);
@@ -194,9 +203,9 @@ public class ARActivity extends FragmentActivity {
                             clearTemp();
 
 
-                            tempNode = createNode(node.getWorldPosition().x, node.getWorldPosition().y, node.getWorldPosition().z,
+                            tempNode = ARUtil.createWorldNode(node.getWorldPosition().x, node.getWorldPosition().y, node.getWorldPosition().z,
                                     pointMaterial, shadow);
-                            arSceneView.getScene().addChild(tempNode);
+                            tempNode.setParent(arSceneView.getScene());
 
                             break;
                         }
@@ -218,7 +227,7 @@ public class ARActivity extends FragmentActivity {
                         return;
                     }
 
-                    updatePlanRenderer();
+                    ARUtil.updatePlanRenderer(arSceneView.getPlaneRenderer());
 
                     Collection<Plane> planeCollection = frame.getUpdatedTrackables(Plane.class);
 
@@ -230,10 +239,15 @@ public class ARActivity extends FragmentActivity {
 
                     List<HitResult> hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
 
-                    checkPlanType(planeCollection, hitTestResultList);
+                    String planTypeString = ARUtil.checkPlanType(planeCollection, hitTestResultList);
+                    ILog.iLogDebug(TAG, planTypeString);
 
                     for (HitResult hitResult : hitTestResultList) {
-                        if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
+
+                        Trackable trackable = hitResult.getTrackable();
+
+                        if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+//                        if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
 
                             toggleDistanceHint(hitResult.getDistance());
 
@@ -241,8 +255,8 @@ public class ARActivity extends FragmentActivity {
                                 centerPoint.setLocalPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
                             }
                             else {
-                                centerPoint = createNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
-                                arSceneView.getScene().addChild(centerPoint);
+                                centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+                                centerPoint.setParent(arSceneView.getScene());
                             }
 
                             if(tempNode == null) {
@@ -336,12 +350,12 @@ public class ARActivity extends FragmentActivity {
                     centerPoint = null;
                 }
 
-                tempNode = createNode(
+                tempNode = ARUtil.createWorldNode(
                         floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().x,
                         floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().y,
                         floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().z,
                         pointMaterial, shadow);
-                arSceneView.getScene().addChild(tempNode);
+                tempNode.setParent(arSceneView.getScene());
             }
         }
     }
@@ -351,14 +365,13 @@ public class ARActivity extends FragmentActivity {
 
         Node node;
         for(int i = 0; i < floorPolygon.size(); i++) {
-            node = createNode(
-                    floorPolygon.get(i).getWorldPosition().x,
-                    floorPolygon.get(i).getWorldPosition().y + 1,
-                    floorPolygon.get(i).getWorldPosition().z ,
+            node = ARUtil.createLocalNode(
+                    floorPolygon.get(i).getLocalPosition().x,
+                    floorPolygon.get(i).getLocalPosition().y + 1,
+                    floorPolygon.get(i).getLocalPosition().z ,
                     pointMaterial, shadow);
+            node.setParent(bottomAnchorPolygon.get(i));
             cellPolygon.add(node);
-
-            arSceneView.getScene().addChild(node);
         }
 
         // draw vertical line
@@ -394,49 +407,6 @@ public class ARActivity extends FragmentActivity {
         }
     }
 
-    private void checkPlanType(Collection<Plane> planeCollection, List<HitResult> hitTestResultList) {
-
-        if(planeCollection.isEmpty() || hitTestResultList.isEmpty()) {
-            return;
-        }
-
-        Pose pose = null;
-
-        for (HitResult hitResult : hitTestResultList) {
-            if (hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
-                pose = hitResult.getHitPose();
-                break;
-            }
-        }
-
-        if(pose == null) {
-            return;
-        }
-
-        for (Plane plane : planeCollection) {
-
-            if(plane.isPoseInPolygon(pose) && plane.isPoseInExtents(pose)) {
-                if(plane.getType() == Plane.Type.VERTICAL && plane.getTrackingState() == TrackingState.TRACKING) {
-                    ILog.iLogDebug(TAG, "wall");
-                    // A vertical plane (e.g. a wall).
-//                            textViewDistance.setTextColor(android.graphics.Color.RED);
-                }
-                else if(plane.getType() == Plane.Type.HORIZONTAL_DOWNWARD_FACING && plane.getTrackingState() == TrackingState.TRACKING) {
-                    // A horizontal plane facing downward (e.g. a ceiling).
-//                            textViewDistance.setTextColor(android.graphics.Color.GREEN);
-                    ILog.iLogDebug(TAG, "ceiling");
-                }
-                else if(plane.getType() == Plane.Type.HORIZONTAL_UPWARD_FACING && plane.getTrackingState() == TrackingState.TRACKING) {
-                    // A horizontal plane facing upward (e.g. floor or tabletop).
-//                            textViewDistance.setTextColor(android.graphics.Color.BLUE);
-                    ILog.iLogDebug(TAG, "floor");
-                }
-            }
-
-            break;
-        }
-    }
-
     private boolean checkClose(Node startNode, Node endNode) {
 //        if(Vector3.subtract(startNode.getWorldPosition(), endNode.getWorldPosition()).length() < 0.06) {
         if(ARUtil.getNodesDistanceMetersWithoutHeight(startNode, endNode) < 0.06) {
@@ -461,55 +431,6 @@ public class ARActivity extends FragmentActivity {
             textViewTooCloseTooFar.setText("");
             frameLayoutTooCloseTooFar.setVisibility(View.GONE);
         }
-    }
-
-    private void updatePlanRenderer() {
-        PlaneRenderer planeRenderer = arSceneView.getPlaneRenderer();
-
-        planeRenderer.getMaterial().thenAccept(material -> {
-            material.setFloat3(PlaneRenderer.MATERIAL_SPOTLIGHT_RADIUS, 1000f, 1000f, 1000f);
-            material.setFloat3(PlaneRenderer.MATERIAL_COLOR, new Color(1f, 1f, 1f, 1f));
-        });
-
-//        // Build texture sampler
-//        Texture.Sampler sampler = Texture.Sampler.builder()
-//                .setMinFilter(Texture.Sampler.MinFilter.LINEAR)
-//                .setMagFilter(Texture.Sampler.MagFilter.LINEAR)
-//                .setWrapMode(Texture.Sampler.WrapMode.REPEAT).build();
-//
-//        // Build texture with sampler
-//        CompletableFuture<Texture> trigrid = Texture.builder()
-//                .setSource(this, R.drawable.grid_blue)
-//                .setSampler(sampler).build();
-//
-//        planeRenderer.getMaterial().thenAcceptBoth(trigrid, (material, texture) -> {
-//            material.setTexture(PlaneRenderer.MATERIAL_TEXTURE, texture);
-//            material.setFloat(PlaneRenderer.MATERIAL_SPOTLIGHT_RADIUS, 1000f);
-//        });
-    }
-
-//    private AnchorNode createAnchorNode(Anchor anchor, Material material, boolean shadow) {
-//
-//        ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
-//        modelRenderable.setShadowReceiver(shadow);
-//        modelRenderable.setShadowCaster(shadow);
-//
-//        AnchorNode anchorNode = new AnchorNode(anchor);
-//        anchorNode.setRenderable(modelRenderable);
-//
-//        return anchorNode;
-//    }
-
-    private Node createNode(float tx, float ty, float tz, Material material, boolean shadow) {
-        ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
-        modelRenderable.setShadowReceiver(shadow);
-        modelRenderable.setShadowCaster(shadow);
-        Node node = new Node();
-        node.setRenderable(modelRenderable);
-        node.setLocalPosition(new Vector3(tx, ty, tz));
-//        node.setWorldPosition(new Vector3(tx, ty, tz));
-        // Create the transformable andy and add it to the anchor.
-        return node;
     }
 
 //    private void makeVerticalCenterCube(float tx, float ty, float tz, Runnable runnable) {
