@@ -3,9 +3,7 @@ package com.swein.sharcodecode.framework.util.ar;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
-import com.google.ar.core.Pose;
 import com.google.ar.core.Trackable;
-import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
@@ -15,7 +13,6 @@ import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.PlaneRenderer;
 import com.google.ar.sceneform.rendering.ShapeFactory;
 
-import java.util.Collection;
 import java.util.List;
 
 public class ARUtil {
@@ -104,46 +101,35 @@ public class ARUtil {
         return node;
     }
 
-    public static String checkPlanType(Collection<Plane> planeCollection, List<HitResult> hitTestResultList) {
+    public static String checkPlanType(List<HitResult> hitTestResultList, String none, String wall, String ceiling, String floor) {
 
-        if(planeCollection.isEmpty() || hitTestResultList.isEmpty()) {
-            return "";
-        }
-
-        Plane currentPlane = null;
-        for (Plane plane : planeCollection) {
-            if(plane.getTrackingState() == TrackingState.TRACKING) {
-                currentPlane = plane;
-                break;
-            }
-        }
-
-        Pose pose = null;
         for (HitResult hitResult : hitTestResultList) {
+
             Trackable trackable = hitResult.getTrackable();
-            if (trackable.getTrackingState() == TrackingState.TRACKING) {
 
-                pose = hitResult.getHitPose();
-                break;
+            if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+
+                if(((Plane) trackable).getType() == Plane.Type.VERTICAL) {
+                    return wall; // wall
+                }
+                else if(((Plane) trackable).getType() == Plane.Type.HORIZONTAL_DOWNWARD_FACING) {
+                    return ceiling; // ceiling
+                }
+                else if(((Plane) trackable).getType() == Plane.Type.HORIZONTAL_UPWARD_FACING) {
+                    return floor; // floor
+                }
             }
         }
 
-        if(currentPlane == null || pose == null) {
-            return "";
-        }
+        return none;
+    }
 
-        if(currentPlane.isPoseInPolygon(pose)) {
-            if(currentPlane.getType() == Plane.Type.VERTICAL) {
-                return "V"; // wall
-            }
-            else if(currentPlane.getType() == Plane.Type.HORIZONTAL_DOWNWARD_FACING) {
-                return "C"; // ceiling
-            }
-            else if(currentPlane.getType() == Plane.Type.HORIZONTAL_UPWARD_FACING) {
-                return "F"; // floor
+    public static void removeChildFormNode(Node node) {
+        List<Node> childList = node.getChildren();
+        if(!childList.isEmpty()) {
+            for (int i = childList.size() - 1; i >= 0; i--) {
+                childList.get(i).setParent(null);
             }
         }
-
-        return "";
     }
 }

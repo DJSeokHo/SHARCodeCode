@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.fragment.app.FragmentActivity;
@@ -60,6 +61,15 @@ public class ARActivity extends FragmentActivity {
     private FrameLayout frameLayoutTooCloseTooFar;
     private TextView textViewTooCloseTooFar;
 
+    private LinearLayout linearLayout;
+    private TextView textViewArea;
+    private TextView textViewCircumference;
+    private TextView textViewHeight;
+    private TextView textViewWallArea;
+    private TextView textViewVolume;
+
+    private TextView textViewPlaneType;
+
     private Node centerPoint;
 
     private Button buttonBack;
@@ -87,6 +97,8 @@ public class ARActivity extends FragmentActivity {
     private boolean isAutoClosed = false;
 
     private Config.PlaneFindingMode planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL;
+
+    private float height = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -133,15 +145,20 @@ public class ARActivity extends FragmentActivity {
         textViewTooCloseTooFar = findViewById(R.id.textViewTooCloseTooFar);
         buttonBack = findViewById(R.id.buttonBack);
         buttonReDetect = findViewById(R.id.buttonReDetect);
+        textViewPlaneType = findViewById(R.id.textViewPlaneType);
+
+        linearLayout = findViewById(R.id.linearLayout);
+        textViewArea = findViewById(R.id.textViewArea);
+        textViewCircumference = findViewById(R.id.textViewCircumference);
+        textViewHeight = findViewById(R.id.textViewHeight);
+        textViewWallArea = findViewById(R.id.textViewWallArea);
+        textViewVolume = findViewById(R.id.textViewVolume);
     }
 
     private void setListener() {
         // Set a touch listener on the Scene to listen for taps.
         arSceneView.getScene().setOnTouchListener(
                 (HitTestResult hitTestResult, MotionEvent event) -> {
-
-//                            ILog.iLogDebug(TAG, "tab");
-//                            ILog.iLogDebug(TAG, hitTestResult.getDistance());
 
                     Frame frame = arSceneView.getArFrame();
                     if (frame == null) {
@@ -159,7 +176,6 @@ public class ARActivity extends FragmentActivity {
                         Trackable trackable = hitResult.getTrackable();
 
                         if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
-//                        if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
 
                             if(isAutoClosed) {
                                 return false;
@@ -179,6 +195,7 @@ public class ARActivity extends FragmentActivity {
                                 }
 
                                 createCellPolygon();
+                                calculate();
                                 return false;
                             }
 
@@ -188,8 +205,6 @@ public class ARActivity extends FragmentActivity {
                             anchorNode.setParent(arSceneView.getScene());
                             bottomAnchorPolygon.add(anchorNode);
 
-
-//                            Node node = createNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
                             Node node = ARUtil.createLocalNode(0, 0, 0, pointMaterial, shadow);
                             node.setParent(anchorNode);
                             floorPolygon.add(node);
@@ -230,7 +245,6 @@ public class ARActivity extends FragmentActivity {
                     ARUtil.updatePlanRenderer(arSceneView.getPlaneRenderer());
 
                     Collection<Plane> planeCollection = frame.getUpdatedTrackables(Plane.class);
-
                     checkPlaneSize(planeCollection);
 
                     if(isAutoClosed) {
@@ -239,15 +253,19 @@ public class ARActivity extends FragmentActivity {
 
                     List<HitResult> hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
 
-                    String planTypeString = ARUtil.checkPlanType(planeCollection, hitTestResultList);
-                    ILog.iLogDebug(TAG, planTypeString);
+                    textViewPlaneType.setText(
+                            ARUtil.checkPlanType(
+                                    hitTestResultList, "",
+                                    getString(R.string.ar_plane_type_wall),
+                                    getString(R.string.ar_plane_type_ceiling),
+                                    getString(R.string.ar_plane_type_floor))
+                    );
 
                     for (HitResult hitResult : hitTestResultList) {
 
                         Trackable trackable = hitResult.getTrackable();
 
                         if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
-//                        if(hitResult.getTrackable().getTrackingState() == TrackingState.TRACKING) {
 
                             toggleDistanceHint(hitResult.getDistance());
 
@@ -296,65 +314,50 @@ public class ARActivity extends FragmentActivity {
     private void back() {
         if(isAutoClosed) {
 
-            for(Node node : floorPolygon) {
-                arSceneView.getScene().removeChild(node);
+            for(AnchorNode anchorNode : bottomAnchorPolygon) {
+                ARUtil.removeChildFormNode(anchorNode);
+                anchorNode.setParent(null);
             }
 
-            for(Node node : cellPolygon) {
-                arSceneView.getScene().removeChild(node);
-            }
-
+            bottomAnchorPolygon.clear();
             floorPolygon.clear();
             cellPolygon.clear();
 
             clearTemp();
-
-            if(centerPoint != null) {
-                arSceneView.getScene().removeChild(centerPoint);
-                centerPoint = null;
-            }
-
+            clearCenter();
 
             isAutoClosed = false;
             isReadyToAutoClose = false;
         }
         else {
 
-            if(floorPolygon.size() == 1) {
-
-                arSceneView.getScene().removeChild(floorPolygon.get(0));
+            if(bottomAnchorPolygon.size() == 1) {
+                bottomAnchorPolygon.get(0).setParent(null);
+                ARUtil.removeChildFormNode(bottomAnchorPolygon.get(0));
+                bottomAnchorPolygon.clear();
                 floorPolygon.clear();
 
                 clearTemp();
-                if(centerPoint != null) {
-                    arSceneView.getScene().removeChild(centerPoint);
-                    centerPoint = null;
-                }
+                clearCenter();
             }
-            else if(floorPolygon.size() > 1) {
+            else if(bottomAnchorPolygon.size() > 1) {
 
-                List<Node> childList = floorPolygon.get(floorPolygon.size() - 2).getChildren();
-
-                if(!childList.isEmpty()) {
-                    Node childNode = childList.get(0);
-                    childNode.setParent(null);
-                    floorPolygon.get(floorPolygon.size() - 2).removeChild(childNode);
-                }
-
-                arSceneView.getScene().removeChild(floorPolygon.get(floorPolygon.size() - 1));
+                ARUtil.removeChildFormNode(bottomAnchorPolygon.get(bottomAnchorPolygon.size() - 1));
+                bottomAnchorPolygon.get(bottomAnchorPolygon.size() - 1).setParent(null);
+                bottomAnchorPolygon.remove(bottomAnchorPolygon.size() - 1);
                 floorPolygon.remove(floorPolygon.size() - 1);
 
+                ARUtil.removeChildFormNode(floorPolygon.get(floorPolygon.size() - 1));
+
                 clearTemp();
-                if(centerPoint != null) {
-                    arSceneView.getScene().removeChild(centerPoint);
-                    centerPoint = null;
-                }
+                clearCenter();
 
                 tempNode = ARUtil.createWorldNode(
                         floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().x,
                         floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().y,
                         floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().z,
                         pointMaterial, shadow);
+
                 tempNode.setParent(arSceneView.getScene());
             }
         }
@@ -367,7 +370,7 @@ public class ARActivity extends FragmentActivity {
         for(int i = 0; i < floorPolygon.size(); i++) {
             node = ARUtil.createLocalNode(
                     floorPolygon.get(i).getLocalPosition().x,
-                    floorPolygon.get(i).getLocalPosition().y + 1,
+                    floorPolygon.get(i).getLocalPosition().y + height,
                     floorPolygon.get(i).getLocalPosition().z ,
                     pointMaterial, shadow);
             node.setParent(bottomAnchorPolygon.get(i));
@@ -391,6 +394,13 @@ public class ARActivity extends FragmentActivity {
 
     }
 
+    private void clearCenter() {
+        if(centerPoint != null) {
+            centerPoint.setParent(null);
+            centerPoint = null;
+        }
+    }
+
     private void clearTemp() {
         if(tempNode != null) {
             arSceneView.getScene().removeChild(tempNode);
@@ -408,14 +418,7 @@ public class ARActivity extends FragmentActivity {
     }
 
     private boolean checkClose(Node startNode, Node endNode) {
-//        if(Vector3.subtract(startNode.getWorldPosition(), endNode.getWorldPosition()).length() < 0.06) {
-        if(ARUtil.getNodesDistanceMetersWithoutHeight(startNode, endNode) < 0.06) {
-            ILog.iLogDebug(TAG, "checkClose nice!!!!!!");
-            return true;
-        }
-        else {
-            return false;
-        }
+        return ARUtil.getNodesDistanceMetersWithoutHeight(startNode, endNode) < 0.06;
     }
 
     private void toggleDistanceHint(float distance) {
@@ -552,7 +555,6 @@ public class ARActivity extends FragmentActivity {
         for (Plane plane : planeCollection) {
 
             if (plane.getTrackingState() == TrackingState.TRACKING) {
-//                                ILog.iLogDebug(TAG, "size ?? " + (plane.getExtentX() * plane.getExtentZ() * 2));
 
                 if((plane.getExtentX() * plane.getExtentZ() * 2) > 3) {
                     textView.setVisibility(View.GONE);
