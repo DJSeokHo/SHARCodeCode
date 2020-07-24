@@ -1,17 +1,14 @@
 package com.swein.sharcodecode.arpart;
 
 import android.app.Activity;
-import android.content.Context;
 import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.SuperscriptSpan;
-import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -87,7 +84,6 @@ public class ARActivity extends FragmentActivity {
     private List<AnchorNode> bottomAnchorPolygon = new ArrayList<>();
     private List<Node> floorPolygon = new ArrayList<>();
     private List<Node> cellPolygon = new ArrayList<>();
-    private List<Float> lengthBetweenNodes = new ArrayList<>();
 
     private Node tempNode;
 
@@ -143,11 +139,8 @@ public class ARActivity extends FragmentActivity {
                     viewRenderable.setShadowReceiver(false);
                 });
 
-        WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
-        DisplayMetrics dm = new DisplayMetrics();
-        wm.getDefaultDisplay().getMetrics(dm);
-        screenCenterX = (float)dm.widthPixels * 0.5f;
-        screenCenterY = (float)dm.heightPixels * 0.5f;
+        screenCenterX = DeviceUtil.getScreenCenterX(this);
+        screenCenterY = DeviceUtil.getScreenCenterY(this);
     }
 
     private void findView() {
@@ -465,7 +458,6 @@ public class ARActivity extends FragmentActivity {
     }
 
 
-
     private void clearCenter() {
         if(centerPoint != null) {
             centerPoint.setParent(null);
@@ -571,7 +563,6 @@ public class ARActivity extends FragmentActivity {
                     faceToCameraNode.setLocalPosition(new Vector3(0f, 0.05f, 0f));
                     faceToCameraNode.setRenderable(viewRenderable);
                 });
-
     }
 
     private void drawTempLine(Node startNode, Node endNode) {
@@ -684,8 +675,11 @@ public class ARActivity extends FragmentActivity {
             case CM:
                 return length * 100;
 
-            default:
+            case M:
                 return length;
+
+            default:
+                return 0;
         }
     }
 
@@ -694,8 +688,11 @@ public class ARActivity extends FragmentActivity {
             case CM:
                 return area * 10000;
 
-            default:
+            case M:
                 return area;
+
+            default:
+                return 0;
         }
     }
 
