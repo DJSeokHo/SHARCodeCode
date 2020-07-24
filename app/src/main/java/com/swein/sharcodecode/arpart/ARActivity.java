@@ -47,7 +47,6 @@ import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.framework.util.ar.ARUtil;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.device.DeviceUtil;
-import com.swein.sharcodecode.framework.util.math.MathUtil;
 import com.swein.sharcodecode.framework.util.toast.ToastUtil;
 
 import java.util.ArrayList;
@@ -70,6 +69,8 @@ public class ARActivity extends FragmentActivity {
     private TextView textViewHeight;
     private TextView textViewWallArea;
     private TextView textViewVolume;
+
+    private TextView textViewHeightRealTime;
 
     private TextView textViewPlaneType;
 
@@ -159,6 +160,8 @@ public class ARActivity extends FragmentActivity {
         textViewHeight = findViewById(R.id.textViewHeight);
         textViewWallArea = findViewById(R.id.textViewWallArea);
         textViewVolume = findViewById(R.id.textViewVolume);
+
+        textViewHeightRealTime = findViewById(R.id.textViewHeightRealTime);
     }
 
     private void setListener() {
@@ -203,14 +206,33 @@ public class ARActivity extends FragmentActivity {
 
                             if(normalVectorOfPlane == null) {
                                 // calculate normal vector of plane
-                                float[] yAxis = ((Plane) trackable).getCenterPose().getYAxis();
-                                normalVectorOfPlane = new Vector3(yAxis[0], yAxis[1], yAxis[2]);
-                                ILog.iLogDebug(TAG, "normalVectorOfPlane " + normalVectorOfPlane.x + " " + normalVectorOfPlane.y + " " + normalVectorOfPlane.z);
+                                normalVectorOfPlane = ARUtil.getNormalVectorOfThreeVectors(
+                                        new Vector3(((Plane) trackable).getCenterPose().tx(), ((Plane) trackable).getCenterPose().ty(), ((Plane) trackable).getCenterPose().tz()),
+                                        new Vector3(((Plane) trackable).getCenterPose().tx() + ((Plane) trackable).getExtentX(), ((Plane) trackable).getCenterPose().ty(), ((Plane) trackable).getCenterPose().tz()),
+                                        new Vector3(((Plane) trackable).getCenterPose().tx(), ((Plane) trackable).getCenterPose().ty(), ((Plane) trackable).getCenterPose().tz() + ((Plane) trackable).getExtentZ())
+                                );
+                                ILog.iLogDebug(TAG, "normalVectorOfPlane by cal " + normalVectorOfPlane.x + " " + normalVectorOfPlane.y + " " + normalVectorOfPlane.z);
                             }
+
+
+
+                            ILog.iLogDebug(TAG, "x " + ((Plane) trackable).getExtentX());
+                            ILog.iLogDebug(TAG, "z " + ((Plane) trackable).getExtentZ());
+                            ILog.iLogDebug(TAG, "center " + ((Plane) trackable).getCenterPose().tx() + " " + ((Plane) trackable).getCenterPose().ty() + " " + ((Plane) trackable).getCenterPose().tz());
+
 
                             Anchor anchor = hitResult.createAnchor();
                             AnchorNode anchorNode = ARUtil.createAnchorNode(anchor);
                             anchorNode.setParent(arSceneView.getScene());
+
+                            // two vector is too near
+                            if(!floorPolygonList.isEmpty()) {
+                                if(Vector3.subtract(anchorNode.getWorldPosition(), floorPolygonList.get(floorPolygonList.size() - 1).getWorldPosition()).length() < 0.05) {
+                                    return false;
+                                }
+                            }
+
+
                             bottomAnchorPolygon.add(anchorNode);
 
 
@@ -257,13 +279,14 @@ public class ARActivity extends FragmentActivity {
 
                     List<HitResult> hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
 
-                    textViewPlaneType.setText(
-                            ARUtil.checkPlanType(
-                                    hitTestResultList, "",
-                                    getString(R.string.ar_plane_type_wall),
-                                    getString(R.string.ar_plane_type_ceiling),
-                                    getString(R.string.ar_plane_type_floor))
-                    );
+                    String planType = ARUtil.checkPlanType(
+                            hitTestResultList, "",
+                            getString(R.string.ar_plane_type_wall),
+                            getString(R.string.ar_plane_type_ceiling),
+                            getString(R.string.ar_plane_type_floor));
+
+                    boolean isCeiling = planType.equals(getString(R.string.ar_plane_type_ceiling));
+                    textViewPlaneType.setText(planType);
 
                     for (HitResult hitResult : hitTestResultList) {
 
@@ -274,7 +297,7 @@ public class ARActivity extends FragmentActivity {
                             toggleDistanceHint(hitResult.getDistance());
 
                             if(centerPoint != null) {
-                                centerPoint.setLocalPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
+                                centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
                             }
                             else {
                                 centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
@@ -283,6 +306,17 @@ public class ARActivity extends FragmentActivity {
 
                             if(floorPolygonList.isEmpty()) {
                                 return;
+                            }
+
+                            if(isCeiling) {
+                                // get distance ceiling
+
+                                Vector3 floorPoint = new Vector3(bottomAnchorPolygon.get(0).getWorldPosition().x, bottomAnchorPolygon.get(0).getWorldPosition().y, bottomAnchorPolygon.get(0).getWorldPosition().z);
+                                Vector3 ceiling = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
+
+                                height = ARUtil.getLengthBetweenPointToPlane(ceiling, floorPoint, normalVectorOfPlane);
+                                textViewHeightRealTime.setText(String.valueOf(height));
+
                             }
 
                             drawTempLine(floorPolygonList.get(floorPolygonList.size() - 1), centerPoint);
@@ -434,7 +468,7 @@ public class ARActivity extends FragmentActivity {
         }
         vector3List.add(floorPolygonList.get(0).getWorldPosition());
 
-        float area = Math.abs(MathUtil.area3DPolygon(floorPolygonList.size(), vector3List, normalVectorOfPlane));
+        float area = Math.abs(ARUtil.area3DPolygon(floorPolygonList.size(), vector3List, normalVectorOfPlane));
         ILog.iLogDebug(TAG, "area is " + area);
         return area;
     }
@@ -478,31 +512,6 @@ public class ARActivity extends FragmentActivity {
             frameLayoutTooCloseTooFar.setVisibility(View.GONE);
         }
     }
-
-//    private void makeVerticalCenterCube(float tx, float ty, float tz, Runnable runnable) {
-//
-//        if(centerPoint != null) {
-//            centerPoint.setLocalPosition(new Vector3(tx, ty, tz));
-//            runnable.run();
-//        }
-//        else {
-//            MaterialFactory
-//                    .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
-//                    .thenAccept(material -> {
-//
-//                        ModelRenderable modelRenderable = ShapeFactory.makeCylinder(0.01f, 0.0001f, Vector3.zero(), material);
-//                        modelRenderable.setShadowReceiver(shadow);
-//                        modelRenderable.setShadowCaster(shadow);
-//                        Node node = new Node();
-//                        node.setRenderable(modelRenderable);
-//                        node.setLocalPosition(new Vector3(tx, ty, tz));
-//                        // Create the transformable andy and add it to the anchor.
-//                        arSceneView.getScene().addChild(node);
-//                        this.centerPoint = node;
-//                        runnable.run();
-//                    });
-//        }
-//    }
 
     private void drawLine(Node startNode, Node endNode) {
 
@@ -708,71 +717,7 @@ public class ARActivity extends FragmentActivity {
 
         return cm2;
     }
-//    private void drawTempVerticalLine(Node startNode, Node endNode, boolean updateText) {
-//
-//        Vector3 startVector3 = startNode.getWorldPosition();
-//        Vector3 endVector3 = endNode.getWorldPosition();
-//
-//        Vector3 difference = Vector3.subtract(startVector3, endVector3);
-//        ILog.iLogDebug(TAG, "difference length " + difference.length());
-//        Vector3 directionFromTopToBottom = difference.normalized();
-//        Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
-//
-//        if(tempLineNode != null) {
-//
-////            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), tempLineNode.getRenderable().getMaterial());
-//            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, difference.length(), 0.005f), Vector3.zero(), tempLineNode.getRenderable().getMaterial());
-//            lineMode.setShadowCaster(shadow);
-//            lineMode.setShadowReceiver(shadow);
-//
-//            tempLineNode.setRenderable(lineMode);
-//            tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
-//            tempLineNode.setWorldRotation(rotationFromAToB);
-//        }
-//        else {
-//            MaterialFactory
-//                    .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
-//                    .thenAccept(material -> {
-//
-////                        ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), material);
-//                        ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, difference.length(), 0.005f), Vector3.zero(), material);
-//                        lineMode.setShadowCaster(shadow);
-//                        lineMode.setShadowReceiver(shadow);
-//
-//                        tempLineNode = new Node();
-//                        tempLineNode.setParent(startNode);
-//                        tempLineNode.setRenderable(lineMode);
-//                        tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
-//                        tempLineNode.setWorldRotation(rotationFromAToB);
-//                    });
-//        }
-//
-//        if(tempTextNode != null) {
-//            textViewSize.setText(String.format("%.1fCM", difference.length() * 100));
-//        }
-//        else {
-//            if(updateText && tempLineNode != null) {
-//                ViewRenderable.builder()
-//                        .setView(this, R.layout.view_renderable_text)
-//                        .build()
-//                        .thenAccept(viewRenderable -> {
-//
-//                            textViewSize = (TextView)viewRenderable.getView();
-//                            textViewSize.setText(String.format("%.1fCM", difference.length() * 100));
-//                            viewRenderable.setShadowCaster(false);
-//                            viewRenderable.setShadowReceiver(false);
-//
-//                            tempTextNode = new FaceToCameraNode();
-//                            tempTextNode.setParent(tempLineNode);
-//
-//                            tempTextNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
-//                            tempTextNode.setLocalPosition(new Vector3(0f, 0.01f, 0f));
-//                            tempTextNode.setRenderable(viewRenderable);
-//                        });
-//            }
-//        }
-//
-//    }
+
 
     private static Session createArSession(Activity activity, boolean installRequested, Config.LightEstimationMode lightEstimationMode, Config.PlaneFindingMode planeFindingMode) throws UnavailableException {
         Session session;
