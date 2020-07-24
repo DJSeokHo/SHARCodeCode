@@ -82,10 +82,9 @@ public class ARActivity extends FragmentActivity {
     private FaceToCameraNode tempTextNode;
 
     private List<AnchorNode> bottomAnchorPolygon = new ArrayList<>();
-    private List<Node> floorPolygon = new ArrayList<>();
-    private List<Node> cellPolygon = new ArrayList<>();
-
-    private Node tempNode;
+    private List<Node> floorPolygonList = new ArrayList<>();
+    private List<Node> cellPolygonList = new ArrayList<>();
+    private List<TextView> textViewSizeList = new ArrayList<>();
 
     private float screenCenterX;
     private float screenCenterY;
@@ -189,16 +188,12 @@ public class ARActivity extends FragmentActivity {
 
                             if(isReadyToAutoClose) {
 
-                                drawLine(floorPolygon.get(floorPolygon.size() - 1), floorPolygon.get(0));
+                                clearTemp();
+                                clearCenter();
+
+                                drawLine(floorPolygonList.get(floorPolygonList.size() - 1), floorPolygonList.get(0));
                                 DeviceUtil.vibrate(this, 5);
                                 isAutoClosed = true;
-
-                                clearTemp();
-
-                                if(centerPoint != null) {
-                                    arSceneView.getScene().removeChild(centerPoint);
-                                    centerPoint = null;
-                                }
 
                                 createCellPolygon();
                                 calculate();
@@ -213,20 +208,15 @@ public class ARActivity extends FragmentActivity {
 
                             Node node = ARUtil.createLocalNode(0, 0, 0, pointMaterial, shadow);
                             node.setParent(anchorNode);
-                            floorPolygon.add(node);
+                            floorPolygonList.add(node);
 
                             DeviceUtil.vibrate(this, 5);
 
-                            if(floorPolygon.size() >= 2) {
-                                drawLine(floorPolygon.get(floorPolygon.size() - 2), floorPolygon.get(floorPolygon.size() - 1));
+                            if(floorPolygonList.size() >= 2) {
+                                drawLine(floorPolygonList.get(floorPolygonList.size() - 2), floorPolygonList.get(floorPolygonList.size() - 1));
                             }
 
                             clearTemp();
-
-
-                            tempNode = ARUtil.createWorldNode(node.getWorldPosition().x, node.getWorldPosition().y, node.getWorldPosition().z,
-                                    pointMaterial, shadow);
-                            tempNode.setParent(arSceneView.getScene());
 
                             break;
                         }
@@ -283,18 +273,18 @@ public class ARActivity extends FragmentActivity {
                                 centerPoint.setParent(arSceneView.getScene());
                             }
 
-                            if(tempNode == null) {
+                            if(floorPolygonList.isEmpty()) {
                                 return;
                             }
 
-                            drawTempLine(tempNode, centerPoint);
+                            drawTempLine(floorPolygonList.get(floorPolygonList.size() - 1), centerPoint);
 
-                            if(floorPolygon.size() < 3) {
+                            if(floorPolygonList.size() < 3) {
                                 return;
                             }
 
-                            if(checkClose(centerPoint, floorPolygon.get(0))) {
-                                drawTempLine(tempNode, floorPolygon.get(0));
+                            if(checkClose(centerPoint, floorPolygonList.get(0))) {
+                                drawTempLine(floorPolygonList.get(floorPolygonList.size() - 1), floorPolygonList.get(0));
 
                                 if(!isReadyToAutoClose) {
                                     DeviceUtil.vibrate(this, 5);
@@ -303,7 +293,7 @@ public class ARActivity extends FragmentActivity {
                                 isReadyToAutoClose = true;
                             }
                             else {
-                                drawTempLine(tempNode, centerPoint);
+                                drawTempLine(floorPolygonList.get(floorPolygonList.size() - 1), centerPoint);
                                 isReadyToAutoClose = false;
                             }
 
@@ -326,14 +316,12 @@ public class ARActivity extends FragmentActivity {
             }
 
             bottomAnchorPolygon.clear();
-            floorPolygon.clear();
-            cellPolygon.clear();
+            floorPolygonList.clear();
+            cellPolygonList.clear();
+            textViewSizeList.clear();
 
             clearTemp();
             clearCenter();
-
-            isAutoClosed = false;
-            isReadyToAutoClose = false;
         }
         else {
 
@@ -341,8 +329,8 @@ public class ARActivity extends FragmentActivity {
                 bottomAnchorPolygon.get(0).setParent(null);
                 ARUtil.removeChildFormNode(bottomAnchorPolygon.get(0));
                 bottomAnchorPolygon.clear();
-                floorPolygon.clear();
-
+                floorPolygonList.clear();
+                textViewSizeList.clear();
                 clearTemp();
                 clearCenter();
             }
@@ -351,20 +339,12 @@ public class ARActivity extends FragmentActivity {
                 ARUtil.removeChildFormNode(bottomAnchorPolygon.get(bottomAnchorPolygon.size() - 1));
                 bottomAnchorPolygon.get(bottomAnchorPolygon.size() - 1).setParent(null);
                 bottomAnchorPolygon.remove(bottomAnchorPolygon.size() - 1);
-                floorPolygon.remove(floorPolygon.size() - 1);
-
-                ARUtil.removeChildFormNode(floorPolygon.get(floorPolygon.size() - 1));
+                floorPolygonList.remove(floorPolygonList.size() - 1);
+                textViewSizeList.remove(textViewSizeList.size() - 1);
+                ARUtil.removeChildFormNode(floorPolygonList.get(floorPolygonList.size() - 1));
 
                 clearTemp();
                 clearCenter();
-
-                tempNode = ARUtil.createWorldNode(
-                        floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().x,
-                        floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().y,
-                        floorPolygon.get(floorPolygon.size() - 1).getWorldPosition().z,
-                        pointMaterial, shadow);
-
-                tempNode.setParent(arSceneView.getScene());
             }
         }
 
@@ -374,32 +354,35 @@ public class ARActivity extends FragmentActivity {
         textViewCircumference.setText("");
         textViewWallArea.setText("");
         textViewVolume.setText("");
+
+        isAutoClosed = false;
+        isReadyToAutoClose = false;
     }
 
     private void createCellPolygon() {
-        cellPolygon.clear();
+        cellPolygonList.clear();
 
         Node node;
-        for(int i = 0; i < floorPolygon.size(); i++) {
+        for(int i = 0; i < floorPolygonList.size(); i++) {
             node = ARUtil.createLocalNode(
-                    floorPolygon.get(i).getLocalPosition().x,
-                    floorPolygon.get(i).getLocalPosition().y + height,
-                    floorPolygon.get(i).getLocalPosition().z ,
+                    floorPolygonList.get(i).getLocalPosition().x,
+                    floorPolygonList.get(i).getLocalPosition().y + height,
+                    floorPolygonList.get(i).getLocalPosition().z ,
                     pointMaterial, shadow);
             node.setParent(bottomAnchorPolygon.get(i));
-            cellPolygon.add(node);
+            cellPolygonList.add(node);
         }
 
         // draw vertical line
-        for(int i = 0; i < floorPolygon.size(); i++) {
-            drawLine(floorPolygon.get(i), cellPolygon.get(i));
+        for(int i = 0; i < floorPolygonList.size(); i++) {
+            drawLine(floorPolygonList.get(i), cellPolygonList.get(i));
         }
 
         // connect node and make line close
-        for(int i = 0; i < cellPolygon.size() - 1; i++) {
-            drawLine(cellPolygon.get(i), cellPolygon.get(i + 1));
+        for(int i = 0; i < cellPolygonList.size() - 1; i++) {
+            drawLine(cellPolygonList.get(i), cellPolygonList.get(i + 1));
         }
-        drawLine(cellPolygon.get(cellPolygon.size() - 1), cellPolygon.get(0));
+        drawLine(cellPolygonList.get(cellPolygonList.size() - 1), cellPolygonList.get(0));
     }
 
 
@@ -410,10 +393,10 @@ public class ARActivity extends FragmentActivity {
         textViewHeight.setText(getString(R.string.ar_area_height_title) + " " + String.format("%.2f", getLengthByUnit(height)) + getLengthUnitString(unit));
 
         float circumference = 0;
-        for(int i = 0; i < floorPolygon.size() - 1; i++) {
-            circumference += Vector3.subtract(floorPolygon.get(i + 1).getWorldPosition(), floorPolygon.get(i).getWorldPosition()).length();
+        for(int i = 0; i < floorPolygonList.size() - 1; i++) {
+            circumference += Vector3.subtract(floorPolygonList.get(i + 1).getWorldPosition(), floorPolygonList.get(i).getWorldPosition()).length();
         }
-        circumference += Vector3.subtract(floorPolygon.get(floorPolygon.size() - 1).getWorldPosition(), floorPolygon.get(0).getWorldPosition()).length();
+        circumference += Vector3.subtract(floorPolygonList.get(floorPolygonList.size() - 1).getWorldPosition(), floorPolygonList.get(0).getWorldPosition()).length();
         textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " + String.format("%.2f", getLengthByUnit(circumference)) + getLengthUnitString(unit));
 
         float wallArea = getLengthByUnit(circumference) * getLengthByUnit(height);
@@ -439,20 +422,20 @@ public class ARActivity extends FragmentActivity {
 
         // get normal vector of bottom plane
         Vector3 normalVectorOfPlane = MathUtil.getNormalVectorOfThreeVectors(
-                floorPolygon.get(0).getWorldPosition(),
-                floorPolygon.get(1).getWorldPosition(),
-                floorPolygon.get(floorPolygon.size() - 1).getWorldPosition()
+                floorPolygonList.get(0).getWorldPosition(),
+                floorPolygonList.get(1).getWorldPosition(),
+                floorPolygonList.get(floorPolygonList.size() - 1).getWorldPosition()
         );
 
         ILog.iLogDebug(TAG, "normalVectorOfPlane " + normalVectorOfPlane.x + " " + normalVectorOfPlane.y + " " + normalVectorOfPlane.z);
 
         List<Vector3> vector3List = new ArrayList<>();
-        for(int i = 0; i < floorPolygon.size(); i++) {
-            vector3List.add(floorPolygon.get(i).getWorldPosition());
+        for(int i = 0; i < floorPolygonList.size(); i++) {
+            vector3List.add(floorPolygonList.get(i).getWorldPosition());
         }
-        vector3List.add(floorPolygon.get(0).getWorldPosition());
+        vector3List.add(floorPolygonList.get(0).getWorldPosition());
 
-        float area = MathUtil.area3DPolygon(floorPolygon.size(), vector3List, normalVectorOfPlane);
+        float area = MathUtil.area3DPolygon(floorPolygonList.size(), vector3List, normalVectorOfPlane);
         ILog.iLogDebug(TAG, "area is " + area);
         return area;
     }
@@ -466,17 +449,14 @@ public class ARActivity extends FragmentActivity {
     }
 
     private void clearTemp() {
-        if(tempNode != null) {
-            arSceneView.getScene().removeChild(tempNode);
-            tempNode = null;
-        }
+
         if(tempTextNode != null) {
-            arSceneView.getScene().removeChild(tempTextNode);
+            tempTextNode.setParent(null);
             tempTextNode = null;
         }
 
         if(tempLineNode != null) {
-            arSceneView.getScene().removeChild(tempLineNode);
+            tempLineNode.setParent(null);
             tempLineNode = null;
         }
     }
@@ -552,7 +532,9 @@ public class ARActivity extends FragmentActivity {
                 .build()
                 .thenAccept(viewRenderable -> {
 
-                    ((TextView)viewRenderable.getView()).setText(String.format("%.2fCM", length));
+                    TextView textView = ((TextView)viewRenderable.getView());
+                    textView.setText(String.format("%.2fCM", length));
+                    textViewSizeList.add(textView);
                     viewRenderable.setShadowCaster(false);
                     viewRenderable.setShadowReceiver(false);
 
