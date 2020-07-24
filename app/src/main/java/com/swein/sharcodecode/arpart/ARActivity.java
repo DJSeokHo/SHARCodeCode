@@ -85,6 +85,7 @@ public class ARActivity extends FragmentActivity {
     private List<Node> floorPolygonList = new ArrayList<>();
     private List<Node> cellPolygonList = new ArrayList<>();
     private List<TextView> textViewSizeList = new ArrayList<>();
+    private Vector3 normalVectorOfPlane;
 
     private float screenCenterX;
     private float screenCenterY;
@@ -200,11 +201,18 @@ public class ARActivity extends FragmentActivity {
                                 return false;
                             }
 
+                            if(normalVectorOfPlane == null) {
+                                // calculate normal vector of plane
+                                float[] yAxis = ((Plane) trackable).getCenterPose().getYAxis();
+                                normalVectorOfPlane = new Vector3(yAxis[0], yAxis[1], yAxis[2]);
+                                ILog.iLogDebug(TAG, "normalVectorOfPlane " + normalVectorOfPlane.x + " " + normalVectorOfPlane.y + " " + normalVectorOfPlane.z);
+                            }
 
                             Anchor anchor = hitResult.createAnchor();
                             AnchorNode anchorNode = ARUtil.createAnchorNode(anchor);
                             anchorNode.setParent(arSceneView.getScene());
                             bottomAnchorPolygon.add(anchorNode);
+
 
                             Node node = ARUtil.createLocalNode(0, 0, 0, pointMaterial, shadow);
                             node.setParent(anchorNode);
@@ -420,22 +428,13 @@ public class ARActivity extends FragmentActivity {
 
     private float calculateArea() {
 
-        // get normal vector of bottom plane
-        Vector3 normalVectorOfPlane = MathUtil.getNormalVectorOfThreeVectors(
-                floorPolygonList.get(0).getWorldPosition(),
-                floorPolygonList.get(1).getWorldPosition(),
-                floorPolygonList.get(floorPolygonList.size() - 1).getWorldPosition()
-        );
-
-        ILog.iLogDebug(TAG, "normalVectorOfPlane " + normalVectorOfPlane.x + " " + normalVectorOfPlane.y + " " + normalVectorOfPlane.z);
-
         List<Vector3> vector3List = new ArrayList<>();
         for(int i = 0; i < floorPolygonList.size(); i++) {
             vector3List.add(floorPolygonList.get(i).getWorldPosition());
         }
         vector3List.add(floorPolygonList.get(0).getWorldPosition());
 
-        float area = MathUtil.area3DPolygon(floorPolygonList.size(), vector3List, normalVectorOfPlane);
+        float area = Math.abs(MathUtil.area3DPolygon(floorPolygonList.size(), vector3List, normalVectorOfPlane));
         ILog.iLogDebug(TAG, "area is " + area);
         return area;
     }
