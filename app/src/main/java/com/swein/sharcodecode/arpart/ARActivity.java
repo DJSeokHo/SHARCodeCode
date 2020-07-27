@@ -75,6 +75,7 @@ public class ARActivity extends FragmentActivity {
     private TextView textViewPlaneType;
 
     private Node centerPoint;
+    private Node wallTestPoint;
 
     private Button buttonBack;
     private Button buttonReDetect;
@@ -95,6 +96,7 @@ public class ARActivity extends FragmentActivity {
 
     private ViewRenderable viewRenderableSizeText;
     private Material pointMaterial;
+    private Material wallPointMaterial;
     private Material lineMaterial;
 
     private boolean isReadyToAutoClose = false;
@@ -129,6 +131,11 @@ public class ARActivity extends FragmentActivity {
                     pointMaterial = material;
                     lineMaterial = material;
                 });
+
+        MaterialFactory
+                .makeOpaqueWithColor(this, new Color(android.graphics.Color.RED))
+                .thenAccept(material -> wallPointMaterial = material);
+
 
         ViewRenderable.builder()
                 .setView(this, R.layout.view_renderable_text)
@@ -274,6 +281,80 @@ public class ARActivity extends FragmentActivity {
                     checkPlaneSize(planeCollection);
 
                     if(isAutoClosed) {
+
+                        List<HitResult> hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
+
+                        for (HitResult hitResult : hitTestResultList) {
+
+                            // draw center point
+                            if(centerPoint != null) {
+                                centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
+                            }
+                            else {
+                                centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+                                centerPoint.setParent(arSceneView.getScene());
+                            }
+                            // draw center point
+
+
+                            // check wall test
+                            Vector3 normalVector = ARUtil.getNormalVectorOfThreeVectors(
+                                    new Vector3(floorPolygonList.get(0).getWorldPosition().x, floorPolygonList.get(0).getWorldPosition().y, floorPolygonList.get(0).getWorldPosition().z),
+                                    new Vector3(floorPolygonList.get(1).getWorldPosition().x, floorPolygonList.get(1).getWorldPosition().y, floorPolygonList.get(1).getWorldPosition().z),
+                                    new Vector3(cellPolygonList.get(0).getWorldPosition().x, cellPolygonList.get(0).getWorldPosition().y, cellPolygonList.get(0).getWorldPosition().z)
+                            );
+
+                            Vector3 rayVector = new Vector3(
+                                    hitResult.getHitPose().tx(),
+                                    hitResult.getHitPose().ty(),
+                                    hitResult.getHitPose().tz()
+                            );
+
+                            Vector3 rayOrigin = new Vector3(
+                                    arSceneView.getArFrame().getCamera().getPose().tx(),
+                                    arSceneView.getArFrame().getCamera().getPose().ty(),
+                                    arSceneView.getArFrame().getCamera().getPose().tz()
+                            );
+
+                            Vector3 planePoint = new Vector3(floorPolygonList.get(0).getWorldPosition().x, floorPolygonList.get(0).getWorldPosition().y, floorPolygonList.get(0).getWorldPosition().z);
+
+//                            Vector3 result = ARUtil.calculateIntersectionPointOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint);
+
+                            Vector3 result = new Vector3();
+
+                            if(ARUtil.calculateIntersectionOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint, result) == 1) {
+                                if(wallTestPoint != null) {
+                                    wallTestPoint.setWorldPosition(new Vector3(result.x, result.y, result.z));
+                                }
+                                else {
+                                    wallTestPoint = ARUtil.createWorldNode(result.x, result.y, result.z, wallPointMaterial, shadow);
+                                }
+                                wallTestPoint.setParent(arSceneView.getScene());
+                            }
+                            else {
+                                if(wallTestPoint != null) {
+                                    wallTestPoint.setParent(null);
+                                }
+                            }
+
+//                            if(ARUtil.rayCasting(result, floorPolygonList.get(0).getWorldPosition(), cellPolygonList.get(1).getWorldPosition())) {
+//                                // draw wall point
+//                                if(wallTestPoint != null) {
+//                                    wallTestPoint.setWorldPosition(new Vector3(result.x, result.y, result.z));
+//                                }
+//                                else {
+//                                    wallTestPoint = ARUtil.createWorldNode(result.x, result.y, result.z, wallPointMaterial, shadow);
+//                                }
+//                                wallTestPoint.setParent(arSceneView.getScene());
+//                                // draw wall point
+//                            }
+//                            else {
+//                                if(wallTestPoint != null) {
+//                                    wallTestPoint.setParent(null);
+//                                }
+//                            }
+                        }
+
                         return;
                     }
 
