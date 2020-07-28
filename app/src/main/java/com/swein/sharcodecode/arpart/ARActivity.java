@@ -106,6 +106,8 @@ public class ARActivity extends FragmentActivity {
 
     private float height = 1;
 
+    private float fixedY = 0;
+
     private enum Unit {
         M, CM
     }
@@ -249,6 +251,14 @@ public class ARActivity extends FragmentActivity {
 
                             DeviceUtil.vibrate(this, 5);
 
+                            if(!bottomAnchorPolygon.isEmpty()) {
+                                fixedY = bottomAnchorPolygon.get(0).getWorldPosition().y;
+
+                                for(int i = 0; i < bottomAnchorPolygon.size(); i++) {
+                                    bottomAnchorPolygon.get(i).setWorldPosition(new Vector3(bottomAnchorPolygon.get(i).getWorldPosition().x, fixedY, bottomAnchorPolygon.get(i).getWorldPosition().z));
+                                }
+                            }
+
                             if(floorPolygonList.size() >= 2) {
                                 drawLine(floorPolygonList.get(floorPolygonList.size() - 2), floorPolygonList.get(floorPolygonList.size() - 1));
                             }
@@ -284,6 +294,14 @@ public class ARActivity extends FragmentActivity {
 
                         List<HitResult> hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
 
+                        String planType = ARUtil.checkPlanType(
+                                hitTestResultList, "",
+                                getString(R.string.ar_plane_type_wall),
+                                getString(R.string.ar_plane_type_ceiling),
+                                getString(R.string.ar_plane_type_floor));
+
+                        textViewPlaneType.setText(planType);
+
                         for (HitResult hitResult : hitTestResultList) {
 
                             // draw center point
@@ -318,11 +336,21 @@ public class ARActivity extends FragmentActivity {
 
                             Vector3 planePoint = new Vector3(floorPolygonList.get(0).getWorldPosition().x, floorPolygonList.get(0).getWorldPosition().y, floorPolygonList.get(0).getWorldPosition().z);
 
-//                            Vector3 result = ARUtil.calculateIntersectionPointOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint);
 
                             Vector3 result = new Vector3();
 
-                            if(ARUtil.calculateIntersectionOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint, result) == 1) {
+                            boolean isPointInPlane = ARUtil.calculateIntersectionOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint, result) == 1;
+
+                            List<Vector3> wallPoint = new ArrayList<>();
+                            wallPoint.add(floorPolygonList.get(0).getWorldPosition());
+                            wallPoint.add(floorPolygonList.get(1).getWorldPosition());
+                            wallPoint.add(cellPolygonList.get(1).getWorldPosition());
+                            wallPoint.add(cellPolygonList.get(0).getWorldPosition());
+
+                            boolean isPointInPoly = ARUtil.checkIsVectorInPolygon(result, wallPoint);
+
+
+                            if(isPointInPlane && isPointInPoly) {
                                 if(wallTestPoint != null) {
                                     wallTestPoint.setWorldPosition(new Vector3(result.x, result.y, result.z));
                                 }
@@ -337,8 +365,7 @@ public class ARActivity extends FragmentActivity {
                                 }
                             }
 
-//                            if(ARUtil.rayCasting(result, floorPolygonList.get(0).getWorldPosition(), cellPolygonList.get(1).getWorldPosition())) {
-//                                // draw wall point
+//                            if(ARUtil.calculateIntersectionOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint, result) == 1) {
 //                                if(wallTestPoint != null) {
 //                                    wallTestPoint.setWorldPosition(new Vector3(result.x, result.y, result.z));
 //                                }
@@ -346,13 +373,13 @@ public class ARActivity extends FragmentActivity {
 //                                    wallTestPoint = ARUtil.createWorldNode(result.x, result.y, result.z, wallPointMaterial, shadow);
 //                                }
 //                                wallTestPoint.setParent(arSceneView.getScene());
-//                                // draw wall point
 //                            }
 //                            else {
 //                                if(wallTestPoint != null) {
 //                                    wallTestPoint.setParent(null);
 //                                }
 //                            }
+
                         }
 
                         return;
@@ -366,8 +393,9 @@ public class ARActivity extends FragmentActivity {
                             getString(R.string.ar_plane_type_ceiling),
                             getString(R.string.ar_plane_type_floor));
 
-                    boolean isCeiling = planType.equals(getString(R.string.ar_plane_type_ceiling));
                     textViewPlaneType.setText(planType);
+
+                    boolean isCeiling = planType.equals(getString(R.string.ar_plane_type_ceiling));
 
                     for (HitResult hitResult : hitTestResultList) {
 
@@ -378,10 +406,22 @@ public class ARActivity extends FragmentActivity {
                             toggleDistanceHint(hitResult.getDistance());
 
                             if(centerPoint != null) {
-                                centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
+                                if(bottomAnchorPolygon.isEmpty()) {
+                                    centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
+                                }
+                                else {
+                                    centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), fixedY, hitResult.getHitPose().tz()));
+                                }
                             }
                             else {
-                                centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+
+                                if(bottomAnchorPolygon.isEmpty()) {
+                                    centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+                                }
+                                else {
+                                    centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), fixedY, hitResult.getHitPose().tz(), pointMaterial, shadow);
+                                }
+
                                 centerPoint.setParent(arSceneView.getScene());
                             }
 
@@ -445,6 +485,14 @@ public class ARActivity extends FragmentActivity {
 
             clearTemp();
             clearCenter();
+
+            fixedY = 0;
+
+            if(wallTestPoint != null) {
+                wallTestPoint.setParent(null);
+                wallTestPoint = null;
+            }
+
         }
         else {
 
@@ -456,6 +504,13 @@ public class ARActivity extends FragmentActivity {
                 textViewSizeList.clear();
                 clearTemp();
                 clearCenter();
+
+                fixedY = 0;
+
+                if(wallTestPoint != null) {
+                    wallTestPoint.setParent(null);
+                    wallTestPoint = null;
+                }
             }
             else if(bottomAnchorPolygon.size() > 1) {
 
@@ -468,6 +523,11 @@ public class ARActivity extends FragmentActivity {
 
                 clearTemp();
                 clearCenter();
+
+                if(wallTestPoint != null) {
+                    wallTestPoint.setParent(null);
+                    wallTestPoint = null;
+                }
             }
         }
 

@@ -318,4 +318,41 @@ public class ARUtil {
         return 1;
     }
 
+
+    public static boolean checkIsVectorInPolygon(Vector3 p, List<Vector3> poly) {
+        float px = p.x;
+        float py = p.z;
+        boolean flag = false;
+
+        for(int i = 0, l = poly.size(), j = l - 1; i < l; j = i, i++) {
+            float sx = poly.get(i).x;
+            float sy = poly.get(i).z;
+            float tx = poly.get(j).x;
+            float ty = poly.get(j).z;
+
+            // vector on polygon's side
+            if((sx == px && sy == py) || (tx == px && ty == py)) {
+                return false;
+            }
+
+
+            if((sy < py && ty >= py) || (sy >= py && ty < py)) {
+
+                float x = sx + (py - sy) * (tx - sx) / (ty - sy);
+
+                // vector on polygon's side
+                if(x == px) {
+                    return false;
+                }
+
+                if(x > px) {
+                    flag = !flag;
+                }
+            }
+        }
+
+        // vector in polygon
+        return flag;
+    }
+
 }
