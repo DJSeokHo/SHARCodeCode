@@ -8,5 +8,4 @@ import java.util.List;
 public class WallBean {
 
     public List<Vector3> endPointList = new ArrayList<>();
-    public Vector3 centerPoint = new Vector3();
 }
