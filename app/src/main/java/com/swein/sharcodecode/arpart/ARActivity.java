@@ -44,6 +44,7 @@ import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
+import com.swein.sharcodecode.bean.WallBean;
 import com.swein.sharcodecode.framework.util.ar.ARUtil;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.device.DeviceUtil;
@@ -74,6 +75,8 @@ public class ARActivity extends FragmentActivity {
 
     private TextView textViewPlaneType;
 
+    private TextView textViewNearest;
+
     private Node centerPoint;
     private Node wallTestPoint;
 
@@ -88,6 +91,7 @@ public class ARActivity extends FragmentActivity {
     private List<Node> cellPolygonList = new ArrayList<>();
     private List<TextView> textViewSizeList = new ArrayList<>();
     private Vector3 normalVectorOfPlane;
+    private List<WallBean> wallBeanList = new ArrayList<>();
 
     private float screenCenterX;
     private float screenCenterY;
@@ -171,6 +175,8 @@ public class ARActivity extends FragmentActivity {
         textViewVolume = findViewById(R.id.textViewVolume);
 
         textViewHeightRealTime = findViewById(R.id.textViewHeightRealTime);
+
+        textViewNearest = findViewById(R.id.textViewNearest);
     }
 
     private void setListener() {
@@ -210,6 +216,7 @@ public class ARActivity extends FragmentActivity {
 
                                 createCellPolygon();
                                 calculate();
+                                createWall();
                                 return false;
                             }
 
@@ -302,6 +309,34 @@ public class ARActivity extends FragmentActivity {
 
                         textViewPlaneType.setText(planType);
 
+
+//                        // check which wall is nearest
+//                        List<Float> distance = new ArrayList<>();
+//                        Vector3 camera = new Vector3(arSceneView.getArFrame().getCamera().getPose().tx(), arSceneView.getArFrame().getCamera().getPose().ty(), arSceneView.getArFrame().getCamera().getPose().tz());
+//                        for(int i = 0; i < wallBeanList.size(); i++) {
+//                            distance.add(Vector3.subtract(camera, wallBeanList.get(i).centerPoint).length());
+//                        }
+//
+//                        ILog.iLogDebug(TAG, distance.get(0) + " " + distance.get(1) + " " + distance.get(2) + " " + distance.get(3));
+//
+//                        int index = 0;
+//                        float currentDistance = distance.get(0);
+//                        for(int i = 0; i < distance.size(); i++) {
+//                            if(currentDistance > distance.get(i)) {
+//                                currentDistance = distance.get(i);
+//                            }
+//                        }
+//
+//                        for(int i = 0; i < distance.size(); i++) {
+//                            if(currentDistance == distance.get(i)) {
+//                                index = i;
+//                            }
+//                        }
+////                        ILog.iLogDebug(TAG, "nearest index is " + index);
+//                        textViewNearest.setText(String.valueOf(index));
+
+                        // check which wall is nearest
+
                         for (HitResult hitResult : hitTestResultList) {
 
                             // draw center point
@@ -315,57 +350,100 @@ public class ARActivity extends FragmentActivity {
                             // draw center point
 
 
-                            // check wall test
-                            Vector3 normalVector = ARUtil.getNormalVectorOfThreeVectors(
-                                    new Vector3(floorPolygonList.get(0).getWorldPosition().x, floorPolygonList.get(0).getWorldPosition().y, floorPolygonList.get(0).getWorldPosition().z),
-                                    new Vector3(floorPolygonList.get(1).getWorldPosition().x, floorPolygonList.get(1).getWorldPosition().y, floorPolygonList.get(1).getWorldPosition().z),
-                                    new Vector3(cellPolygonList.get(0).getWorldPosition().x, cellPolygonList.get(0).getWorldPosition().y, cellPolygonList.get(0).getWorldPosition().z)
-                            );
+//                            // check wall test
+//                            Vector3 normalVector = ARUtil.getNormalVectorOfThreeVectors(
+//                                    new Vector3(floorPolygonList.get(0).getWorldPosition().x, floorPolygonList.get(0).getWorldPosition().y, floorPolygonList.get(0).getWorldPosition().z),
+//                                    new Vector3(floorPolygonList.get(1).getWorldPosition().x, floorPolygonList.get(1).getWorldPosition().y, floorPolygonList.get(1).getWorldPosition().z),
+//                                    new Vector3(cellPolygonList.get(0).getWorldPosition().x, cellPolygonList.get(0).getWorldPosition().y, cellPolygonList.get(0).getWorldPosition().z)
+//                            );
+//
+//                            Vector3 rayVector = new Vector3(
+//                                    hitResult.getHitPose().tx(),
+//                                    hitResult.getHitPose().ty(),
+//                                    hitResult.getHitPose().tz()
+//                            );
+//
+//                            Vector3 rayOrigin = new Vector3(
+//                                    arSceneView.getArFrame().getCamera().getPose().tx(),
+//                                    arSceneView.getArFrame().getCamera().getPose().ty(),
+//                                    arSceneView.getArFrame().getCamera().getPose().tz()
+//                            );
+//
+//                            Vector3 planePoint = new Vector3(floorPolygonList.get(0).getWorldPosition().x, floorPolygonList.get(0).getWorldPosition().y, floorPolygonList.get(0).getWorldPosition().z);
+//
+//
+//                            Vector3 result = new Vector3();
+//
+//                            boolean isPointInPlane = ARUtil.calculateIntersectionOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint, result) == 1;
+//
+//                            List<Vector3> wallPoint = new ArrayList<>();
+//                            wallPoint.add(floorPolygonList.get(0).getWorldPosition());
+//                            wallPoint.add(floorPolygonList.get(1).getWorldPosition());
+//                            wallPoint.add(cellPolygonList.get(1).getWorldPosition());
+//                            wallPoint.add(cellPolygonList.get(0).getWorldPosition());
+//
+////                            boolean isPointInPoly = ARUtil.checkIsVectorInPolygon(result, wallPoint);
+//                            boolean isPointInPoly = ARUtil.checkIsVectorInPolygon(result, wallPoint.get(0), wallPoint.get(2));
 
-                            Vector3 rayVector = new Vector3(
-                                    hitResult.getHitPose().tx(),
-                                    hitResult.getHitPose().ty(),
-                                    hitResult.getHitPose().tz()
-                            );
+//                            ILog.iLogDebug(TAG, isPointInPlane + " " + isPointInPoly);
 
-                            Vector3 rayOrigin = new Vector3(
-                                    arSceneView.getArFrame().getCamera().getPose().tx(),
-                                    arSceneView.getArFrame().getCamera().getPose().ty(),
-                                    arSceneView.getArFrame().getCamera().getPose().tz()
-                            );
+                            List<Vector3> result = new ArrayList<>();
+                            List<Integer> indexList = getThoughWall(result, hitResult);
 
-                            Vector3 planePoint = new Vector3(floorPolygonList.get(0).getWorldPosition().x, floorPolygonList.get(0).getWorldPosition().y, floorPolygonList.get(0).getWorldPosition().z);
+                            if(result.isEmpty()) {
 
-
-                            Vector3 result = new Vector3();
-
-                            boolean isPointInPlane = ARUtil.calculateIntersectionOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint, result) == 1;
-
-                            List<Vector3> wallPoint = new ArrayList<>();
-                            wallPoint.add(floorPolygonList.get(0).getWorldPosition());
-                            wallPoint.add(floorPolygonList.get(1).getWorldPosition());
-                            wallPoint.add(cellPolygonList.get(1).getWorldPosition());
-                            wallPoint.add(cellPolygonList.get(0).getWorldPosition());
-
-                            boolean isPointInPoly = ARUtil.checkIsVectorInPolygon(result, wallPoint);
-
-
-                            if(isPointInPlane && isPointInPoly) {
-                                if(wallTestPoint != null) {
-                                    wallTestPoint.setWorldPosition(new Vector3(result.x, result.y, result.z));
-                                }
-                                else {
-                                    wallTestPoint = ARUtil.createWorldNode(result.x, result.y, result.z, wallPointMaterial, shadow);
-                                }
-                                wallTestPoint.setParent(arSceneView.getScene());
-                            }
-                            else {
                                 if(wallTestPoint != null) {
                                     wallTestPoint.setParent(null);
                                 }
+
+                                textViewNearest.setText("");
+                                return;
                             }
 
-//                            if(ARUtil.calculateIntersectionOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint, result) == 1) {
+                            StringBuilder stringBuilder = new StringBuilder();
+
+                            List<Float> distanceList = new ArrayList<>();
+                            float distance;
+                            Vector3 camera = new Vector3(arSceneView.getArFrame().getCamera().getPose().tx(), arSceneView.getArFrame().getCamera().getPose().ty(), arSceneView.getArFrame().getCamera().getPose().tz());
+                            for(int i = 0; i < result.size(); i++) {
+                                distanceList.add(Vector3.subtract(camera, result.get(i)).length());
+                            }
+
+                            int resultIndex = 0;
+                            distance = distanceList.get(0);
+                            for(int i = 0; i < distanceList.size(); i++) {
+
+                                stringBuilder.append(distanceList.get(i)).append(" ");
+
+                                if(distance > distanceList.get(i)) {
+                                    distance = distanceList.get(i);
+                                }
+                            }
+
+
+                            ILog.iLogDebug(TAG, stringBuilder.toString());
+
+                            for(int i = 0; i < distanceList.size(); i++) {
+                                if(distance == distanceList.get(i)) {
+                                    resultIndex = i;
+                                    break;
+                                }
+                            }
+
+                            int wallIndex = indexList.get(resultIndex);
+
+                            ILog.iLogDebug(TAG, "wall index is " + wallIndex);
+                            textViewNearest.setText(String.valueOf(wallIndex));
+
+                            if(wallTestPoint != null) {
+                                wallTestPoint.setWorldPosition(new Vector3(result.get(resultIndex).x, result.get(resultIndex).y, result.get(resultIndex).z));
+                            }
+                            else {
+                                wallTestPoint = ARUtil.createWorldNode(result.get(resultIndex).x, result.get(resultIndex).y, result.get(resultIndex).z, wallPointMaterial, shadow);
+                            }
+                            wallTestPoint.setParent(arSceneView.getScene());
+
+//                            if(isPointInPlane && isPointInPoly) {
 //                                if(wallTestPoint != null) {
 //                                    wallTestPoint.setWorldPosition(new Vector3(result.x, result.y, result.z));
 //                                }
@@ -379,7 +457,6 @@ public class ARActivity extends FragmentActivity {
 //                                    wallTestPoint.setParent(null);
 //                                }
 //                            }
-
                         }
 
                         return;
@@ -437,7 +514,6 @@ public class ARActivity extends FragmentActivity {
 
                                 height = ARUtil.getLengthBetweenPointToPlane(ceiling, floorPoint, normalVectorOfPlane);
                                 textViewHeightRealTime.setText(String.valueOf(height));
-
                             }
 
                             drawTempLine(floorPolygonList.get(floorPolygonList.size() - 1), centerPoint);
@@ -470,6 +546,53 @@ public class ARActivity extends FragmentActivity {
         buttonReDetect.setOnClickListener(view -> reset());
     }
 
+    private List<Integer> getThoughWall(List<Vector3> resultList, HitResult hitResult) {
+
+        List<Integer> indexList = new ArrayList<>();
+
+        Vector3 normalVector;
+        Vector3 rayVector;
+        Vector3 rayOrigin;
+        Vector3 planePoint;
+
+        for(int i = 0; i < wallBeanList.size(); i++) {
+
+            // check wall test
+            normalVector = ARUtil.getNormalVectorOfThreeVectors(
+                    new Vector3(wallBeanList.get(i).endPointList.get(0).x, wallBeanList.get(i).endPointList.get(0).y, wallBeanList.get(i).endPointList.get(0).z),
+                    new Vector3(wallBeanList.get(i).endPointList.get(1).x, wallBeanList.get(i).endPointList.get(1).y, wallBeanList.get(i).endPointList.get(1).z),
+                    new Vector3(wallBeanList.get(i).endPointList.get(3).x, wallBeanList.get(i).endPointList.get(3).y, wallBeanList.get(i).endPointList.get(3).z)
+            );
+
+            rayVector = new Vector3(
+                    hitResult.getHitPose().tx(),
+                    hitResult.getHitPose().ty(),
+                    hitResult.getHitPose().tz()
+            );
+
+            rayOrigin = new Vector3(
+                    arSceneView.getArFrame().getCamera().getPose().tx(),
+                    arSceneView.getArFrame().getCamera().getPose().ty(),
+                    arSceneView.getArFrame().getCamera().getPose().tz()
+            );
+
+            planePoint = new Vector3(wallBeanList.get(i).endPointList.get(0).x, wallBeanList.get(i).endPointList.get(0).y, wallBeanList.get(i).endPointList.get(0).z);
+
+            Vector3 result = new Vector3();
+            boolean isPointInPlane = ARUtil.calculateIntersectionOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint, result) == 1;
+
+//            boolean isPointInPoly = ARUtil.checkIsVectorInPolygon(result, wallPoint);
+            boolean isPointInPoly = ARUtil.checkIsVectorInPolygon(result, wallBeanList.get(i).endPointList.get(0), wallBeanList.get(i).endPointList.get(2));
+
+            if(isPointInPlane && isPointInPoly) {
+                resultList.add(result);
+                indexList.add(i);
+            }
+        }
+
+        return indexList;
+    }
+
     private void back() {
         if(isAutoClosed) {
 
@@ -482,6 +605,7 @@ public class ARActivity extends FragmentActivity {
             floorPolygonList.clear();
             cellPolygonList.clear();
             textViewSizeList.clear();
+            wallBeanList.clear();
 
             clearTemp();
             clearCenter();
@@ -502,6 +626,8 @@ public class ARActivity extends FragmentActivity {
                 bottomAnchorPolygon.clear();
                 floorPolygonList.clear();
                 textViewSizeList.clear();
+                wallBeanList.clear();
+
                 clearTemp();
                 clearCenter();
 
@@ -528,6 +654,8 @@ public class ARActivity extends FragmentActivity {
                     wallTestPoint.setParent(null);
                     wallTestPoint = null;
                 }
+
+                wallBeanList.clear();
             }
         }
 
@@ -568,6 +696,37 @@ public class ARActivity extends FragmentActivity {
         drawLine(cellPolygonList.get(cellPolygonList.size() - 1), cellPolygonList.get(0));
     }
 
+    private void createWall() {
+
+
+        wallBeanList.clear();
+
+        WallBean wallBean;
+        for(int i = 0; i < floorPolygonList.size(); i++) {
+
+            wallBean = new WallBean();
+
+            if(i < floorPolygonList.size() - 1) {
+                wallBean.endPointList.add(floorPolygonList.get(i).getWorldPosition());
+                wallBean.endPointList.add(floorPolygonList.get(i + 1).getWorldPosition());
+                wallBean.endPointList.add(cellPolygonList.get(i + 1).getWorldPosition());
+                wallBean.endPointList.add(cellPolygonList.get(i).getWorldPosition());
+            }
+            else {
+                wallBean.endPointList.add(floorPolygonList.get(i).getWorldPosition());
+                wallBean.endPointList.add(floorPolygonList.get(0).getWorldPosition());
+                wallBean.endPointList.add(cellPolygonList.get(0).getWorldPosition());
+                wallBean.endPointList.add(cellPolygonList.get(i).getWorldPosition());
+            }
+
+            wallBean.centerPoint.x = (wallBean.endPointList.get(0).x + wallBean.endPointList.get(2).x) * 0.5f;
+            wallBean.centerPoint.y = (wallBean.endPointList.get(0).y + wallBean.endPointList.get(2).y) * 0.5f;
+            wallBean.centerPoint.z = (wallBean.endPointList.get(0).z + wallBean.endPointList.get(2).z) * 0.5f;
+
+            wallBeanList.add(wallBean);
+        }
+
+    }
 
     private void calculate() {
 

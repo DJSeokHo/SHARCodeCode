@@ -355,4 +355,41 @@ public class ARUtil {
         return flag;
     }
 
+    public static boolean checkIsVectorInPolygon(Vector3 p, Vector3 leftBottom, Vector3 rightTop) {
+
+        boolean isIn = false;
+
+        boolean hr = false;
+        if(leftBottom.x <= p.x && p.x <= rightTop.x) {
+            hr = true;
+        }
+
+        boolean vr = false;
+        if(leftBottom.y <= p.y && p.y <= rightTop.y) {
+            vr = true;
+        }
+
+        if(hr && vr) {
+            isIn = true;
+        }
+
+
+        boolean hl = false;
+        if(leftBottom.x >= p.x && p.x >= rightTop.x) {
+            hl = true;
+        }
+
+        boolean vl = false;
+        if(leftBottom.y <= p.y && p.y <= rightTop.y) {
+            vl = true;
+        }
+
+        if(hl && vl) {
+            isIn = true;
+        }
+
+
+        return isIn;
+    }
+
 }
