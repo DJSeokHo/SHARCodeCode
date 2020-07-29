@@ -1,5 +1,6 @@
 package com.swein.sharcodecode.arpart;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.Bundle;
 import android.text.SpannableString;
@@ -90,7 +91,8 @@ public class ARActivity extends FragmentActivity {
     private Node tempLineNode;
     private FaceToCameraNode tempTextNode;
 
-    private List<AnchorNode> bottomAnchorPolygon = new ArrayList<>();
+//    private List<AnchorNode> bottomAnchorPolygon = new ArrayList<>();
+    private AnchorNode anchorNode;
     private List<Node> floorPolygonList = new ArrayList<>();
     private List<Node> cellPolygonList = new ArrayList<>();
     private List<TextView> textViewSizeList = new ArrayList<>();
@@ -188,6 +190,7 @@ public class ARActivity extends FragmentActivity {
         textViewNearest = findViewById(R.id.textViewNearest);
     }
 
+    @SuppressLint("RestrictedApi")
     private void setListener() {
         // Set a touch listener on the Scene to listen for taps.
         arSceneView.getScene().setOnTouchListener(
@@ -215,14 +218,25 @@ public class ARActivity extends FragmentActivity {
                                 // make node on wall
                                 if(wallTempPoint == null) {
                                     // create wall object start point
-                                    wallTempPoint = ARUtil.createWorldNode(
-                                            wallGuidePoint.getWorldPosition().x,
-                                            wallGuidePoint.getWorldPosition().y,
-                                            wallGuidePoint.getWorldPosition().z, wallPointMaterial, shadow);
-
-                                    wallTempPoint.setParent(arSceneView.getScene());
 
                                     currentWallIndex = currentGuideIndex;
+
+
+                                    Vector3 vector3World = new Vector3(
+                                            wallGuidePoint.getWorldPosition().x,
+                                            wallGuidePoint.getWorldPosition().y,
+                                            wallGuidePoint.getWorldPosition().z
+                                    );
+                                    Vector3 vector3Local = ARUtil.transformWorldPositionToLocalPositionOfParent(anchorNode, vector3World);
+
+
+                                    wallTempPoint = ARUtil.createLocalNode(
+                                            vector3Local.x,
+                                            vector3Local.y,
+                                            vector3Local.z,
+                                            wallPointMaterial, shadow);
+
+                                    wallTempPoint.setParent(anchorNode);
                                 }
                                 else {
 
@@ -264,40 +278,56 @@ public class ARActivity extends FragmentActivity {
                                 ILog.iLogDebug(TAG, "normalVectorOfPlane by cal " + normalVectorOfPlane.x + " " + normalVectorOfPlane.y + " " + normalVectorOfPlane.z);
                             }
 
+//
+//                            ILog.iLogDebug(TAG, "x " + ((Plane) trackable).getExtentX());
+//                            ILog.iLogDebug(TAG, "z " + ((Plane) trackable).getExtentZ());
+//                            ILog.iLogDebug(TAG, "center " + ((Plane) trackable).getCenterPose().tx() + " " + ((Plane) trackable).getCenterPose().ty() + " " + ((Plane) trackable).getCenterPose().tz());
 
 
-                            ILog.iLogDebug(TAG, "x " + ((Plane) trackable).getExtentX());
-                            ILog.iLogDebug(TAG, "z " + ((Plane) trackable).getExtentZ());
-                            ILog.iLogDebug(TAG, "center " + ((Plane) trackable).getCenterPose().tx() + " " + ((Plane) trackable).getCenterPose().ty() + " " + ((Plane) trackable).getCenterPose().tz());
-
-
-                            Anchor anchor = hitResult.createAnchor();
-                            AnchorNode anchorNode = ARUtil.createAnchorNode(anchor);
-                            anchorNode.setParent(arSceneView.getScene());
+                            if(anchorNode == null) {
+                                Anchor anchor = hitResult.createAnchor();
+                                anchorNode = ARUtil.createAnchorNode(anchor);
+                                anchorNode.setParent(arSceneView.getScene());
+                            }
 
                             // two vector is too near
-                            if(!floorPolygonList.isEmpty()) {
-                                if(Vector3.subtract(anchorNode.getWorldPosition(), floorPolygonList.get(floorPolygonList.size() - 1).getWorldPosition()).length() < 0.05) {
+                            if(floorPolygonList.size() > 1) {
+                                if(Vector3.subtract(floorPolygonList.get(floorPolygonList.size() - 2).getLocalPosition(),
+                                        floorPolygonList.get(floorPolygonList.size() - 1).getLocalPosition()).length() < 0.05) {
                                     return false;
                                 }
                             }
 
+                            Node node;
+//                            bottomAnchorPolygon.add(anchorNode);
+                            if(floorPolygonList.isEmpty()) {
+                                node = ARUtil.createLocalNode(0, 0, 0, pointMaterial, shadow);
+                            }
+                            else {
 
-                            bottomAnchorPolygon.add(anchorNode);
+//                                Quaternion localRotation = new Quaternion(hitResult.getHitPose().qx(), hitResult.getHitPose().qy(), hitResult.getHitPose().qz(), hitResult.getHitPose().qw());
+//                                localRotation = Quaternion.multiply(this.anchorNode.getWorldRotation().inverted(), Preconditions.checkNotNull(localRotation));
 
+                                Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
+                                Vector3 localPosition = ARUtil.transformWorldPositionToLocalPositionOfParent(this.anchorNode, hitWorldPosition);
 
-                            Node node = ARUtil.createLocalNode(0, 0, 0, pointMaterial, shadow);
-                            node.setParent(anchorNode);
+                                node = ARUtil.createLocalNode(localPosition.x, localPosition.y, localPosition.z, pointMaterial, shadow);
+                            }
+
+                            node.setParent(this.anchorNode);
                             floorPolygonList.add(node);
 
                             DeviceUtil.vibrate(this, 5);
 
-                            if(!bottomAnchorPolygon.isEmpty()) {
-                                fixedY = bottomAnchorPolygon.get(0).getWorldPosition().y;
-
-                                for(int i = 0; i < bottomAnchorPolygon.size(); i++) {
-                                    bottomAnchorPolygon.get(i).setWorldPosition(new Vector3(bottomAnchorPolygon.get(i).getWorldPosition().x, fixedY, bottomAnchorPolygon.get(i).getWorldPosition().z));
-                                }
+//                            if(!bottomAnchorPolygon.isEmpty()) {
+//                                fixedY = bottomAnchorPolygon.get(0).getWorldPosition().y;
+//
+//                                for(int i = 0; i < bottomAnchorPolygon.size(); i++) {
+//                                    bottomAnchorPolygon.get(i).setWorldPosition(new Vector3(bottomAnchorPolygon.get(i).getWorldPosition().x, fixedY, bottomAnchorPolygon.get(i).getWorldPosition().z));
+//                                }
+//                            }
+                            if(this.anchorNode != null) {
+                                fixedY = anchorNode.getWorldPosition().y;
                             }
 
                             if(floorPolygonList.size() >= 2) {
@@ -412,16 +442,10 @@ public class ARActivity extends FragmentActivity {
 
                             if(wallTempPoint != null) {
 
-                                ILog.iLogDebug(TAG, currentGuideIndex + " " + currentWallIndex);
-
                                 if(currentGuideIndex == currentWallIndex) {
                                     WallObjectBean wallObjectBean = new WallObjectBean();
                                     drawWallTempLine(wallTempPoint, wallGuidePoint);
                                 }
-                                else {
-
-                                }
-
                             }
                         }
 
@@ -449,7 +473,8 @@ public class ARActivity extends FragmentActivity {
                             toggleDistanceHint(hitResult.getDistance());
 
                             if(centerPoint != null) {
-                                if(bottomAnchorPolygon.isEmpty()) {
+//                                if(bottomAnchorPolygon.isEmpty()) {
+                                if(anchorNode == null) {
                                     centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
                                 }
                                 else {
@@ -458,7 +483,8 @@ public class ARActivity extends FragmentActivity {
                             }
                             else {
 
-                                if(bottomAnchorPolygon.isEmpty()) {
+//                                if(bottomAnchorPolygon.isEmpty()) {
+                                if(anchorNode == null) {
                                     centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
                                 }
                                 else {
@@ -474,15 +500,23 @@ public class ARActivity extends FragmentActivity {
 
                             if(isCeiling) {
                                 // get distance ceiling
-
-                                Vector3 floorPoint = new Vector3(bottomAnchorPolygon.get(0).getWorldPosition().x, bottomAnchorPolygon.get(0).getWorldPosition().y, bottomAnchorPolygon.get(0).getWorldPosition().z);
+                                if(centerPoint != null) {
+                                    centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
+                                }
+                                else {
+                                    centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+                                }
+//                                Vector3 floorPoint = new Vector3(bottomAnchorPolygon.get(0).getWorldPosition().x, bottomAnchorPolygon.get(0).getWorldPosition().y, bottomAnchorPolygon.get(0).getWorldPosition().z);
+                                Vector3 floorPoint = new Vector3(anchorNode.getWorldPosition().x, anchorNode.getWorldPosition().y, anchorNode.getWorldPosition().z);
                                 Vector3 ceiling = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
 
                                 height = ARUtil.getLengthBetweenPointToPlane(ceiling, floorPoint, normalVectorOfPlane);
                                 textViewHeightRealTime.setText(String.valueOf(height));
                             }
+                            else {
+                                drawTempLine(floorPolygonList.get(floorPolygonList.size() - 1), centerPoint);
+                            }
 
-                            drawTempLine(floorPolygonList.get(floorPolygonList.size() - 1), centerPoint);
 
                             if(floorPolygonList.size() < 3) {
                                 return;
@@ -510,6 +544,30 @@ public class ARActivity extends FragmentActivity {
         buttonBack.setOnClickListener(view -> back());
 
         buttonReDetect.setOnClickListener(view -> reset());
+    }
+
+    private void createWallObject() {
+
+//        if(wallTempPoint != null) {
+//
+//            if(currentGuideIndex == currentWallIndex) {
+//
+//                WallObjectBean wallObjectBean = new WallObjectBean();
+//                wallObjectBean.objectPointList.add(wallTempPoint);
+//
+//                Node node = ARUtil.createWorldNode(, wallPointMaterial, shadow);
+//                node.setWorldPosition(new Vector3());
+//                wallObjectBean.objectPointList.add(node);
+//
+//                wallObjectBean.objectPointList.add(wallGuidePoint);
+//
+//                node = ARUtil.createWorldNode(, wallPointMaterial, shadow);
+//                node.setWorldPosition(new Vector3());
+//                wallObjectBean.objectPointList.add(node);
+//
+////                drawWallTempLine(wallTempPoint, wallGuidePoint);
+//            }
+//        }
     }
 
     private List<Integer> getThoughWall(List<Vector3> resultList, HitResult hitResult) {
@@ -562,12 +620,12 @@ public class ARActivity extends FragmentActivity {
     private void back() {
         if(isAutoClosed) {
 
-            for(AnchorNode anchorNode : bottomAnchorPolygon) {
+            if(anchorNode != null) {
                 ARUtil.removeChildFormNode(anchorNode);
                 anchorNode.setParent(null);
+                anchorNode = null;
             }
 
-            bottomAnchorPolygon.clear();
             floorPolygonList.clear();
             cellPolygonList.clear();
             textViewSizeList.clear();
@@ -601,10 +659,13 @@ public class ARActivity extends FragmentActivity {
         }
         else {
 
-            if(bottomAnchorPolygon.size() == 1) {
-                bottomAnchorPolygon.get(0).setParent(null);
-                ARUtil.removeChildFormNode(bottomAnchorPolygon.get(0));
-                bottomAnchorPolygon.clear();
+            if(floorPolygonList.size() == 1) {
+
+                if(anchorNode != null) {
+                    ARUtil.removeChildFormNode(anchorNode);
+                    anchorNode = null;
+                }
+
                 floorPolygonList.clear();
                 textViewSizeList.clear();
                 wallBeanList.clear();
@@ -634,14 +695,12 @@ public class ARActivity extends FragmentActivity {
                 currentGuideIndex = -1;
                 currentWallIndex = -1;
             }
-            else if(bottomAnchorPolygon.size() > 1) {
+            else if(floorPolygonList.size() > 1) {
 
-                ARUtil.removeChildFormNode(bottomAnchorPolygon.get(bottomAnchorPolygon.size() - 1));
-                bottomAnchorPolygon.get(bottomAnchorPolygon.size() - 1).setParent(null);
-                bottomAnchorPolygon.remove(bottomAnchorPolygon.size() - 1);
+                ARUtil.removeChildFormNode(floorPolygonList.get(floorPolygonList.size() - 1));
+                floorPolygonList.get(floorPolygonList.size() - 1).setParent(null);
                 floorPolygonList.remove(floorPolygonList.size() - 1);
                 textViewSizeList.remove(textViewSizeList.size() - 1);
-                ARUtil.removeChildFormNode(floorPolygonList.get(floorPolygonList.size() - 1));
 
                 clearTemp();
                 clearCenter();
@@ -691,7 +750,8 @@ public class ARActivity extends FragmentActivity {
                     floorPolygonList.get(i).getLocalPosition().y + height,
                     floorPolygonList.get(i).getLocalPosition().z ,
                     pointMaterial, shadow);
-            node.setParent(bottomAnchorPolygon.get(i));
+//            node.setParent(bottomAnchorPolygon.get(i));
+            node.setParent(anchorNode);
             cellPolygonList.add(node);
         }
 
@@ -708,7 +768,6 @@ public class ARActivity extends FragmentActivity {
     }
 
     private void createWall() {
-
 
         wallBeanList.clear();
 

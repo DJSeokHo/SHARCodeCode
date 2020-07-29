@@ -56,6 +56,10 @@ public class ARUtil {
 //        });
     }
 
+    public static Vector3 transformWorldPositionToLocalPositionOfParent(Node parent, Vector3 worldPosition) {
+        return parent.worldToLocalPoint(worldPosition);
+    }
+
     public static AnchorNode createAnchorNode(Anchor anchor, Material material, boolean shadow) {
 
         ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
