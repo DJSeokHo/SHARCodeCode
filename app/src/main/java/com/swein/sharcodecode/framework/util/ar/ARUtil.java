@@ -1,5 +1,10 @@
 package com.swein.sharcodecode.framework.util.ar;
 
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.SuperscriptSpan;
+
 import com.google.ar.core.Anchor;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
@@ -16,6 +21,10 @@ import com.google.ar.sceneform.rendering.ShapeFactory;
 import java.util.List;
 
 public class ARUtil {
+
+    public enum Unit {
+        M, CM
+    }
 
     public static double getNodesDistanceMeters(Node startNode, Node endNode) {
         float dx = startNode.getWorldPosition().x - endNode.getWorldPosition().x;
@@ -322,7 +331,6 @@ public class ARUtil {
         return 1;
     }
 
-
     public static boolean checkIsVectorInPolygon(Vector3 p, List<Vector3> poly) {
         float px = p.x;
         float py = p.z;
@@ -396,4 +404,100 @@ public class ARUtil {
         return isIn;
     }
 
+    public static String getLengthUnitString(Unit unit) {
+        switch (unit) {
+            case M:
+                return "m";
+
+            case CM:
+                return "cm";
+
+            default:
+                return "";
+        }
+    }
+
+    public static SpannableString getAreaUnitString(Unit unit) {
+        switch (unit) {
+            case M:
+                return getM2();
+
+            case CM:
+                return getCM2();
+
+            default:
+                return null;
+        }
+    }
+
+    public static SpannableString getVolumeUnitString(Unit unit) {
+        switch (unit) {
+            case M:
+                return getM3();
+
+            case CM:
+                return getCM3();
+
+            default:
+                return null;
+        }
+    }
+
+    public static float getLengthByUnit(Unit unit, float length) {
+        switch (unit) {
+            case CM:
+                return length * 100;
+
+            case M:
+                return length;
+
+            default:
+                return 0;
+        }
+    }
+
+    public static float getAreaByUnit(Unit unit, float area) {
+        switch (unit) {
+            case CM:
+                return area * 10000;
+
+            case M:
+                return area;
+
+            default:
+                return 0;
+        }
+    }
+
+    public static SpannableString getM2() {
+        SpannableString m2 = new SpannableString("m2");
+        m2.setSpan(new RelativeSizeSpan(0.5f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        m2.setSpan(new SuperscriptSpan(), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        return m2;
+    }
+
+    public static SpannableString getCM2() {
+        SpannableString cm2 = new SpannableString("cm2");
+        cm2.setSpan(new RelativeSizeSpan(0.5f), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        cm2.setSpan(new SuperscriptSpan(), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        return cm2;
+    }
+
+    public static SpannableString getM3() {
+        SpannableString m2 = new SpannableString("m3");
+        m2.setSpan(new RelativeSizeSpan(0.5f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        m2.setSpan(new SuperscriptSpan(), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        return m2;
+    }
+
+    public static SpannableString getCM3() {
+        SpannableString cm2 = new SpannableString("cm3");
+        cm2.setSpan(new RelativeSizeSpan(0.5f), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        cm2.setSpan(new SuperscriptSpan(), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        return cm2;
+    }
 }

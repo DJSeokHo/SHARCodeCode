@@ -3,11 +3,7 @@ package com.swein.sharcodecode.arpart;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.Bundle;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
-import android.text.Spanned;
-import android.text.style.RelativeSizeSpan;
-import android.text.style.SuperscriptSpan;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
@@ -120,11 +116,9 @@ public class ARActivity extends FragmentActivity {
 
     private float fixedY = 0;
 
-    private enum Unit {
-        M, CM
-    }
+    private ARUtil.Unit unit = ARUtil.Unit.CM;
 
-    private Unit unit = Unit.CM;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -237,6 +231,66 @@ public class ARActivity extends FragmentActivity {
                                             wallPointMaterial, shadow);
 
                                     wallTempPoint.setParent(anchorNode);
+
+
+                                    if(wallObjectBeans.isEmpty()) {
+                                        wallObjectBeans.add(new WallObjectBean());
+
+                                        WallObjectBean wallObjectBean = wallObjectBeans.get(0);
+
+                                        // add point
+                                        wallObjectBean.objectPointList.add(wallTempPoint);
+
+                                        Vector3 horizontalVector3 = new Vector3(wallGuidePoint.getWorldPosition().x, wallGuidePoint.getWorldPosition().y, wallGuidePoint.getWorldPosition().z);
+                                        Vector3 horizontalLocalPosition = ARUtil.transformWorldPositionToLocalPositionOfParent(this.anchorNode, horizontalVector3);
+                                        Node horizontalNode = ARUtil.createLocalNode(horizontalLocalPosition.x, horizontalLocalPosition.y, horizontalLocalPosition.z, wallPointMaterial, shadow);
+                                        horizontalNode.setParent(anchorNode);
+                                        wallObjectBean.objectPointList.add(horizontalNode);
+
+                                        wallObjectBean.objectPointList.add(wallGuidePoint);
+
+                                        Vector3 verticalVector3 = new Vector3();
+                                        verticalVector3.x = wallTempPoint.getWorldPosition().x;
+                                        verticalVector3.y = wallGuidePoint.getWorldPosition().y;
+                                        verticalVector3.z = wallTempPoint.getWorldPosition().z;
+                                        Node verticalNode = ARUtil.createLocalNode(verticalVector3.x, verticalVector3.y, verticalVector3.z, wallPointMaterial, shadow);
+                                        verticalNode.setParent(anchorNode);
+                                        wallObjectBean.objectPointList.add(verticalNode);
+
+                                        // add line
+                                        Node tempLineNode;
+                                        for(int i = 0; i < wallObjectBean.objectPointList.size(); i++) {
+                                            tempLineNode = new Node();
+                                            tempLineNode.setParent(wallObjectBean.objectPointList.get(i));
+                                            wallObjectBean.objectLineList.add(tempLineNode);
+                                        }
+
+                                        // add text node
+                                        for(int i = 0; i < wallObjectBean.objectPointList.size(); i++) {
+
+                                            // add text view
+                                            int index = i;
+                                            ViewRenderable.builder()
+                                                    .setView(this, R.layout.view_renderable_text)
+                                                    .build()
+                                                    .thenAccept(viewRenderable -> {
+
+                                                        viewRenderable.setShadowCaster(false);
+                                                        viewRenderable.setShadowReceiver(false);
+                                                        wallObjectBean.viewRenderableList.add(viewRenderable);
+
+                                                        Node tempTextNode = new FaceToCameraNode();
+                                                        tempTextNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
+                                                        tempTextNode.setParent(wallObjectBean.objectLineList.get(index));
+                                                        tempTextNode.setRenderable(viewRenderable);
+                                                        wallObjectBean.objectTextList.add(tempTextNode);
+
+                                                    });
+                                        }
+
+
+                                    }
+
                                 }
                                 else {
 
@@ -248,6 +302,20 @@ public class ARActivity extends FragmentActivity {
                                     currentWallIndex = -1;
                                     currentGuideIndex = -1;
 
+                                    for(int i = 0; i < wallObjectBeans.size(); i++) {
+                                        WallObjectBean wallObjectBean = wallObjectBeans.get(i);
+
+                                        for(Node node : wallObjectBean.objectPointList) {
+                                            ARUtil.removeChildFormNode(node);
+                                            node.setParent(null);
+                                        }
+                                        wallObjectBean.objectPointList.clear();
+                                        wallObjectBean.objectTextList.clear();
+                                        wallObjectBean.objectLineList.clear();
+                                        wallObjectBean.viewRenderableList.clear();
+                                    }
+
+                                    wallObjectBeans.clear();
                                 }
 
                                 return false;
@@ -418,7 +486,7 @@ public class ARActivity extends FragmentActivity {
                                 }
                             }
 
-                            ILog.iLogDebug(TAG, stringBuilder.toString());
+//                            ILog.iLogDebug(TAG, stringBuilder.toString());
 
                             for(int i = 0; i < distanceList.size(); i++) {
                                 if(distance == distanceList.get(i)) {
@@ -428,6 +496,7 @@ public class ARActivity extends FragmentActivity {
                             }
 
                             currentGuideIndex = indexList.get(resultIndex);
+
 
                             textViewNearest.setText(String.valueOf(currentGuideIndex));
 
@@ -443,8 +512,53 @@ public class ARActivity extends FragmentActivity {
                             if(wallTempPoint != null) {
 
                                 if(currentGuideIndex == currentWallIndex) {
-                                    WallObjectBean wallObjectBean = new WallObjectBean();
-                                    drawWallTempLine(wallTempPoint, wallGuidePoint);
+
+                                    if(wallObjectBeans.isEmpty()) {
+                                        return;
+                                    }
+
+                                    WallObjectBean wallObjectBean = wallObjectBeans.get(0);
+
+
+                                    Vector3 horizontalVector3 = new Vector3();
+                                    horizontalVector3.x = wallGuidePoint.getWorldPosition().x;
+                                    horizontalVector3.y = wallTempPoint.getWorldPosition().y;
+                                    horizontalVector3.z = wallGuidePoint.getWorldPosition().z;
+
+                                    Vector3 horizontalLocalPosition = ARUtil.transformWorldPositionToLocalPositionOfParent(this.anchorNode, horizontalVector3);
+//                                    Node horizontalNode = ARUtil.createLocalNode(horizontalLocalPosition.x, horizontalLocalPosition.y, horizontalLocalPosition.z, wallPointMaterial, shadow);
+//
+//
+                                    Vector3 verticalVector3 = new Vector3();
+                                    verticalVector3.x = wallTempPoint.getWorldPosition().x;
+                                    verticalVector3.y = wallGuidePoint.getWorldPosition().y;
+                                    verticalVector3.z = wallTempPoint.getWorldPosition().z;
+                                    Vector3 verticalLocalPosition = ARUtil.transformWorldPositionToLocalPositionOfParent(this.anchorNode, verticalVector3);
+//                                    Node verticalNode = ARUtil.createLocalNode(verticalVector3.x, verticalVector3.y, verticalVector3.z, wallPointMaterial, shadow);
+
+//                                    drawWallTempLine
+
+                                    if(wallObjectBean.viewRenderableList.size() < 4) {
+                                        return;
+                                    }
+
+                                    wallObjectBean.objectPointList.get(1).setLocalPosition(horizontalLocalPosition);
+                                    wallObjectBean.objectPointList.get(3).setLocalPosition(verticalLocalPosition);
+
+                                    drawTempWallLine(wallObjectBean.objectPointList.get(0), wallObjectBean.objectPointList.get(1),
+                                            wallObjectBean.objectLineList.get(0), wallObjectBean.objectTextList.get(0), wallObjectBean.viewRenderableList.get(0));
+
+                                    drawTempWallLine(wallObjectBean.objectPointList.get(1), wallObjectBean.objectPointList.get(2),
+                                            wallObjectBean.objectLineList.get(1), wallObjectBean.objectTextList.get(1), wallObjectBean.viewRenderableList.get(1));
+
+                                    drawTempWallLine(wallObjectBean.objectPointList.get(2), wallObjectBean.objectPointList.get(3),
+                                            wallObjectBean.objectLineList.get(2), wallObjectBean.objectTextList.get(2), wallObjectBean.viewRenderableList.get(2));
+
+                                    drawTempWallLine(wallObjectBean.objectPointList.get(3), wallObjectBean.objectPointList.get(0),
+                                            wallObjectBean.objectLineList.get(3), wallObjectBean.objectTextList.get(3), wallObjectBean.viewRenderableList.get(3));
+                                }
+                                else {
+                                    wallGuidePoint.setWorldPosition(new Vector3(wallTempPoint.getWorldPosition().x, wallTempPoint.getWorldPosition().y, wallTempPoint.getWorldPosition().z));
                                 }
                             }
                         }
@@ -697,7 +811,7 @@ public class ARActivity extends FragmentActivity {
             }
             else if(floorPolygonList.size() > 1) {
 
-                ARUtil.removeChildFormNode(floorPolygonList.get(floorPolygonList.size() - 1));
+                ARUtil.removeChildFormNode(floorPolygonList.get(floorPolygonList.size() - 2));
                 floorPolygonList.get(floorPolygonList.size() - 1).setParent(null);
                 floorPolygonList.remove(floorPolygonList.size() - 1);
                 textViewSizeList.remove(textViewSizeList.size() - 1);
@@ -798,30 +912,30 @@ public class ARActivity extends FragmentActivity {
 
         linearLayout.setVisibility(View.VISIBLE);
 
-        textViewHeight.setText(getString(R.string.ar_area_height_title) + " " + String.format("%.2f", getLengthByUnit(height)) + getLengthUnitString(unit));
+        textViewHeight.setText(getString(R.string.ar_area_height_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(unit, height)) + ARUtil.getLengthUnitString(unit));
 
         float circumference = 0;
         for(int i = 0; i < floorPolygonList.size() - 1; i++) {
             circumference += Vector3.subtract(floorPolygonList.get(i + 1).getWorldPosition(), floorPolygonList.get(i).getWorldPosition()).length();
         }
         circumference += Vector3.subtract(floorPolygonList.get(floorPolygonList.size() - 1).getWorldPosition(), floorPolygonList.get(0).getWorldPosition()).length();
-        textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " + String.format("%.2f", getLengthByUnit(circumference)) + getLengthUnitString(unit));
+        textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(unit, circumference)) + ARUtil.getLengthUnitString(unit));
 
-        float wallArea = getLengthByUnit(circumference) * getLengthByUnit(height);
+        float wallArea = ARUtil.getLengthByUnit(unit, circumference) * ARUtil.getLengthByUnit(unit, height);
 
         SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", wallArea));
-        wallAreaString.append(getAreaUnitString(unit));
+        wallAreaString.append(ARUtil.getAreaUnitString(unit));
         textViewWallArea.setText(wallAreaString);
 
 
-        float area = getAreaByUnit(calculateArea());
+        float area = ARUtil.getAreaByUnit(unit, calculateArea());
         SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
-        areaString.append(getAreaUnitString(unit));
+        areaString.append(ARUtil.getAreaUnitString(unit));
         textViewArea.setText(areaString);
 
-        float volume = getLengthByUnit(height) * area;
+        float volume = ARUtil.getLengthByUnit(unit, height) * area;
         SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
-        volumeString.append(getVolumeUnitString(unit));
+        volumeString.append(ARUtil.getVolumeUnitString(unit));
         textViewVolume.setText(volumeString);
 
     }
@@ -900,7 +1014,7 @@ public class ARActivity extends FragmentActivity {
         lineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
         lineNode.setWorldRotation(rotationFromAToB);
 
-        float length = getLengthByUnit(difference.length());
+        float length = ARUtil.getLengthByUnit(unit, difference.length());
 
         ViewRenderable.builder()
                 .setView(this, R.layout.view_renderable_text)
@@ -954,15 +1068,15 @@ public class ARActivity extends FragmentActivity {
             tempLineNode.setWorldRotation(rotationFromAToB);
         }
 
-        float length = getLengthByUnit(difference.length());
+        float length = ARUtil.getLengthByUnit(unit, difference.length());
 
         if(tempTextNode != null) {
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + getLengthUnitString(unit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(unit));
         }
         else {
             if(tempLineNode != null) {
 
-                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + getLengthUnitString(unit));
+                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(unit));
 
                 tempTextNode = new FaceToCameraNode();
                 tempTextNode.setParent(tempLineNode);
@@ -976,7 +1090,7 @@ public class ARActivity extends FragmentActivity {
     }
 
 
-    private void drawWallTempLine(Node startNode, Node endNode) {
+    private void drawTempWallLine(Node startNode, Node endNode, Node tempLineNode, Node tempTextNode, ViewRenderable viewRenderableSizeText) {
 
         Vector3 startVector3 = startNode.getWorldPosition();
         Vector3 endVector3 = endNode.getWorldPosition();
@@ -1008,15 +1122,15 @@ public class ARActivity extends FragmentActivity {
             tempLineNode.setWorldRotation(rotationFromAToB);
         }
 
-        float length = getLengthByUnit(difference.length());
+        float length = ARUtil.getLengthByUnit(unit, difference.length());
 
         if(tempTextNode != null) {
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + getLengthUnitString(unit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(unit));
         }
         else {
             if(tempLineNode != null) {
 
-                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + getLengthUnitString(unit));
+                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(unit));
 
                 tempTextNode = new FaceToCameraNode();
                 tempTextNode.setParent(tempLineNode);
@@ -1039,103 +1153,6 @@ public class ARActivity extends FragmentActivity {
                 }
             }
         }
-    }
-
-    private String getLengthUnitString(Unit unit) {
-        switch (unit) {
-            case M:
-                return "m";
-
-            case CM:
-                return "cm";
-
-            default:
-                return "";
-        }
-    }
-
-    private SpannableString getAreaUnitString(Unit unit) {
-        switch (unit) {
-            case M:
-                return getM2();
-
-            case CM:
-                return getCM2();
-
-            default:
-                return null;
-        }
-    }
-
-    private SpannableString getVolumeUnitString(Unit unit) {
-        switch (unit) {
-            case M:
-                return getM3();
-
-            case CM:
-                return getCM3();
-
-            default:
-                return null;
-        }
-    }
-
-    private float getLengthByUnit(float length) {
-        switch (unit) {
-            case CM:
-                return length * 100;
-
-            case M:
-                return length;
-
-            default:
-                return 0;
-        }
-    }
-
-    private float getAreaByUnit(float area) {
-        switch (unit) {
-            case CM:
-                return area * 10000;
-
-            case M:
-                return area;
-
-            default:
-                return 0;
-        }
-    }
-
-    private SpannableString getM2() {
-        SpannableString m2 = new SpannableString("m2");
-        m2.setSpan(new RelativeSizeSpan(0.5f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        m2.setSpan(new SuperscriptSpan(), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        return m2;
-    }
-
-    private SpannableString getCM2() {
-        SpannableString cm2 = new SpannableString("cm2");
-        cm2.setSpan(new RelativeSizeSpan(0.5f), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        cm2.setSpan(new SuperscriptSpan(), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        return cm2;
-    }
-
-    private SpannableString getM3() {
-        SpannableString m2 = new SpannableString("m3");
-        m2.setSpan(new RelativeSizeSpan(0.5f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        m2.setSpan(new SuperscriptSpan(), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        return m2;
-    }
-
-    private SpannableString getCM3() {
-        SpannableString cm2 = new SpannableString("cm3");
-        cm2.setSpan(new RelativeSizeSpan(0.5f), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        cm2.setSpan(new SuperscriptSpan(), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        return cm2;
     }
 
 
