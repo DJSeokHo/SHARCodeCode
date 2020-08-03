@@ -116,7 +116,7 @@ public class ARActivity extends FragmentActivity {
 
     private float fixedY = 0;
 
-    private ARUtil.Unit unit = ARUtil.Unit.CM;
+    private ARUtil.ARUnit ARUnit = ARUtil.ARUnit.CM;
 
 
 
@@ -912,30 +912,30 @@ public class ARActivity extends FragmentActivity {
 
         linearLayout.setVisibility(View.VISIBLE);
 
-        textViewHeight.setText(getString(R.string.ar_area_height_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(unit, height)) + ARUtil.getLengthUnitString(unit));
+        textViewHeight.setText(getString(R.string.ar_area_height_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(ARUnit, height)) + ARUtil.getLengthUnitString(ARUnit));
 
         float circumference = 0;
         for(int i = 0; i < floorPolygonList.size() - 1; i++) {
             circumference += Vector3.subtract(floorPolygonList.get(i + 1).getWorldPosition(), floorPolygonList.get(i).getWorldPosition()).length();
         }
         circumference += Vector3.subtract(floorPolygonList.get(floorPolygonList.size() - 1).getWorldPosition(), floorPolygonList.get(0).getWorldPosition()).length();
-        textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(unit, circumference)) + ARUtil.getLengthUnitString(unit));
+        textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(ARUnit, circumference)) + ARUtil.getLengthUnitString(ARUnit));
 
-        float wallArea = ARUtil.getLengthByUnit(unit, circumference) * ARUtil.getLengthByUnit(unit, height);
+        float wallArea = ARUtil.getLengthByUnit(ARUnit, circumference) * ARUtil.getLengthByUnit(ARUnit, height);
 
         SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", wallArea));
-        wallAreaString.append(ARUtil.getAreaUnitString(unit));
+        wallAreaString.append(ARUtil.getAreaUnitString(ARUnit));
         textViewWallArea.setText(wallAreaString);
 
 
-        float area = ARUtil.getAreaByUnit(unit, calculateArea());
+        float area = ARUtil.getAreaByUnit(ARUnit, calculateArea());
         SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
-        areaString.append(ARUtil.getAreaUnitString(unit));
+        areaString.append(ARUtil.getAreaUnitString(ARUnit));
         textViewArea.setText(areaString);
 
-        float volume = ARUtil.getLengthByUnit(unit, height) * area;
+        float volume = ARUtil.getLengthByUnit(ARUnit, height) * area;
         SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
-        volumeString.append(ARUtil.getVolumeUnitString(unit));
+        volumeString.append(ARUtil.getVolumeUnitString(ARUnit));
         textViewVolume.setText(volumeString);
 
     }
@@ -1014,7 +1014,7 @@ public class ARActivity extends FragmentActivity {
         lineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
         lineNode.setWorldRotation(rotationFromAToB);
 
-        float length = ARUtil.getLengthByUnit(unit, difference.length());
+        float length = ARUtil.getLengthByUnit(ARUnit, difference.length());
 
         ViewRenderable.builder()
                 .setView(this, R.layout.view_renderable_text)
@@ -1068,15 +1068,15 @@ public class ARActivity extends FragmentActivity {
             tempLineNode.setWorldRotation(rotationFromAToB);
         }
 
-        float length = ARUtil.getLengthByUnit(unit, difference.length());
+        float length = ARUtil.getLengthByUnit(ARUnit, difference.length());
 
         if(tempTextNode != null) {
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(unit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(ARUnit));
         }
         else {
             if(tempLineNode != null) {
 
-                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(unit));
+                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(ARUnit));
 
                 tempTextNode = new FaceToCameraNode();
                 tempTextNode.setParent(tempLineNode);
@@ -1122,15 +1122,15 @@ public class ARActivity extends FragmentActivity {
             tempLineNode.setWorldRotation(rotationFromAToB);
         }
 
-        float length = ARUtil.getLengthByUnit(unit, difference.length());
+        float length = ARUtil.getLengthByUnit(ARUnit, difference.length());
 
         if(tempTextNode != null) {
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(unit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(ARUnit));
         }
         else {
             if(tempLineNode != null) {
 
-                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(unit));
+                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(ARUnit));
 
                 tempTextNode = new FaceToCameraNode();
                 tempTextNode.setParent(tempLineNode);

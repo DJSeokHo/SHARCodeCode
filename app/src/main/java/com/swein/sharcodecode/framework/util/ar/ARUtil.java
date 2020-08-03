@@ -22,7 +22,7 @@ import java.util.List;
 
 public class ARUtil {
 
-    public enum Unit {
+    public enum ARUnit {
         M, CM
     }
 
@@ -404,8 +404,8 @@ public class ARUtil {
         return isIn;
     }
 
-    public static String getLengthUnitString(Unit unit) {
-        switch (unit) {
+    public static String getLengthUnitString(ARUnit ARUnit) {
+        switch (ARUnit) {
             case M:
                 return "m";
 
@@ -417,8 +417,8 @@ public class ARUtil {
         }
     }
 
-    public static SpannableString getAreaUnitString(Unit unit) {
-        switch (unit) {
+    public static SpannableString getAreaUnitString(ARUnit ARUnit) {
+        switch (ARUnit) {
             case M:
                 return getM2();
 
@@ -430,8 +430,8 @@ public class ARUtil {
         }
     }
 
-    public static SpannableString getVolumeUnitString(Unit unit) {
-        switch (unit) {
+    public static SpannableString getVolumeUnitString(ARUnit ARUnit) {
+        switch (ARUnit) {
             case M:
                 return getM3();
 
@@ -443,8 +443,8 @@ public class ARUtil {
         }
     }
 
-    public static float getLengthByUnit(Unit unit, float length) {
-        switch (unit) {
+    public static float getLengthByUnit(ARUnit ARUnit, float length) {
+        switch (ARUnit) {
             case CM:
                 return length * 100;
 
@@ -456,8 +456,8 @@ public class ARUtil {
         }
     }
 
-    public static float getAreaByUnit(Unit unit, float area) {
-        switch (unit) {
+    public static float getAreaByUnit(ARUnit ARUnit, float area) {
+        switch (ARUnit) {
             case CM:
                 return area * 10000;
 
