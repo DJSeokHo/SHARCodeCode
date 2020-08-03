@@ -1,4 +1,4 @@
-package com.swein.sharcodecode.bean;
+package com.swein.sharcodecode.arpart.bean.object;
 
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.rendering.ViewRenderable;

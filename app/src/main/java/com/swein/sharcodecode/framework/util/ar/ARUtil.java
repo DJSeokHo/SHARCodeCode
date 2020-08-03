@@ -17,14 +17,11 @@ import com.google.ar.sceneform.rendering.Material;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.PlaneRenderer;
 import com.google.ar.sceneform.rendering.ShapeFactory;
+import com.swein.sharcodecode.arpart.builder.ARBuilder;
 
 import java.util.List;
 
 public class ARUtil {
-
-    public enum ARUnit {
-        M, CM
-    }
 
     public static double getNodesDistanceMeters(Node startNode, Node endNode) {
         float dx = startNode.getWorldPosition().x - endNode.getWorldPosition().x;
@@ -404,7 +401,7 @@ public class ARUtil {
         return isIn;
     }
 
-    public static String getLengthUnitString(ARUnit ARUnit) {
+    public static String getLengthUnitString(ARBuilder.ARUnit ARUnit) {
         switch (ARUnit) {
             case M:
                 return "m";
@@ -417,7 +414,7 @@ public class ARUtil {
         }
     }
 
-    public static SpannableString getAreaUnitString(ARUnit ARUnit) {
+    public static SpannableString getAreaUnitString(ARBuilder.ARUnit ARUnit) {
         switch (ARUnit) {
             case M:
                 return getM2();
@@ -430,7 +427,7 @@ public class ARUtil {
         }
     }
 
-    public static SpannableString getVolumeUnitString(ARUnit ARUnit) {
+    public static SpannableString getVolumeUnitString(ARBuilder.ARUnit ARUnit) {
         switch (ARUnit) {
             case M:
                 return getM3();
@@ -443,7 +440,7 @@ public class ARUtil {
         }
     }
 
-    public static float getLengthByUnit(ARUnit ARUnit, float length) {
+    public static float getLengthByUnit(ARBuilder.ARUnit ARUnit, float length) {
         switch (ARUnit) {
             case CM:
                 return length * 100;
@@ -456,7 +453,7 @@ public class ARUtil {
         }
     }
 
-    public static float getAreaByUnit(ARUnit ARUnit, float area) {
+    public static float getAreaByUnit(ARBuilder.ARUnit ARUnit, float area) {
         switch (ARUnit) {
             case CM:
                 return area * 10000;

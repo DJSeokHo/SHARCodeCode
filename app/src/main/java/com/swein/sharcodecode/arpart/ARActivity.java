@@ -1,7 +1,6 @@
 package com.swein.sharcodecode.arpart;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.view.MotionEvent;
@@ -14,20 +13,12 @@ import android.widget.TextView;
 import androidx.fragment.app.FragmentActivity;
 
 import com.google.ar.core.Anchor;
-import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
-import com.google.ar.core.Session;
 import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
-import com.google.ar.core.exceptions.CameraNotAvailableException;
-import com.google.ar.core.exceptions.UnavailableApkTooOldException;
-import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
-import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
-import com.google.ar.core.exceptions.UnavailableException;
-import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.HitTestResult;
@@ -41,12 +32,14 @@ import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
-import com.swein.sharcodecode.bean.WallBean;
-import com.swein.sharcodecode.bean.WallObjectBean;
+import com.swein.sharcodecode.arpart.bean.RoomBean;
+import com.swein.sharcodecode.arpart.bean.object.WallObjectBean;
+import com.swein.sharcodecode.arpart.bean.struct.WallBean;
+import com.swein.sharcodecode.arpart.builder.ARBuilder;
+import com.swein.sharcodecode.arpart.environment.AREnvironment;
 import com.swein.sharcodecode.framework.util.ar.ARUtil;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.device.DeviceUtil;
-import com.swein.sharcodecode.framework.util.toast.ToastUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -116,9 +109,11 @@ public class ARActivity extends FragmentActivity {
 
     private float fixedY = 0;
 
-    private ARUtil.ARUnit ARUnit = ARUtil.ARUnit.CM;
+    private ARBuilder.ARUnit ARUnit = ARBuilder.ARUnit.CM;
 
-
+    //*******
+    private RoomBean roomBean;
+    //*******
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,9 +124,13 @@ public class ARActivity extends FragmentActivity {
         findView();
         setListener();
 
+        initAR();
     }
 
     private void initData() {
+
+        roomBean = new RoomBean();
+
 
         MaterialFactory
                 .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
@@ -182,6 +181,11 @@ public class ARActivity extends FragmentActivity {
         textViewHeightRealTime = findViewById(R.id.textViewHeightRealTime);
 
         textViewNearest = findViewById(R.id.textViewNearest);
+    }
+
+    private void initAR() {
+        AREnvironment.getInstance().init(arSceneView);
+        ARBuilder.getInstance().initMaterial(this);
     }
 
     @SuppressLint("RestrictedApi")
@@ -657,76 +661,53 @@ public class ARActivity extends FragmentActivity {
 
         buttonBack.setOnClickListener(view -> back());
 
-        buttonReDetect.setOnClickListener(view -> reset());
+        buttonReDetect.setOnClickListener(view -> AREnvironment.getInstance().reset(this, this::finish, () -> textView.setVisibility(View.VISIBLE)));
     }
 
-    private void createWallObject() {
-
-//        if(wallTempPoint != null) {
-//
-//            if(currentGuideIndex == currentWallIndex) {
-//
-//                WallObjectBean wallObjectBean = new WallObjectBean();
-//                wallObjectBean.objectPointList.add(wallTempPoint);
-//
-//                Node node = ARUtil.createWorldNode(, wallPointMaterial, shadow);
-//                node.setWorldPosition(new Vector3());
-//                wallObjectBean.objectPointList.add(node);
-//
-//                wallObjectBean.objectPointList.add(wallGuidePoint);
-//
-//                node = ARUtil.createWorldNode(, wallPointMaterial, shadow);
-//                node.setWorldPosition(new Vector3());
-//                wallObjectBean.objectPointList.add(node);
-//
-////                drawWallTempLine(wallTempPoint, wallGuidePoint);
-//            }
-//        }
-    }
 
     private List<Integer> getThoughWall(List<Vector3> resultList, HitResult hitResult) {
 
         List<Integer> indexList = new ArrayList<>();
 
-        Vector3 normalVector;
-        Vector3 rayVector;
-        Vector3 rayOrigin;
-        Vector3 planePoint;
-
-        for(int i = 0; i < wallBeanList.size(); i++) {
-
-            // check wall test
-            normalVector = ARUtil.getNormalVectorOfThreeVectors(
-                    new Vector3(wallBeanList.get(i).endPointList.get(0).x, wallBeanList.get(i).endPointList.get(0).y, wallBeanList.get(i).endPointList.get(0).z),
-                    new Vector3(wallBeanList.get(i).endPointList.get(1).x, wallBeanList.get(i).endPointList.get(1).y, wallBeanList.get(i).endPointList.get(1).z),
-                    new Vector3(wallBeanList.get(i).endPointList.get(3).x, wallBeanList.get(i).endPointList.get(3).y, wallBeanList.get(i).endPointList.get(3).z)
-            );
-
-            rayVector = new Vector3(
-                    hitResult.getHitPose().tx(),
-                    hitResult.getHitPose().ty(),
-                    hitResult.getHitPose().tz()
-            );
-
-            rayOrigin = new Vector3(
-                    arSceneView.getArFrame().getCamera().getPose().tx(),
-                    arSceneView.getArFrame().getCamera().getPose().ty(),
-                    arSceneView.getArFrame().getCamera().getPose().tz()
-            );
-
-            planePoint = new Vector3(wallBeanList.get(i).endPointList.get(0).x, wallBeanList.get(i).endPointList.get(0).y, wallBeanList.get(i).endPointList.get(0).z);
-
-            Vector3 result = new Vector3();
-            boolean isPointInPlane = ARUtil.calculateIntersectionOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint, result) == 1;
-
-//            boolean isPointInPoly = ARUtil.checkIsVectorInPolygon(result, wallPoint);
-            boolean isPointInPoly = ARUtil.checkIsVectorInPolygon(result, wallBeanList.get(i).endPointList.get(0), wallBeanList.get(i).endPointList.get(2));
-
-            if(isPointInPlane && isPointInPoly) {
-                resultList.add(result);
-                indexList.add(i);
-            }
-        }
+//        Vector3 normalVector;
+//        Vector3 rayVector;
+//        Vector3 rayOrigin;
+//        Vector3 planePoint;
+//
+//        for(int i = 0; i < wallBeanList.size(); i++) {
+//
+//            // check wall test
+//            normalVector = ARUtil.getNormalVectorOfThreeVectors(
+//                    new Vector3(wallBeanList.get(i).endPointList.get(0).x, wallBeanList.get(i).endPointList.get(0).y, wallBeanList.get(i).endPointList.get(0).z),
+//                    new Vector3(wallBeanList.get(i).endPointList.get(1).x, wallBeanList.get(i).endPointList.get(1).y, wallBeanList.get(i).endPointList.get(1).z),
+//                    new Vector3(wallBeanList.get(i).endPointList.get(3).x, wallBeanList.get(i).endPointList.get(3).y, wallBeanList.get(i).endPointList.get(3).z)
+//            );
+//
+//            rayVector = new Vector3(
+//                    hitResult.getHitPose().tx(),
+//                    hitResult.getHitPose().ty(),
+//                    hitResult.getHitPose().tz()
+//            );
+//
+//            rayOrigin = new Vector3(
+//                    arSceneView.getArFrame().getCamera().getPose().tx(),
+//                    arSceneView.getArFrame().getCamera().getPose().ty(),
+//                    arSceneView.getArFrame().getCamera().getPose().tz()
+//            );
+//
+//            planePoint = new Vector3(wallBeanList.get(i).endPointList.get(0).x, wallBeanList.get(i).endPointList.get(0).y, wallBeanList.get(i).endPointList.get(0).z);
+//
+//            Vector3 result = new Vector3();
+//            boolean isPointInPlane = ARUtil.calculateIntersectionOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint, result) == 1;
+//
+////            boolean isPointInPoly = ARUtil.checkIsVectorInPolygon(result, wallPoint);
+//            boolean isPointInPoly = ARUtil.checkIsVectorInPolygon(result, wallBeanList.get(i).endPointList.get(0), wallBeanList.get(i).endPointList.get(2));
+//
+//            if(isPointInPlane && isPointInPoly) {
+//                resultList.add(result);
+//                indexList.add(i);
+//            }
+//        }
 
         return indexList;
     }
@@ -883,28 +864,28 @@ public class ARActivity extends FragmentActivity {
 
     private void createWall() {
 
-        wallBeanList.clear();
-
-        WallBean wallBean;
-        for(int i = 0; i < floorPolygonList.size(); i++) {
-
-            wallBean = new WallBean();
-
-            if(i < floorPolygonList.size() - 1) {
-                wallBean.endPointList.add(floorPolygonList.get(i).getWorldPosition());
-                wallBean.endPointList.add(floorPolygonList.get(i + 1).getWorldPosition());
-                wallBean.endPointList.add(cellPolygonList.get(i + 1).getWorldPosition());
-                wallBean.endPointList.add(cellPolygonList.get(i).getWorldPosition());
-            }
-            else {
-                wallBean.endPointList.add(floorPolygonList.get(i).getWorldPosition());
-                wallBean.endPointList.add(floorPolygonList.get(0).getWorldPosition());
-                wallBean.endPointList.add(cellPolygonList.get(0).getWorldPosition());
-                wallBean.endPointList.add(cellPolygonList.get(i).getWorldPosition());
-            }
-
-            wallBeanList.add(wallBean);
-        }
+//        wallBeanList.clear();
+//
+//        WallBean wallBean;
+//        for(int i = 0; i < floorPolygonList.size(); i++) {
+//
+//            wallBean = new WallBean();
+//
+//            if(i < floorPolygonList.size() - 1) {
+//                wallBean.endPointList.add(floorPolygonList.get(i).getWorldPosition());
+//                wallBean.endPointList.add(floorPolygonList.get(i + 1).getWorldPosition());
+//                wallBean.endPointList.add(cellPolygonList.get(i + 1).getWorldPosition());
+//                wallBean.endPointList.add(cellPolygonList.get(i).getWorldPosition());
+//            }
+//            else {
+//                wallBean.endPointList.add(floorPolygonList.get(i).getWorldPosition());
+//                wallBean.endPointList.add(floorPolygonList.get(0).getWorldPosition());
+//                wallBean.endPointList.add(cellPolygonList.get(0).getWorldPosition());
+//                wallBean.endPointList.add(cellPolygonList.get(i).getWorldPosition());
+//            }
+//
+//            wallBeanList.add(wallBean);
+//        }
 
     }
 
@@ -1155,156 +1136,23 @@ public class ARActivity extends FragmentActivity {
         }
     }
 
-
-    private static Session createArSession(Activity activity, boolean installRequested, Config.LightEstimationMode lightEstimationMode, Config.PlaneFindingMode planeFindingMode) throws UnavailableException {
-        Session session;
-        // if we have the camera permission, create the session
-        switch (ArCoreApk.getInstance().requestInstall(activity, !installRequested)) {
-            case INSTALL_REQUESTED:
-                installRequested = true;
-                return null;
-            case INSTALLED:
-                break;
-        }
-
-        session = new Session(activity);
-        // IMPORTANT!!!  ArSceneView requires the `LATEST_CAMERA_IMAGE` non-blocking update mode.
-        Config config = new Config(session);
-        config.setUpdateMode(Config.UpdateMode.LATEST_CAMERA_IMAGE);
-        config.setPlaneFindingMode(planeFindingMode);
-
-        if(lightEstimationMode != null) {
-            config.setLightEstimationMode(lightEstimationMode);
-        }
-        else {
-            config.setLightEstimationMode(Config.LightEstimationMode.DISABLED);
-        }
-
-        session.configure(config);
-        return session;
-    }
-
-    public static void handleSessionException(
-            Activity activity, UnavailableException sessionException) {
-
-        String message;
-        if (sessionException instanceof UnavailableArcoreNotInstalledException) {
-            message = "Please install ARCore";
-        }
-        else if (sessionException instanceof UnavailableApkTooOldException) {
-            message = "Please update ARCore";
-        }
-        else if (sessionException instanceof UnavailableSdkTooOldException) {
-            message = "Please update this app";
-        }
-        else if (sessionException instanceof UnavailableDeviceNotCompatibleException) {
-            message = "This device does not support AR";
-        }
-        else {
-            message = "Failed to create AR session";
-            ILog.iLogError(TAG, "Exception: " + sessionException);
-        }
-
-        ToastUtil.showCustomShortToastNormal(activity, message);
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
-        if (arSceneView == null) {
-            return;
-        }
 
-        if (arSceneView.getSession() == null) {
-            // If the session wasn't created yet, don't resume rendering.
-            // This can happen if ARCore needs to be updated or permissions are not granted yet.
-            try {
-//                Config.LightEstimationMode lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR;
-//                Session session = createArSession(this, true, lightEstimationMode);
-                Session session = createArSession(this, true, null, planeFindingMode);
-
-                if (session == null) {
-                    finish();
-                }
-                else {
-                    arSceneView.setupSession(session);
-                }
-            }
-            catch (UnavailableException e) {
-                handleSessionException(this, e);
-            }
-        }
-
-        try {
-            arSceneView.resume();
-        }
-        catch (CameraNotAvailableException ex) {
-            ToastUtil.showCustomShortToastNormal(ARActivity.this, "Unable to get camera");
-            finish();
-            return;
-        }
-
-        if (arSceneView.getSession() != null) {
-            // loading...finding plane
-            textView.setVisibility(View.VISIBLE);
-        }
+        AREnvironment.getInstance().resume(this, this::finish, () -> textView.setVisibility(View.VISIBLE));
     }
 
-    private void reset() {
-
-        if (arSceneView == null) {
-            return;
-        }
-
-        arSceneView.pause();
-
-        arSceneView.setupSession(null);
-
-        try {
-//                Config.LightEstimationMode lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR;
-//                Session session = createArSession(this, true, lightEstimationMode);
-            Session session = createArSession(this, true, null, planeFindingMode);
-
-            if (session == null) {
-                finish();
-            }
-            else {
-                arSceneView.setupSession(session);
-            }
-        }
-        catch (UnavailableException e) {
-            handleSessionException(this, e);
-        }
-
-        try {
-            arSceneView.resume();
-        }
-        catch (CameraNotAvailableException ex) {
-            ToastUtil.showCustomShortToastNormal(ARActivity.this, "Unable to get camera");
-            finish();
-            return;
-        }
-
-        if (arSceneView.getSession() != null) {
-            // loading...finding plane
-            textView.setVisibility(View.VISIBLE);
-        }
-
-    }
 
     @Override
     public void onPause() {
         super.onPause();
-        if (arSceneView != null) {
-            arSceneView.pause();
-        }
+        AREnvironment.getInstance().pause();
     }
 
     @Override
     public void onDestroy() {
+        AREnvironment.getInstance().destroy();
         super.onDestroy();
-        if (arSceneView != null) {
-            arSceneView.destroy();
-        }
     }
 }

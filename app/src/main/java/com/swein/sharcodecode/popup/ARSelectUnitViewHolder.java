@@ -8,7 +8,6 @@ import android.widget.Button;
 import android.widget.Spinner;
 
 import com.swein.sharcodecode.R;
-import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.view.ViewUtil;
 
 import java.util.ArrayList;
