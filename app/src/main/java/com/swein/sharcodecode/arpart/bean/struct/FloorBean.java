@@ -8,10 +8,10 @@ public class FloorBean {
     public boolean isReadyToAutoClose;
     public boolean isAutoClosed;
 
-    public PlaneBean floor;
+    public PlaneBean planeBean;
 
     public FloorBean() {
-        floor = new PlaneBean();
+        planeBean = new PlaneBean();
         isReadyToAutoClose = false;
         isAutoClosed = false;
     }

@@ -4,9 +4,9 @@ import com.swein.sharcodecode.arpart.bean.basic.PlaneBean;
 
 public class CeilingBean {
 
-    public PlaneBean ceiling;
+    public PlaneBean planeBean;
 
     public CeilingBean() {
-        ceiling = new PlaneBean();
+        planeBean = new PlaneBean();
     }
 }

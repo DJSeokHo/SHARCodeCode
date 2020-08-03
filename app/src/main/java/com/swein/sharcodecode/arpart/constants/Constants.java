@@ -1,4 +1,4 @@
-package com.swein.sharcodecode.constants;
+package com.swein.sharcodecode.arpart.constants;
 
 public class Constants {
 

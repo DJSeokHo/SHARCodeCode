@@ -4,7 +4,12 @@ import android.app.Activity;
 
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Config;
+import com.google.ar.core.Frame;
+import com.google.ar.core.HitResult;
+import com.google.ar.core.Plane;
 import com.google.ar.core.Session;
+import com.google.ar.core.Trackable;
+import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
@@ -12,8 +17,17 @@ import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.sceneform.ArSceneView;
+import com.google.ar.sceneform.math.Vector3;
+import com.swein.sharcodecode.R;
+import com.swein.sharcodecode.arpart.builder.ARBuilder;
+import com.swein.sharcodecode.arpart.builder.tool.ARTool;
+import com.swein.sharcodecode.framework.util.ar.ARUtil;
 import com.swein.sharcodecode.framework.util.debug.ILog;
+import com.swein.sharcodecode.framework.util.device.DeviceUtil;
 import com.swein.sharcodecode.framework.util.toast.ToastUtil;
+
+import java.util.Collection;
+import java.util.List;
 
 public class AREnvironment {
 
@@ -27,19 +41,125 @@ public class AREnvironment {
 
     private AREnvironment() {}
 
+    private List<HitResult> hitTestResultList;
 
-    public ArSceneView arSceneView;
+    public Config.PlaneFindingMode planeFindingMode;
 
-    // node shadow
-    public boolean nodeShadow = true;
+    public boolean isHitCeiling = false;
 
-    public Config.PlaneFindingMode planeFindingMode = Config.PlaneFindingMode.HORIZONTAL;
-
-    public void init(ArSceneView arSceneView) {
-        this.arSceneView = arSceneView;
+    public void init() {
+        planeFindingMode = Config.PlaneFindingMode.HORIZONTAL;
     }
 
-    public void reset(Activity activity, Runnable finishActivity, Runnable findingPlane) {
+
+    public boolean checkPlanEnable(Frame frame) {
+        if (frame == null) {
+            return false;
+        }
+
+        if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public String updateCloudPointAndPlayType(ArSceneView arSceneView, float screenCenterX, float screenCenterY) {
+
+        Frame frame = arSceneView.getArFrame();
+        if (frame == null) {
+            return "";
+        }
+
+        // update plan cloud point area
+        ARTool.updatePlanRenderer(arSceneView.getPlaneRenderer());
+
+        // if plan size big than target minimum area size
+        // then hide finding plan view
+        Collection<Plane> planeCollection = frame.getUpdatedTrackables(Plane.class);
+        ARBuilder.getInstance().checkPlaneSize(planeCollection);
+
+        hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
+
+        // check plan type
+
+        String planType = ARTool.checkPlanType(
+                hitTestResultList, "",
+                arSceneView.getContext().getString(R.string.ar_plane_type_wall),
+                arSceneView.getContext().getString(R.string.ar_plane_type_ceiling),
+                arSceneView.getContext().getString(R.string.ar_plane_type_floor));
+
+        isHitCeiling = planType.equals(arSceneView.getContext().getString(R.string.ar_plane_type_ceiling));
+
+        return planType;
+    }
+
+    public void onUpdateFrame(ArSceneView arSceneView) {
+
+        Frame frame = arSceneView.getArFrame();
+        if (frame == null) {
+            return;
+        }
+
+
+        for (HitResult hitResult : hitTestResultList) {
+
+            Trackable trackable = hitResult.getTrackable();
+
+            if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+
+                ARBuilder.getInstance().checkDistanceBetweenCameraAndPlane(hitResult.getDistance());
+                ARBuilder.getInstance().showGuidePoint(hitResult, arSceneView);
+
+                if(ARBuilder.getInstance().checkRoomFloorEmpty()) {
+                    return;
+                }
+
+                if(isHitCeiling) {
+                    // get distance ceiling
+                    if(centerPoint != null) {
+                        centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
+                    }
+                    else {
+                        centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+                    }
+//                                Vector3 floorPoint = new Vector3(bottomAnchorPolygon.get(0).getWorldPosition().x, bottomAnchorPolygon.get(0).getWorldPosition().y, bottomAnchorPolygon.get(0).getWorldPosition().z);
+                    Vector3 floorPoint = new Vector3(anchorNode.getWorldPosition().x, anchorNode.getWorldPosition().y, anchorNode.getWorldPosition().z);
+                    Vector3 ceiling = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
+
+                    height = ARUtil.getLengthBetweenPointToPlane(ceiling, floorPoint, normalVectorOfPlane);
+                    textViewHeightRealTime.setText(String.valueOf(height));
+                }
+                else {
+                    drawTempLine(floorPolygonList.get(floorPolygonList.size() - 1), centerPoint);
+                }
+
+
+                if(floorPolygonList.size() < 3) {
+                    return;
+                }
+
+                if(checkClose(centerPoint, floorPolygonList.get(0))) {
+                    drawTempLine(floorPolygonList.get(floorPolygonList.size() - 1), floorPolygonList.get(0));
+
+                    if(!isReadyToAutoClose) {
+                        DeviceUtil.vibrate(this, 5);
+                    }
+
+                    isReadyToAutoClose = true;
+                }
+                else {
+                    drawTempLine(floorPolygonList.get(floorPolygonList.size() - 1), centerPoint);
+                    isReadyToAutoClose = false;
+                }
+
+                return;
+            }
+        }
+
+    }
+
+    public void reset(Activity activity, ArSceneView arSceneView, Runnable finishActivity, Runnable findingPlane) {
 
         if (arSceneView == null) {
             return;
@@ -81,7 +201,7 @@ public class AREnvironment {
 
     }
 
-    public void resume(Activity activity, Runnable finishActivity, Runnable findingPlane) {
+    public void resume(Activity activity, ArSceneView arSceneView, Runnable finishActivity, Runnable findingPlane) {
 
         if (arSceneView == null) {
             return;
@@ -173,13 +293,13 @@ public class AREnvironment {
         ToastUtil.showCustomShortToastNormal(activity, message);
     }
 
-    public void pause() {
+    public void pause(ArSceneView arSceneView) {
         if (arSceneView != null) {
             arSceneView.pause();
         }
     }
 
-    public void destroy() {
+    public void destroy(ArSceneView arSceneView) {
         if (arSceneView != null) {
             arSceneView.destroy();
         }

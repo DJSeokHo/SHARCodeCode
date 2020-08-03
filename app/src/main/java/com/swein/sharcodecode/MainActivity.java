@@ -12,7 +12,7 @@ import android.widget.Toast;
 
 import com.google.ar.core.ArCoreApk;
 import com.swein.sharcodecode.arpart.ARActivity;
-import com.swein.sharcodecode.constants.Constants;
+import com.swein.sharcodecode.arpart.constants.Constants;
 import com.swein.sharcodecode.framework.module.basicpermission.BasicPermissionActivity;
 import com.swein.sharcodecode.framework.module.basicpermission.PermissionManager;
 import com.swein.sharcodecode.framework.module.basicpermission.RequestPermission;

@@ -7,9 +7,9 @@ import java.util.List;
 
 public class WallBean {
 
-    public List<PlaneBean> wallBeanList;
+    public List<PlaneBean> planeBeanList;
 
     public WallBean() {
-        wallBeanList = new ArrayList<>();
+        planeBeanList = new ArrayList<>();
     }
 }

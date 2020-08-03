@@ -32,14 +32,16 @@ import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
-import com.swein.sharcodecode.arpart.bean.RoomBean;
 import com.swein.sharcodecode.arpart.bean.object.WallObjectBean;
 import com.swein.sharcodecode.arpart.bean.struct.WallBean;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
+import com.swein.sharcodecode.arpart.builder.tool.ARTool;
+import com.swein.sharcodecode.arpart.constants.ARESSArrows;
 import com.swein.sharcodecode.arpart.environment.AREnvironment;
 import com.swein.sharcodecode.framework.util.ar.ARUtil;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.device.DeviceUtil;
+import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -112,7 +114,7 @@ public class ARActivity extends FragmentActivity {
     private ARBuilder.ARUnit ARUnit = ARBuilder.ARUnit.CM;
 
     //*******
-    private RoomBean roomBean;
+
     //*******
 
     @Override
@@ -120,18 +122,39 @@ public class ARActivity extends FragmentActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_a_r);
 
+        initESS();
         initData();
+        initAR();
         findView();
         setListener();
-
-        initAR();
     }
+
+    private void initESS() {
+        EventCenter.getInstance().addEventObserver(ARESSArrows.DETECTED_TARGET_MINIMUM_AREA_SIZE_FINISHED, this, (arrow, poster, data) -> textView.setVisibility(View.GONE));
+
+        EventCenter.getInstance().addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_TOO_CLOSE, this, (arrow, poster, data) -> {
+            frameLayoutTooCloseTooFar.setVisibility(View.VISIBLE);
+            textViewTooCloseTooFar.setText(R.string.ar_too_close);
+        });
+
+        EventCenter.getInstance().addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_TOO_FAR, this, (arrow, poster, data) -> {
+            frameLayoutTooCloseTooFar.setVisibility(View.VISIBLE);
+            textViewTooCloseTooFar.setText(R.string.ar_too_far);
+        });
+
+        EventCenter.getInstance().addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_OK, this, (arrow, poster, data) -> {
+            textViewTooCloseTooFar.setText("");
+            frameLayoutTooCloseTooFar.setVisibility(View.GONE);
+        });
+    }
+
 
     private void initData() {
 
-        roomBean = new RoomBean();
+        screenCenterX = DeviceUtil.getScreenCenterX(this);
+        screenCenterY = DeviceUtil.getScreenCenterY(this);
 
-
+        // TODO delete
         MaterialFactory
                 .makeOpaqueWithColor(this, new Color(android.graphics.Color.GREEN))
                 .thenAccept(material -> {
@@ -156,9 +179,8 @@ public class ARActivity extends FragmentActivity {
                     viewRenderable.setShadowCaster(false);
                     viewRenderable.setShadowReceiver(false);
                 });
+        // TODO delete
 
-        screenCenterX = DeviceUtil.getScreenCenterX(this);
-        screenCenterY = DeviceUtil.getScreenCenterY(this);
     }
 
     private void findView() {
@@ -184,8 +206,8 @@ public class ARActivity extends FragmentActivity {
     }
 
     private void initAR() {
-        AREnvironment.getInstance().init(arSceneView);
-        ARBuilder.getInstance().initMaterial(this);
+        AREnvironment.getInstance().init();
+        ARBuilder.getInstance().init(this);
     }
 
     @SuppressLint("RestrictedApi")
@@ -417,27 +439,37 @@ public class ARActivity extends FragmentActivity {
 
         arSceneView.getScene().addOnUpdateListener(
                 frameTime -> {
+
+                    if(!AREnvironment.getInstance().checkPlanEnable(arSceneView.getArFrame())) {
+                        return;
+                    }
+
+                    textViewPlaneType.setText(AREnvironment.getInstance().updateCloudPointAndPlayType(arSceneView, screenCenterX, screenCenterY));
+
+
+                    AREnvironment.getInstance().onUpdateFrame(arSceneView);
+
                     // get camera frame when find a plan
                     Frame frame = arSceneView.getArFrame();
 
-                    if (frame == null) {
-                        return;
-                    }
-
-                    if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
-                        return;
-                    }
-
-                    ARUtil.updatePlanRenderer(arSceneView.getPlaneRenderer());
-
-                    Collection<Plane> planeCollection = frame.getUpdatedTrackables(Plane.class);
-                    checkPlaneSize(planeCollection);
+//                    if (frame == null) {
+//                        return;
+//                    }
+//
+//                    if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
+//                        return;
+//                    }
+//
+//                    ARTool.updatePlanRenderer(arSceneView.getPlaneRenderer());
+//
+//                    Collection<Plane> planeCollection = frame.getUpdatedTrackables(Plane.class);
+//                    checkPlaneSize(planeCollection);
 
                     if(isAutoClosed) {
 
                         List<HitResult> hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
 
-                        String planType = ARUtil.checkPlanType(
+                        String planType = ARTool.checkPlanType(
                                 hitTestResultList, "",
                                 getString(R.string.ar_plane_type_wall),
                                 getString(R.string.ar_plane_type_ceiling),
@@ -571,8 +603,8 @@ public class ARActivity extends FragmentActivity {
                     }
 
                     List<HitResult> hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
-
-                    String planType = ARUtil.checkPlanType(
+//
+                    String planType = ARTool.checkPlanType(
                             hitTestResultList, "",
                             getString(R.string.ar_plane_type_wall),
                             getString(R.string.ar_plane_type_ceiling),
@@ -661,7 +693,7 @@ public class ARActivity extends FragmentActivity {
 
         buttonBack.setOnClickListener(view -> back());
 
-        buttonReDetect.setOnClickListener(view -> AREnvironment.getInstance().reset(this, this::finish, () -> textView.setVisibility(View.VISIBLE)));
+        buttonReDetect.setOnClickListener(view -> AREnvironment.getInstance().reset(this, arSceneView, this::finish, () -> textView.setVisibility(View.VISIBLE)));
     }
 
 
@@ -960,6 +992,7 @@ public class ARActivity extends FragmentActivity {
         return ARUtil.getNodesDistanceMetersWithoutHeight(startNode, endNode) < 0.06;
     }
 
+    // TODO delete
     private void toggleDistanceHint(float distance) {
         if(distance < 0.5) {
             frameLayoutTooCloseTooFar.setVisibility(View.VISIBLE);
@@ -1124,6 +1157,7 @@ public class ARActivity extends FragmentActivity {
         }
     }
 
+    // TODO delete
     private void checkPlaneSize(Collection<Plane> planeCollection) {
         for (Plane plane : planeCollection) {
 
@@ -1140,19 +1174,21 @@ public class ARActivity extends FragmentActivity {
     protected void onResume() {
         super.onResume();
 
-        AREnvironment.getInstance().resume(this, this::finish, () -> textView.setVisibility(View.VISIBLE));
+        AREnvironment.getInstance().resume(this, arSceneView, this::finish, () -> textView.setVisibility(View.VISIBLE));
     }
 
 
     @Override
     public void onPause() {
         super.onPause();
-        AREnvironment.getInstance().pause();
+        AREnvironment.getInstance().pause(arSceneView);
     }
 
     @Override
     public void onDestroy() {
-        AREnvironment.getInstance().destroy();
+        AREnvironment.getInstance().destroy(arSceneView);
+        ARBuilder.getInstance().clear();
+
         super.onDestroy();
     }
 }
