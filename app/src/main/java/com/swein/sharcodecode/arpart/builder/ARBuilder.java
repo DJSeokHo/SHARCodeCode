@@ -21,6 +21,8 @@ import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.FaceToCameraNode;
+import com.swein.sharcodecode.arpart.bean.RoomBean;
+import com.swein.sharcodecode.arpart.bean.basic.PointBean;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
 import com.swein.sharcodecode.framework.util.ar.ARUtil;
@@ -32,6 +34,10 @@ import java.util.Collection;
 import java.util.List;
 
 public class ARBuilder {
+
+    public interface ARBuilderDelegate {
+        void onCalculate(float height, float area, float circumference, float wallArea, float volume);
+    }
 
     private final static String TAG = "ARBuilder";
 
@@ -89,12 +95,19 @@ public class ARBuilder {
     public List<Node> floorGuideList;
     public float floorFixedY;
 
+    public float height = 1;
+
     // anchor of room
     public AnchorNode anchorNode;
 
     public Vector3 normalVectorOfPlane;
 
-    public void init(Context context) {
+    private RoomBean roomBean;
+
+    private ARBuilderDelegate arBuilderDelegate;
+
+    public void init(Context context, ARBuilderDelegate arBuilderDelegate) {
+        this.arBuilderDelegate = arBuilderDelegate;
 
         // 감지 필요한 최소 cloud point 면적
         targetMinimumAreaSize = 3;
@@ -214,43 +227,6 @@ public class ARBuilder {
         }
     }
 
-    public void drawFloorSegment(Context context) {
-
-        if(floorGuideList.size() >= 2) {
-
-            Node startNode = ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 2);
-            Node endNode = ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 1);
-
-            Node lineNode = ARTool.drawSegment(startNode, endNode, segmentMaterial, nodeShadow);
-
-            float length = ARTool.getLengthOfTwoNode(startNode, endNode);
-            ARTool.setSegmentSizeTextView(context, length, arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
-
-            });
-
-        }
-    }
-
-    public void autoCloseFloorSegment(Activity activity) {
-
-        if(floorGuideList.size() > 2) {
-
-            Node startNode = ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 1);
-            Node endNode = ARBuilder.getInstance().floorGuideList.get(0);
-
-            Node lineNode = ARTool.drawSegment(startNode, endNode, segmentMaterial, nodeShadow);
-
-            float length = ARTool.getLengthOfTwoNode(startNode, endNode);
-            ARTool.setSegmentSizeTextView(activity, length, arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
-
-            });
-
-            isAutoClosed = true;
-
-            DeviceUtil.vibrate(activity, 5);
-        }
-    }
-
     public void drawFloorGuideSegment(Node startNode, Node endNode) {
 
         Vector3 startVector3 = startNode.getWorldPosition();
@@ -273,16 +249,16 @@ public class ARBuilder {
         guideSegmentNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
         guideSegmentNode.setWorldRotation(rotationFromAToB);
 
-        float length = ARUtil.getLengthByUnit(arUnit, difference.length());
+        float length = ARTool.getLengthByUnit(arUnit, difference.length());
 
         if(guideSizeTextNode != null) {
 
-            ((TextView) guideSizeTextView.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(arUnit));
+            ((TextView) guideSizeTextView.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(arUnit));
 
         }
         else {
 
-            ((TextView) guideSizeTextView.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(arUnit));
+            ((TextView) guideSizeTextView.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(arUnit));
 
             guideSizeTextNode = new FaceToCameraNode();
 
@@ -294,6 +270,36 @@ public class ARBuilder {
             guideSizeTextNode.setLocalPosition(new Vector3(0f, 0.08f, 0f));
             guideSizeTextNode.setRenderable(guideSizeTextView);
 
+        }
+    }
+
+    public void drawSegment(Context context, Node startNode, Node endNode) {
+
+        Node lineNode = ARTool.drawSegment(startNode, endNode, segmentMaterial, nodeShadow);
+
+        float length = ARTool.getLengthOfTwoNode(startNode, endNode);
+        ARTool.setSegmentSizeTextView(context, length, arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
+
+        });
+    }
+
+    public void autoCloseFloorSegment(Activity activity) {
+
+        if(floorGuideList.size() > 2) {
+
+            Node startNode = ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 1);
+            Node endNode = ARBuilder.getInstance().floorGuideList.get(0);
+
+            Node lineNode = ARTool.drawSegment(startNode, endNode, segmentMaterial, nodeShadow);
+
+            float length = ARTool.getLengthOfTwoNode(startNode, endNode);
+            ARTool.setSegmentSizeTextView(activity, length, arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
+
+            });
+
+            isAutoClosed = true;
+
+            DeviceUtil.vibrate(activity, 5);
         }
     }
 
@@ -330,6 +336,86 @@ public class ARBuilder {
         return floorGuideList.isEmpty();
     }
 
+
+    public void createRoom(Context context) {
+
+        if(roomBean != null) {
+            roomBean = null;
+        }
+
+        roomBean = new RoomBean();
+
+        // create floor
+        roomBean.height = height;
+        roomBean.floorFixedY = floorFixedY;
+        roomBean.normalVectorOfPlane = normalVectorOfPlane;
+
+        PointBean pointBean;
+        for(int i = 0; i < floorGuideList.size(); i++) {
+            pointBean = new PointBean();
+            pointBean.point = ARTool.createLocalNode(
+                    floorGuideList.get(i).getLocalPosition().x,
+                    floorGuideList.get(i).getLocalPosition().y,
+                    floorGuideList.get(i).getLocalPosition().z,
+                    pointMaterial, nodeShadow
+            );
+
+            pointBean.point.setParent(anchorNode);
+            roomBean.floor.pointList.add(pointBean);
+        }
+
+        // create ceiling
+        for(int i = 0; i < floorGuideList.size(); i++) {
+            pointBean = new PointBean();
+            pointBean.point = ARTool.createLocalNode(
+                    floorGuideList.get(i).getLocalPosition().x,
+                    floorGuideList.get(i).getLocalPosition().y + height,
+                    floorGuideList.get(i).getLocalPosition().z,
+                    pointMaterial, nodeShadow
+            );
+
+            pointBean.point.setParent(anchorNode);
+            roomBean.ceiling.pointList.add(pointBean);
+        }
+
+        // connect floor and ceiling
+        for(int i = 0; i < roomBean.floor.pointList.size() - 1; i++) {
+            drawSegment(context, roomBean.floor.pointList.get(i).point, roomBean.floor.pointList.get(i + 1).point);
+        }
+        drawSegment(context, roomBean.floor.pointList.get(roomBean.floor.pointList.size() - 1).point, roomBean.floor.pointList.get(0).point);
+
+        for(int i = 0; i < roomBean.ceiling.pointList.size() - 1; i++) {
+            drawSegment(context, roomBean.ceiling.pointList.get(i).point, roomBean.ceiling.pointList.get(i + 1).point);
+        }
+        drawSegment(context, roomBean.ceiling.pointList.get(roomBean.ceiling.pointList.size() - 1).point, roomBean.ceiling.pointList.get(0).point);
+
+        for(int i = 0; i < roomBean.floor.pointList.size(); i++) {
+            drawSegment(context, roomBean.floor.pointList.get(i).point, roomBean.ceiling.pointList.get(i).point);
+        }
+
+
+        // create wall
+
+
+        // calculate
+        roomBean.calculate(arUnit);
+        arBuilderDelegate.onCalculate(roomBean.height, roomBean.area, roomBean.circumference, roomBean.wallArea, roomBean.volume);
+
+        // clear guide
+        for(Node node : floorGuideList) {
+            ARTool.removeChildFormNode(node);
+            node.setParent(null);
+        }
+        floorGuideList.clear();
+
+        clearGuide();
+        clearTemp();
+    }
+
+    public void calculate() {
+
+    }
+
     public void clearTemp() {
 
         if(guideSizeTextNode != null) {
@@ -345,10 +431,11 @@ public class ARBuilder {
     }
 
     public void back() {
+
         if(isAutoClosed) {
 
             if(anchorNode != null) {
-                ARUtil.removeChildFormNode(anchorNode);
+                ARTool.removeChildFormNode(anchorNode);
                 anchorNode.setParent(null);
                 anchorNode = null;
             }
@@ -356,6 +443,10 @@ public class ARBuilder {
             floorGuideList.clear();
 
             // clear room bean
+            if(roomBean != null) {
+                roomBean.clear();
+                roomBean = null;
+            }
 
 //            for(WallObjectBean wallObjectBean : wallObjectBeans) {
 //                for(Node node : wallObjectBean.objectPointList) {
@@ -395,7 +486,7 @@ public class ARBuilder {
             if(floorGuideList.size() == 1) {
 
                 if(anchorNode != null) {
-                    ARUtil.removeChildFormNode(anchorNode);
+                    ARTool.removeChildFormNode(anchorNode);
                     anchorNode = null;
                 }
 
@@ -430,7 +521,7 @@ public class ARBuilder {
             }
             else if(floorGuideList.size() > 1) {
 
-                ARUtil.removeChildFormNode(floorGuideList.get(floorGuideList.size() - 2));
+                ARTool.removeChildFormNode(floorGuideList.get(floorGuideList.size() - 2));
                 floorGuideList.get(floorGuideList.size() - 1).setParent(null);
                 floorGuideList.remove(floorGuideList.size() - 1);
 //                textViewSizeList.remove(textViewSizeList.size() - 1);

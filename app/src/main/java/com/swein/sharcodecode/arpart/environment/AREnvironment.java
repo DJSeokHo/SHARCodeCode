@@ -28,6 +28,10 @@ import java.util.List;
 
 public class AREnvironment {
 
+    public interface AREnvironmentDelegate {
+        void onPlaneType(String type);
+    }
+
     private final static String TAG = "AREnvironment";
 
     public static AREnvironment getInstance() {
@@ -47,8 +51,12 @@ public class AREnvironment {
     public float hitPointX;
     public float hitPointY;
 
-    public void init(Activity activity) {
+
+    private AREnvironmentDelegate arEnvironmentDelegate;
+
+    public void init(Activity activity, AREnvironmentDelegate arEnvironmentDelegate) {
         this.activity = activity;
+        this.arEnvironmentDelegate = arEnvironmentDelegate;
         planeFindingMode = Config.PlaneFindingMode.HORIZONTAL;
     }
 
@@ -65,11 +73,11 @@ public class AREnvironment {
         return true;
     }
 
-    public String updateCloudPointAndPlayType(ArSceneView arSceneView) {
+    public void updateCloudPoint(ArSceneView arSceneView) {
 
         Frame frame = arSceneView.getArFrame();
         if (frame == null) {
-            return "";
+            return;
         }
 
         // update plan cloud point area
@@ -80,10 +88,18 @@ public class AREnvironment {
         Collection<Plane> planeCollection = frame.getUpdatedTrackables(Plane.class);
         ARBuilder.getInstance().checkPlaneSize(planeCollection);
 
+    }
+
+    public void updatePlaneType(ArSceneView arSceneView) {
+
+        Frame frame = arSceneView.getArFrame();
+        if (frame == null) {
+            return;
+        }
+
         List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
 
         // check plan type
-
         String planType = ARTool.checkPlanType(
                 hitTestResultList, "",
                 arSceneView.getContext().getString(R.string.ar_plane_type_wall),
@@ -92,7 +108,7 @@ public class AREnvironment {
 
         isHitCeiling = planType.equals(arSceneView.getContext().getString(R.string.ar_plane_type_ceiling));
 
-        return planType;
+        arEnvironmentDelegate.onPlaneType(planType);
     }
 
     public void onTouch(ArSceneView arSceneView) {
@@ -110,9 +126,8 @@ public class AREnvironment {
                     ARBuilder.getInstance().clearGuide();
 
                     ARBuilder.getInstance().autoCloseFloorSegment(activity);
-
-
-
+                    ARBuilder.getInstance().createRoom(activity);
+                    ARBuilder.getInstance().calculate();
 
 //                    createCellPolygon();
 //                    calculate();
@@ -134,7 +149,12 @@ public class AREnvironment {
                 // create guide floor node
                 ARBuilder.getInstance().createGuideFloorNode(hitResult, activity);
 
-                ARBuilder.getInstance().drawFloorSegment(activity);
+                if(ARBuilder.getInstance().floorGuideList.size() >= 2) {
+                    ARBuilder.getInstance().drawSegment(activity,
+                            ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 2),
+                            ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 1)
+                    );
+                }
 
                 ARBuilder.getInstance().clearTemp();
 

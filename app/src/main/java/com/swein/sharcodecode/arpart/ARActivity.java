@@ -17,7 +17,6 @@ import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Trackable;
-import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.HitTestResult;
@@ -32,7 +31,6 @@ import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.bean.object.WallObjectBean;
-import com.swein.sharcodecode.arpart.bean.struct.WallBean;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
@@ -43,7 +41,6 @@ import com.swein.sharcodecode.framework.util.device.DeviceUtil;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class ARActivity extends FragmentActivity {
@@ -87,7 +84,7 @@ public class ARActivity extends FragmentActivity {
     private List<Node> cellPolygonList = new ArrayList<>();
     private List<TextView> textViewSizeList = new ArrayList<>();
     private Vector3 normalVectorOfPlane;
-    private List<WallBean> wallBeanList = new ArrayList<>();
+//    private List<WallBean> wallBeanList = new ArrayList<>();
     private List<WallObjectBean> wallObjectBeans = new ArrayList<>();
 
     private boolean shadow = true;
@@ -107,7 +104,7 @@ public class ARActivity extends FragmentActivity {
 
     private float fixedY = 0;
 
-    private ARBuilder.ARUnit ARUnit = ARBuilder.ARUnit.CM;
+//    private ARBuilder.ARUnit ARUnit = ARBuilder.ARUnit.CM;
 
     //*******
 
@@ -199,9 +196,39 @@ public class ARActivity extends FragmentActivity {
     }
 
     private void initAR() {
-        AREnvironment.getInstance().init(this);
+        AREnvironment.getInstance().init(this, new AREnvironment.AREnvironmentDelegate() {
+            @Override
+            public void onPlaneType(String type) {
+                textViewPlaneType.setText(type);
+            }
+        });
 
-        ARBuilder.getInstance().init(this);
+        ARBuilder.getInstance().init(this, new ARBuilder.ARBuilderDelegate() {
+            @Override
+            public void onCalculate(float height, float area, float circumference, float wallArea, float volume) {
+                linearLayout.setVisibility(View.VISIBLE);
+
+                textViewHeight.setText(getString(R.string.ar_area_height_title) + " " +
+                        String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.getInstance().arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
+
+                textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " +
+                        String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.getInstance().arUnit, circumference)) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
+
+                SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", wallArea));
+                wallAreaString.append(ARTool.getAreaUnitString(ARBuilder.getInstance().arUnit));
+                textViewWallArea.setText(wallAreaString);
+
+
+                SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
+                areaString.append(ARTool.getAreaUnitString(ARBuilder.getInstance().arUnit));
+                textViewArea.setText(areaString);
+
+                SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
+                volumeString.append(ARTool.getVolumeUnitString(ARBuilder.getInstance().arUnit));
+                textViewVolume.setText(volumeString);
+            }
+        });
+
         AREnvironment.getInstance().hitPointX = DeviceUtil.getScreenCenterX(this);
         AREnvironment.getInstance().hitPointY = DeviceUtil.getScreenCenterY(this);
     }
@@ -331,7 +358,7 @@ public class ARActivity extends FragmentActivity {
                                         WallObjectBean wallObjectBean = wallObjectBeans.get(i);
 
                                         for(Node node : wallObjectBean.objectPointList) {
-                                            ARUtil.removeChildFormNode(node);
+                                            ARTool.removeChildFormNode(node);
                                             node.setParent(null);
                                         }
                                         wallObjectBean.objectPointList.clear();
@@ -360,7 +387,8 @@ public class ARActivity extends FragmentActivity {
                         return;
                     }
 
-                    textViewPlaneType.setText(AREnvironment.getInstance().updateCloudPointAndPlayType(arSceneView));
+                    AREnvironment.getInstance().updateCloudPoint(arSceneView);
+                    AREnvironment.getInstance().updatePlaneType(arSceneView);
 
                     AREnvironment.getInstance().onUpdateFrame(arSceneView);
 
@@ -503,7 +531,10 @@ public class ARActivity extends FragmentActivity {
 
                 });
 
-        buttonBack.setOnClickListener(view -> ARBuilder.getInstance().back());
+        buttonBack.setOnClickListener(view -> {
+            ARBuilder.getInstance().back();
+            linearLayout.setVisibility(View.GONE);
+        });
 
         buttonReDetect.setOnClickListener(view -> AREnvironment.getInstance().reset(this, arSceneView, this::finish, () -> textView.setVisibility(View.VISIBLE)));
     }
@@ -558,30 +589,30 @@ public class ARActivity extends FragmentActivity {
 
 
     private void createCellPolygon() {
-        cellPolygonList.clear();
-
-        Node node;
-        for(int i = 0; i < floorPolygonList.size(); i++) {
-            node = ARUtil.createLocalNode(
-                    floorPolygonList.get(i).getLocalPosition().x,
-                    floorPolygonList.get(i).getLocalPosition().y + height,
-                    floorPolygonList.get(i).getLocalPosition().z ,
-                    pointMaterial, shadow);
-//            node.setParent(bottomAnchorPolygon.get(i));
-            node.setParent(anchorNode);
-            cellPolygonList.add(node);
-        }
-
-        // draw vertical line
-        for(int i = 0; i < floorPolygonList.size(); i++) {
-            drawLine(floorPolygonList.get(i), cellPolygonList.get(i));
-        }
-
-        // connect node and make line close
-        for(int i = 0; i < cellPolygonList.size() - 1; i++) {
-            drawLine(cellPolygonList.get(i), cellPolygonList.get(i + 1));
-        }
-        drawLine(cellPolygonList.get(cellPolygonList.size() - 1), cellPolygonList.get(0));
+//        cellPolygonList.clear();
+//
+//        Node node;
+//        for(int i = 0; i < floorPolygonList.size(); i++) {
+//            node = ARUtil.createLocalNode(
+//                    floorPolygonList.get(i).getLocalPosition().x,
+//                    floorPolygonList.get(i).getLocalPosition().y + height,
+//                    floorPolygonList.get(i).getLocalPosition().z ,
+//                    pointMaterial, shadow);
+////            node.setParent(bottomAnchorPolygon.get(i));
+//            node.setParent(anchorNode);
+//            cellPolygonList.add(node);
+//        }
+//
+//        // draw vertical line
+//        for(int i = 0; i < floorPolygonList.size(); i++) {
+//            drawLine(floorPolygonList.get(i), cellPolygonList.get(i));
+//        }
+//
+//        // connect node and make line close
+//        for(int i = 0; i < cellPolygonList.size() - 1; i++) {
+//            drawLine(cellPolygonList.get(i), cellPolygonList.get(i + 1));
+//        }
+//        drawLine(cellPolygonList.get(cellPolygonList.size() - 1), cellPolygonList.get(0));
     }
 
     private void createWall() {
@@ -613,33 +644,33 @@ public class ARActivity extends FragmentActivity {
 
     private void calculate() {
 
-        linearLayout.setVisibility(View.VISIBLE);
-
-        textViewHeight.setText(getString(R.string.ar_area_height_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(ARUnit, height)) + ARUtil.getLengthUnitString(ARUnit));
-
-        float circumference = 0;
-        for(int i = 0; i < floorPolygonList.size() - 1; i++) {
-            circumference += Vector3.subtract(floorPolygonList.get(i + 1).getWorldPosition(), floorPolygonList.get(i).getWorldPosition()).length();
-        }
-        circumference += Vector3.subtract(floorPolygonList.get(floorPolygonList.size() - 1).getWorldPosition(), floorPolygonList.get(0).getWorldPosition()).length();
-        textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(ARUnit, circumference)) + ARUtil.getLengthUnitString(ARUnit));
-
-        float wallArea = ARUtil.getLengthByUnit(ARUnit, circumference) * ARUtil.getLengthByUnit(ARUnit, height);
-
-        SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", wallArea));
-        wallAreaString.append(ARUtil.getAreaUnitString(ARUnit));
-        textViewWallArea.setText(wallAreaString);
-
-
-        float area = ARUtil.getAreaByUnit(ARUnit, calculateArea());
-        SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
-        areaString.append(ARUtil.getAreaUnitString(ARUnit));
-        textViewArea.setText(areaString);
-
-        float volume = ARUtil.getLengthByUnit(ARUnit, height) * area;
-        SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
-        volumeString.append(ARUtil.getVolumeUnitString(ARUnit));
-        textViewVolume.setText(volumeString);
+//        linearLayout.setVisibility(View.VISIBLE);
+//
+//        textViewHeight.setText(getString(R.string.ar_area_height_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(ARUnit, height)) + ARUtil.getLengthUnitString(ARUnit));
+//
+//        float circumference = 0;
+//        for(int i = 0; i < floorPolygonList.size() - 1; i++) {
+//            circumference += Vector3.subtract(floorPolygonList.get(i + 1).getWorldPosition(), floorPolygonList.get(i).getWorldPosition()).length();
+//        }
+//        circumference += Vector3.subtract(floorPolygonList.get(floorPolygonList.size() - 1).getWorldPosition(), floorPolygonList.get(0).getWorldPosition()).length();
+//        textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(ARUnit, circumference)) + ARUtil.getLengthUnitString(ARUnit));
+//
+//        float wallArea = ARUtil.getLengthByUnit(ARUnit, circumference) * ARUtil.getLengthByUnit(ARUnit, height);
+//
+//        SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", wallArea));
+//        wallAreaString.append(ARUtil.getAreaUnitString(ARUnit));
+//        textViewWallArea.setText(wallAreaString);
+//
+//
+//        float area = ARUtil.getAreaByUnit(ARUnit, calculateArea());
+//        SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
+//        areaString.append(ARUtil.getAreaUnitString(ARUnit));
+//        textViewArea.setText(areaString);
+//
+//        float volume = ARUtil.getLengthByUnit(ARUnit, height) * area;
+//        SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
+//        volumeString.append(ARUtil.getVolumeUnitString(ARUnit));
+//        textViewVolume.setText(volumeString);
 
     }
 
@@ -679,118 +710,6 @@ public class ARActivity extends FragmentActivity {
     }
 
 
-    // TODO delete
-    private void toggleDistanceHint(float distance) {
-        if(distance < 0.5) {
-            frameLayoutTooCloseTooFar.setVisibility(View.VISIBLE);
-            textViewTooCloseTooFar.setText(R.string.ar_too_close);
-        }
-        else if(distance > 10) {
-            frameLayoutTooCloseTooFar.setVisibility(View.VISIBLE);
-            textViewTooCloseTooFar.setText(R.string.ar_too_far);
-        }
-        else {
-            textViewTooCloseTooFar.setText("");
-            frameLayoutTooCloseTooFar.setVisibility(View.GONE);
-        }
-    }
-
-    private void drawLine(Node startNode, Node endNode) {
-
-        Vector3 startVector3 = startNode.getWorldPosition();
-        Vector3 endVector3 = endNode.getWorldPosition();
-
-        Vector3 difference = Vector3.subtract(startVector3, endVector3);
-        Vector3 directionFromTopToBottom = difference.normalized();
-        Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
-
-        ModelRenderable lineModelRenderable = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), lineMaterial);
-        lineModelRenderable.setShadowCaster(shadow);
-        lineModelRenderable.setShadowReceiver(shadow);
-
-        Node lineNode = new Node();
-
-        lineNode.setParent(startNode);
-        lineNode.setRenderable(lineModelRenderable);
-        lineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
-        lineNode.setWorldRotation(rotationFromAToB);
-
-        float length = ARUtil.getLengthByUnit(ARUnit, difference.length());
-
-        ViewRenderable.builder()
-                .setView(this, R.layout.view_renderable_text)
-                .build()
-                .thenAccept(viewRenderable -> {
-
-                    TextView textView = ((TextView)viewRenderable.getView());
-                    textView.setText(String.format("%.2fCM", length));
-                    textViewSizeList.add(textView);
-                    viewRenderable.setShadowCaster(false);
-                    viewRenderable.setShadowReceiver(false);
-
-                    FaceToCameraNode faceToCameraNode = new FaceToCameraNode();
-                    faceToCameraNode.setParent(lineNode);
-
-                    faceToCameraNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
-                    faceToCameraNode.setLocalPosition(new Vector3(0f, 0.05f, 0f));
-                    faceToCameraNode.setRenderable(viewRenderable);
-                });
-    }
-
-    private void drawTempLine(Node startNode, Node endNode) {
-
-        Vector3 startVector3 = startNode.getWorldPosition();
-        Vector3 endVector3 = endNode.getWorldPosition();
-
-        Vector3 difference = Vector3.subtract(startVector3, endVector3);
-
-        Vector3 directionFromTopToBottom = difference.normalized();
-        Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
-
-        if(tempLineNode != null) {
-
-            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), lineMaterial);
-            lineMode.setShadowCaster(shadow);
-            lineMode.setShadowReceiver(shadow);
-
-            tempLineNode.setRenderable(lineMode);
-            tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
-            tempLineNode.setWorldRotation(rotationFromAToB);
-        }
-        else {
-            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), lineMaterial);
-            lineMode.setShadowCaster(shadow);
-            lineMode.setShadowReceiver(shadow);
-
-            tempLineNode = new Node();
-            tempLineNode.setParent(startNode);
-            tempLineNode.setRenderable(lineMode);
-            tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
-            tempLineNode.setWorldRotation(rotationFromAToB);
-        }
-
-        float length = ARUtil.getLengthByUnit(ARUnit, difference.length());
-
-        if(tempTextNode != null) {
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(ARUnit));
-        }
-        else {
-            if(tempLineNode != null) {
-
-                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(ARUnit));
-
-                tempTextNode = new FaceToCameraNode();
-                tempTextNode.setParent(tempLineNode);
-
-                tempTextNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
-                tempTextNode.setLocalPosition(new Vector3(0f, 0.08f, 0f));
-                tempTextNode.setRenderable(viewRenderableSizeText);
-
-            }
-        }
-    }
-
-
     private void drawTempWallLine(Node startNode, Node endNode, Node tempLineNode, Node tempTextNode, ViewRenderable viewRenderableSizeText) {
 
         Vector3 startVector3 = startNode.getWorldPosition();
@@ -823,15 +742,15 @@ public class ARActivity extends FragmentActivity {
             tempLineNode.setWorldRotation(rotationFromAToB);
         }
 
-        float length = ARUtil.getLengthByUnit(ARUnit, difference.length());
+        float length = ARTool.getLengthByUnit(ARBuilder.getInstance().arUnit, difference.length());
 
         if(tempTextNode != null) {
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(ARUnit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
         }
         else {
             if(tempLineNode != null) {
 
-                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARUtil.getLengthUnitString(ARUnit));
+                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
 
                 tempTextNode = new FaceToCameraNode();
                 tempTextNode.setParent(tempLineNode);
@@ -844,23 +763,10 @@ public class ARActivity extends FragmentActivity {
         }
     }
 
-    // TODO delete
-    private void checkPlaneSize(Collection<Plane> planeCollection) {
-        for (Plane plane : planeCollection) {
-
-            if (plane.getTrackingState() == TrackingState.TRACKING) {
-
-                if((plane.getExtentX() * plane.getExtentZ() * 2) > 3) {
-                    textView.setVisibility(View.GONE);
-                }
-            }
-        }
-    }
 
     @Override
     protected void onResume() {
         super.onResume();
-
         AREnvironment.getInstance().resume(this, arSceneView, this::finish, () -> textView.setVisibility(View.VISIBLE));
     }
 

@@ -1,16 +1,10 @@
 package com.swein.sharcodecode.framework.util.ar;
 
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.style.RelativeSizeSpan;
-import android.text.style.SuperscriptSpan;
-
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Material;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
-import com.swein.sharcodecode.arpart.builder.ARBuilder;
 
 import java.util.List;
 
@@ -23,9 +17,6 @@ public class ARUtil {
 
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
-
-
-
 
 
     public static Node createLocalNode(float tx, float ty, float tz, Material material, boolean shadow) {
@@ -46,17 +37,6 @@ public class ARUtil {
         node.setRenderable(modelRenderable);
         node.setWorldPosition(new Vector3(tx, ty, tz));
         return node;
-    }
-
-
-
-    public static void removeChildFormNode(Node node) {
-        List<Node> childList = node.getChildren();
-        if(!childList.isEmpty()) {
-            for (int i = childList.size() - 1; i >= 0; i--) {
-                childList.get(i).setParent(null);
-            }
-        }
     }
 
 
@@ -320,100 +300,100 @@ public class ARUtil {
         return isIn;
     }
 
-    public static String getLengthUnitString(ARBuilder.ARUnit ARUnit) {
-        switch (ARUnit) {
-            case M:
-                return "m";
-
-            case CM:
-                return "cm";
-
-            default:
-                return "";
-        }
-    }
-
-    public static SpannableString getAreaUnitString(ARBuilder.ARUnit ARUnit) {
-        switch (ARUnit) {
-            case M:
-                return getM2();
-
-            case CM:
-                return getCM2();
-
-            default:
-                return null;
-        }
-    }
-
-    public static SpannableString getVolumeUnitString(ARBuilder.ARUnit ARUnit) {
-        switch (ARUnit) {
-            case M:
-                return getM3();
-
-            case CM:
-                return getCM3();
-
-            default:
-                return null;
-        }
-    }
-
-    public static float getLengthByUnit(ARBuilder.ARUnit ARUnit, float length) {
-        switch (ARUnit) {
-            case CM:
-                return length * 100;
-
-            case M:
-                return length;
-
-            default:
-                return 0;
-        }
-    }
-
-    public static float getAreaByUnit(ARBuilder.ARUnit ARUnit, float area) {
-        switch (ARUnit) {
-            case CM:
-                return area * 10000;
-
-            case M:
-                return area;
-
-            default:
-                return 0;
-        }
-    }
-
-    public static SpannableString getM2() {
-        SpannableString m2 = new SpannableString("m2");
-        m2.setSpan(new RelativeSizeSpan(0.5f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        m2.setSpan(new SuperscriptSpan(), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        return m2;
-    }
-
-    public static SpannableString getCM2() {
-        SpannableString cm2 = new SpannableString("cm2");
-        cm2.setSpan(new RelativeSizeSpan(0.5f), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        cm2.setSpan(new SuperscriptSpan(), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        return cm2;
-    }
-
-    public static SpannableString getM3() {
-        SpannableString m2 = new SpannableString("m3");
-        m2.setSpan(new RelativeSizeSpan(0.5f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        m2.setSpan(new SuperscriptSpan(), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        return m2;
-    }
-
-    public static SpannableString getCM3() {
-        SpannableString cm2 = new SpannableString("cm3");
-        cm2.setSpan(new RelativeSizeSpan(0.5f), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        cm2.setSpan(new SuperscriptSpan(), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        return cm2;
-    }
+//    public static String getLengthUnitString(ARBuilder.ARUnit ARUnit) {
+//        switch (ARUnit) {
+//            case M:
+//                return "m";
+//
+//            case CM:
+//                return "cm";
+//
+//            default:
+//                return "";
+//        }
+//    }
+//
+//    public static SpannableString getAreaUnitString(ARBuilder.ARUnit ARUnit) {
+//        switch (ARUnit) {
+//            case M:
+//                return getM2();
+//
+//            case CM:
+//                return getCM2();
+//
+//            default:
+//                return null;
+//        }
+//    }
+//
+//    public static SpannableString getVolumeUnitString(ARBuilder.ARUnit ARUnit) {
+//        switch (ARUnit) {
+//            case M:
+//                return getM3();
+//
+//            case CM:
+//                return getCM3();
+//
+//            default:
+//                return null;
+//        }
+//    }
+//
+//    public static float getLengthByUnit(ARBuilder.ARUnit ARUnit, float length) {
+//        switch (ARUnit) {
+//            case CM:
+//                return length * 100;
+//
+//            case M:
+//                return length;
+//
+//            default:
+//                return 0;
+//        }
+//    }
+//
+//    public static float getAreaByUnit(ARBuilder.ARUnit ARUnit, float area) {
+//        switch (ARUnit) {
+//            case CM:
+//                return area * 10000;
+//
+//            case M:
+//                return area;
+//
+//            default:
+//                return 0;
+//        }
+//    }
+//
+//    public static SpannableString getM2() {
+//        SpannableString m2 = new SpannableString("m2");
+//        m2.setSpan(new RelativeSizeSpan(0.5f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//        m2.setSpan(new SuperscriptSpan(), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//
+//        return m2;
+//    }
+//
+//    public static SpannableString getCM2() {
+//        SpannableString cm2 = new SpannableString("cm2");
+//        cm2.setSpan(new RelativeSizeSpan(0.5f), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//        cm2.setSpan(new SuperscriptSpan(), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//
+//        return cm2;
+//    }
+//
+//    public static SpannableString getM3() {
+//        SpannableString m2 = new SpannableString("m3");
+//        m2.setSpan(new RelativeSizeSpan(0.5f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//        m2.setSpan(new SuperscriptSpan(), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//
+//        return m2;
+//    }
+//
+//    public static SpannableString getCM3() {
+//        SpannableString cm2 = new SpannableString("cm3");
+//        cm2.setSpan(new RelativeSizeSpan(0.5f), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//        cm2.setSpan(new SuperscriptSpan(), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//
+//        return cm2;
+//    }
 }
