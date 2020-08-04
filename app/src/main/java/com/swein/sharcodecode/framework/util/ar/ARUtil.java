@@ -5,8 +5,6 @@ import android.text.Spanned;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.SuperscriptSpan;
 
-import com.google.ar.core.Anchor;
-import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Material;
@@ -26,32 +24,9 @@ public class ARUtil {
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    public static double getNodesDistanceMetersWithoutHeight(Node startNode, Node endNode) {
-        float dx = startNode.getWorldPosition().x - endNode.getWorldPosition().x;
-        float dz = startNode.getWorldPosition().z - endNode.getWorldPosition().z;
 
-        return Math.sqrt(dx * dx + dz * dz);
-    }
 
-    public static Vector3 transformWorldPositionToLocalPositionOfParent(Node parent, Vector3 worldPosition) {
-        return parent.worldToLocalPoint(worldPosition);
-    }
 
-    public static AnchorNode createAnchorNode(Anchor anchor, Material material, boolean shadow) {
-
-        ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
-        modelRenderable.setShadowReceiver(shadow);
-        modelRenderable.setShadowCaster(shadow);
-
-        AnchorNode anchorNode = new AnchorNode(anchor);
-        anchorNode.setRenderable(modelRenderable);
-
-        return anchorNode;
-    }
-
-    public static AnchorNode createAnchorNode(Anchor anchor) {
-        return new AnchorNode(anchor);
-    }
 
     public static Node createLocalNode(float tx, float ty, float tz, Material material, boolean shadow) {
         ModelRenderable modelRenderable = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
@@ -84,13 +59,7 @@ public class ARUtil {
         }
     }
 
-    public static Vector3 getNormalVectorOfThreeVectors(Vector3 original, Vector3 a, Vector3 b) {
 
-        Vector3 side1 = new Vector3(a.x - original.x, a.y - original.y, a.z - original.z);
-        Vector3 side2 = new Vector3(b.x - original.x, b.y - original.y, b.z - original.z);
-
-        return Vector3.cross(side1, side2);
-    }
 
     /**
      * computes the area of a 3D planar polygon
