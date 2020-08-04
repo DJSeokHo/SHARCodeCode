@@ -364,142 +364,146 @@ public class ARActivity extends FragmentActivity {
 
                     AREnvironment.getInstance().onUpdateFrame(arSceneView);
 
-                    // get camera frame when find a plan
-//                    Frame frame = arSceneView.getArFrame();
+                    if(true) {
+                        return;
+                    }
 
-//                    if(isAutoClosed) {
+                    // get camera frame when find a plan
+                    Frame frame = arSceneView.getArFrame();
+
+                    if(isAutoClosed) {
+
+                        List<HitResult> hitTestResultList = frame.hitTest(0, 0);
+
+
+                        for (HitResult hitResult : hitTestResultList) {
+
+                            // draw center point
+                            if(centerPoint != null) {
+                                centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
+                            }
+                            else {
+                                centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+                                centerPoint.setParent(arSceneView.getScene());
+                            }
+                            // draw center point
+
+                            List<Vector3> result = new ArrayList<>();
+                            List<Integer> indexList = getThoughWall(result, hitResult);
+
+                            if(result.isEmpty()) {
+
+                                if(wallGuidePoint != null) {
+                                    wallGuidePoint.setParent(null);
+                                }
+                                currentGuideIndex = -1;
+                                textViewNearest.setText("");
+                                return;
+                            }
+
+                            StringBuilder stringBuilder = new StringBuilder();
+
+                            List<Float> distanceList = new ArrayList<>();
+                            float distance;
+                            Vector3 camera = new Vector3(arSceneView.getArFrame().getCamera().getPose().tx(), arSceneView.getArFrame().getCamera().getPose().ty(), arSceneView.getArFrame().getCamera().getPose().tz());
+                            for(int i = 0; i < result.size(); i++) {
+                                distanceList.add(Vector3.subtract(camera, result.get(i)).length());
+                            }
+
+                            int resultIndex = 0;
+                            distance = distanceList.get(0);
+                            for(int i = 0; i < distanceList.size(); i++) {
+
+                                stringBuilder.append(distanceList.get(i)).append(" ");
+
+                                if(distance > distanceList.get(i)) {
+                                    distance = distanceList.get(i);
+                                }
+                            }
+
+//                            ILog.iLogDebug(TAG, stringBuilder.toString());
+
+                            for(int i = 0; i < distanceList.size(); i++) {
+                                if(distance == distanceList.get(i)) {
+                                    resultIndex = i;
+                                    break;
+                                }
+                            }
+
+                            currentGuideIndex = indexList.get(resultIndex);
+
+
+                            textViewNearest.setText(String.valueOf(currentGuideIndex));
+
+                            if(wallGuidePoint != null) {
+                                wallGuidePoint.setWorldPosition(new Vector3(result.get(resultIndex).x, result.get(resultIndex).y, result.get(resultIndex).z));
+                            }
+                            else {
+                                wallGuidePoint = ARUtil.createWorldNode(result.get(resultIndex).x, result.get(resultIndex).y, result.get(resultIndex).z, wallPointMaterial, shadow);
+                            }
+                            wallGuidePoint.setParent(arSceneView.getScene());
+
+
+                            if(wallTempPoint != null) {
+
+                                if(currentGuideIndex == currentWallIndex) {
+
+                                    if(wallObjectBeans.isEmpty()) {
+                                        return;
+                                    }
+
+                                    WallObjectBean wallObjectBean = wallObjectBeans.get(0);
+
+
+                                    Vector3 horizontalVector3 = new Vector3();
+                                    horizontalVector3.x = wallGuidePoint.getWorldPosition().x;
+                                    horizontalVector3.y = wallTempPoint.getWorldPosition().y;
+                                    horizontalVector3.z = wallGuidePoint.getWorldPosition().z;
+
+                                    Vector3 horizontalLocalPosition = ARTool.transformWorldPositionToLocalPositionOfParent(this.anchorNode, horizontalVector3);
+//                                    Node horizontalNode = ARUtil.createLocalNode(horizontalLocalPosition.x, horizontalLocalPosition.y, horizontalLocalPosition.z, wallPointMaterial, shadow);
 //
-//                        List<HitResult> hitTestResultList = frame.hitTest(screenCenterX, screenCenterY);
 //
-//
-//                        for (HitResult hitResult : hitTestResultList) {
-//
-//                            // draw center point
-//                            if(centerPoint != null) {
-//                                centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
-//                            }
-//                            else {
-//                                centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
-//                                centerPoint.setParent(arSceneView.getScene());
-//                            }
-//                            // draw center point
-//
-//                            List<Vector3> result = new ArrayList<>();
-//                            List<Integer> indexList = getThoughWall(result, hitResult);
-//
-//                            if(result.isEmpty()) {
-//
-//                                if(wallGuidePoint != null) {
-//                                    wallGuidePoint.setParent(null);
-//                                }
-//                                currentGuideIndex = -1;
-//                                textViewNearest.setText("");
-//                                return;
-//                            }
-//
-//                            StringBuilder stringBuilder = new StringBuilder();
-//
-//                            List<Float> distanceList = new ArrayList<>();
-//                            float distance;
-//                            Vector3 camera = new Vector3(arSceneView.getArFrame().getCamera().getPose().tx(), arSceneView.getArFrame().getCamera().getPose().ty(), arSceneView.getArFrame().getCamera().getPose().tz());
-//                            for(int i = 0; i < result.size(); i++) {
-//                                distanceList.add(Vector3.subtract(camera, result.get(i)).length());
-//                            }
-//
-//                            int resultIndex = 0;
-//                            distance = distanceList.get(0);
-//                            for(int i = 0; i < distanceList.size(); i++) {
-//
-//                                stringBuilder.append(distanceList.get(i)).append(" ");
-//
-//                                if(distance > distanceList.get(i)) {
-//                                    distance = distanceList.get(i);
-//                                }
-//                            }
-//
-////                            ILog.iLogDebug(TAG, stringBuilder.toString());
-//
-//                            for(int i = 0; i < distanceList.size(); i++) {
-//                                if(distance == distanceList.get(i)) {
-//                                    resultIndex = i;
-//                                    break;
-//                                }
-//                            }
-//
-//                            currentGuideIndex = indexList.get(resultIndex);
-//
-//
-//                            textViewNearest.setText(String.valueOf(currentGuideIndex));
-//
-//                            if(wallGuidePoint != null) {
-//                                wallGuidePoint.setWorldPosition(new Vector3(result.get(resultIndex).x, result.get(resultIndex).y, result.get(resultIndex).z));
-//                            }
-//                            else {
-//                                wallGuidePoint = ARUtil.createWorldNode(result.get(resultIndex).x, result.get(resultIndex).y, result.get(resultIndex).z, wallPointMaterial, shadow);
-//                            }
-//                            wallGuidePoint.setParent(arSceneView.getScene());
-//
-//
-//                            if(wallTempPoint != null) {
-//
-//                                if(currentGuideIndex == currentWallIndex) {
-//
-//                                    if(wallObjectBeans.isEmpty()) {
-//                                        return;
-//                                    }
-//
-//                                    WallObjectBean wallObjectBean = wallObjectBeans.get(0);
-//
-//
-//                                    Vector3 horizontalVector3 = new Vector3();
-//                                    horizontalVector3.x = wallGuidePoint.getWorldPosition().x;
-//                                    horizontalVector3.y = wallTempPoint.getWorldPosition().y;
-//                                    horizontalVector3.z = wallGuidePoint.getWorldPosition().z;
-//
-//                                    Vector3 horizontalLocalPosition = ARUtil.transformWorldPositionToLocalPositionOfParent(this.anchorNode, horizontalVector3);
-////                                    Node horizontalNode = ARUtil.createLocalNode(horizontalLocalPosition.x, horizontalLocalPosition.y, horizontalLocalPosition.z, wallPointMaterial, shadow);
-////
-////
-//                                    Vector3 verticalVector3 = new Vector3();
-//                                    verticalVector3.x = wallTempPoint.getWorldPosition().x;
-//                                    verticalVector3.y = wallGuidePoint.getWorldPosition().y;
-//                                    verticalVector3.z = wallTempPoint.getWorldPosition().z;
-//                                    Vector3 verticalLocalPosition = ARUtil.transformWorldPositionToLocalPositionOfParent(this.anchorNode, verticalVector3);
-////                                    Node verticalNode = ARUtil.createLocalNode(verticalVector3.x, verticalVector3.y, verticalVector3.z, wallPointMaterial, shadow);
-//
-////                                    drawWallTempLine
-//
-//                                    if(wallObjectBean.viewRenderableList.size() < 4) {
-//                                        return;
-//                                    }
-//
-//                                    wallObjectBean.objectPointList.get(1).setLocalPosition(horizontalLocalPosition);
-//                                    wallObjectBean.objectPointList.get(3).setLocalPosition(verticalLocalPosition);
-//
-//                                    drawTempWallLine(wallObjectBean.objectPointList.get(0), wallObjectBean.objectPointList.get(1),
-//                                            wallObjectBean.objectLineList.get(0), wallObjectBean.objectTextList.get(0), wallObjectBean.viewRenderableList.get(0));
-//
-//                                    drawTempWallLine(wallObjectBean.objectPointList.get(1), wallObjectBean.objectPointList.get(2),
-//                                            wallObjectBean.objectLineList.get(1), wallObjectBean.objectTextList.get(1), wallObjectBean.viewRenderableList.get(1));
-//
-//                                    drawTempWallLine(wallObjectBean.objectPointList.get(2), wallObjectBean.objectPointList.get(3),
-//                                            wallObjectBean.objectLineList.get(2), wallObjectBean.objectTextList.get(2), wallObjectBean.viewRenderableList.get(2));
-//
-//                                    drawTempWallLine(wallObjectBean.objectPointList.get(3), wallObjectBean.objectPointList.get(0),
-//                                            wallObjectBean.objectLineList.get(3), wallObjectBean.objectTextList.get(3), wallObjectBean.viewRenderableList.get(3));
-//                                }
-//                                else {
-//                                    wallGuidePoint.setWorldPosition(new Vector3(wallTempPoint.getWorldPosition().x, wallTempPoint.getWorldPosition().y, wallTempPoint.getWorldPosition().z));
-//                                }
-//                            }
-//                        }
-//
-//                        return;
-//                    }
+                                    Vector3 verticalVector3 = new Vector3();
+                                    verticalVector3.x = wallTempPoint.getWorldPosition().x;
+                                    verticalVector3.y = wallGuidePoint.getWorldPosition().y;
+                                    verticalVector3.z = wallTempPoint.getWorldPosition().z;
+                                    Vector3 verticalLocalPosition = ARTool.transformWorldPositionToLocalPositionOfParent(this.anchorNode, verticalVector3);
+//                                    Node verticalNode = ARUtil.createLocalNode(verticalVector3.x, verticalVector3.y, verticalVector3.z, wallPointMaterial, shadow);
+
+//                                    drawWallTempLine
+
+                                    if(wallObjectBean.viewRenderableList.size() < 4) {
+                                        return;
+                                    }
+
+                                    wallObjectBean.objectPointList.get(1).setLocalPosition(horizontalLocalPosition);
+                                    wallObjectBean.objectPointList.get(3).setLocalPosition(verticalLocalPosition);
+
+                                    drawTempWallLine(wallObjectBean.objectPointList.get(0), wallObjectBean.objectPointList.get(1),
+                                            wallObjectBean.objectLineList.get(0), wallObjectBean.objectTextList.get(0), wallObjectBean.viewRenderableList.get(0));
+
+                                    drawTempWallLine(wallObjectBean.objectPointList.get(1), wallObjectBean.objectPointList.get(2),
+                                            wallObjectBean.objectLineList.get(1), wallObjectBean.objectTextList.get(1), wallObjectBean.viewRenderableList.get(1));
+
+                                    drawTempWallLine(wallObjectBean.objectPointList.get(2), wallObjectBean.objectPointList.get(3),
+                                            wallObjectBean.objectLineList.get(2), wallObjectBean.objectTextList.get(2), wallObjectBean.viewRenderableList.get(2));
+
+                                    drawTempWallLine(wallObjectBean.objectPointList.get(3), wallObjectBean.objectPointList.get(0),
+                                            wallObjectBean.objectLineList.get(3), wallObjectBean.objectTextList.get(3), wallObjectBean.viewRenderableList.get(3));
+                                }
+                                else {
+                                    wallGuidePoint.setWorldPosition(new Vector3(wallTempPoint.getWorldPosition().x, wallTempPoint.getWorldPosition().y, wallTempPoint.getWorldPosition().z));
+                                }
+                            }
+                        }
+
+                        return;
+                    }
 
                 });
 
-        buttonBack.setOnClickListener(view -> back());
+        buttonBack.setOnClickListener(view -> ARBuilder.getInstance().back());
 
         buttonReDetect.setOnClickListener(view -> AREnvironment.getInstance().reset(this, arSceneView, this::finish, () -> textView.setVisibility(View.VISIBLE)));
     }
@@ -552,128 +556,6 @@ public class ARActivity extends FragmentActivity {
         return indexList;
     }
 
-    private void back() {
-        if(isAutoClosed) {
-
-            if(anchorNode != null) {
-                ARUtil.removeChildFormNode(anchorNode);
-                anchorNode.setParent(null);
-                anchorNode = null;
-            }
-
-            floorPolygonList.clear();
-            cellPolygonList.clear();
-            textViewSizeList.clear();
-            wallBeanList.clear();
-
-            for(WallObjectBean wallObjectBean : wallObjectBeans) {
-                for(Node node : wallObjectBean.objectPointList) {
-                    node.setParent(null);
-                }
-            }
-            wallObjectBeans.clear();
-
-            clearTemp();
-            clearCenter();
-
-            fixedY = 0;
-
-            if(wallGuidePoint != null) {
-                wallGuidePoint.setParent(null);
-                wallGuidePoint = null;
-            }
-
-            if(wallTempPoint != null) {
-                wallTempPoint.setParent(null);
-                wallTempPoint = null;
-            }
-
-            currentGuideIndex = -1;
-            currentWallIndex = -1;
-
-        }
-        else {
-
-            if(floorPolygonList.size() == 1) {
-
-                if(anchorNode != null) {
-                    ARUtil.removeChildFormNode(anchorNode);
-                    anchorNode = null;
-                }
-
-                floorPolygonList.clear();
-                textViewSizeList.clear();
-                wallBeanList.clear();
-
-                for(WallObjectBean wallObjectBean : wallObjectBeans) {
-                    for(Node node : wallObjectBean.objectPointList) {
-                        node.setParent(null);
-                    }
-                }
-                wallObjectBeans.clear();
-
-                clearTemp();
-                clearCenter();
-
-                fixedY = 0;
-
-                if(wallGuidePoint != null) {
-                    wallGuidePoint.setParent(null);
-                    wallGuidePoint = null;
-                }
-
-                if(wallTempPoint != null) {
-                    wallTempPoint.setParent(null);
-                    wallTempPoint = null;
-                }
-
-                currentGuideIndex = -1;
-                currentWallIndex = -1;
-            }
-            else if(floorPolygonList.size() > 1) {
-
-                ARUtil.removeChildFormNode(floorPolygonList.get(floorPolygonList.size() - 2));
-                floorPolygonList.get(floorPolygonList.size() - 1).setParent(null);
-                floorPolygonList.remove(floorPolygonList.size() - 1);
-                textViewSizeList.remove(textViewSizeList.size() - 1);
-
-                clearTemp();
-                clearCenter();
-
-                if(wallGuidePoint != null) {
-                    wallGuidePoint.setParent(null);
-                    wallGuidePoint = null;
-                }
-
-                if(wallTempPoint != null) {
-                    wallTempPoint.setParent(null);
-                    wallTempPoint = null;
-                }
-
-                wallBeanList.clear();
-
-                for(WallObjectBean wallObjectBean : wallObjectBeans) {
-                    for(Node node : wallObjectBean.objectPointList) {
-                        node.setParent(null);
-                    }
-                }
-                wallObjectBeans.clear();
-
-                currentGuideIndex = -1;
-                currentWallIndex = -1;
-            }
-        }
-
-        linearLayout.setVisibility(View.GONE);
-        textViewHeight.setText("");
-        textViewArea.setText("");
-        textViewCircumference.setText("");
-        textViewWallArea.setText("");
-        textViewVolume.setText("");
-
-        isAutoClosed = false;
-        isReadyToAutoClose = false;
-    }
 
     private void createCellPolygon() {
         cellPolygonList.clear();

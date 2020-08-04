@@ -344,6 +344,107 @@ public class ARBuilder {
 
     }
 
+    public void back() {
+        if(isAutoClosed) {
+
+            if(anchorNode != null) {
+                ARUtil.removeChildFormNode(anchorNode);
+                anchorNode.setParent(null);
+                anchorNode = null;
+            }
+
+            floorGuideList.clear();
+
+            // clear room bean
+
+//            for(WallObjectBean wallObjectBean : wallObjectBeans) {
+//                for(Node node : wallObjectBean.objectPointList) {
+//                    node.setParent(null);
+//                }
+//            }
+//            wallObjectBeans.clear();
+
+            clearTemp();
+            clearGuide();
+
+            floorFixedY = 0;
+
+//            if(wallGuidePoint != null) {
+//                wallGuidePoint.setParent(null);
+//                wallGuidePoint = null;
+//            }
+//
+//            if(wallTempPoint != null) {
+//                wallTempPoint.setParent(null);
+//                wallTempPoint = null;
+//            }
+//
+//            currentGuideIndex = -1;
+//            currentWallIndex = -1;
+
+//            linearLayout.setVisibility(View.GONE);
+//            textViewHeight.setText("");
+//            textViewArea.setText("");
+//            textViewCircumference.setText("");
+//            textViewWallArea.setText("");
+//            textViewVolume.setText("");
+
+        }
+        else {
+
+            if(floorGuideList.size() == 1) {
+
+                if(anchorNode != null) {
+                    ARUtil.removeChildFormNode(anchorNode);
+                    anchorNode = null;
+                }
+
+                floorGuideList.clear();
+//                textViewSizeList.clear();
+//                wallBeanList.clear();
+//
+//                for(WallObjectBean wallObjectBean : wallObjectBeans) {
+//                    for(Node node : wallObjectBean.objectPointList) {
+//                        node.setParent(null);
+//                    }
+//                }
+//                wallObjectBeans.clear();
+
+                clearTemp();
+                clearGuide();
+
+                floorFixedY = 0;
+
+//                if(wallGuidePoint != null) {
+//                    wallGuidePoint.setParent(null);
+//                    wallGuidePoint = null;
+//                }
+//
+//                if(wallTempPoint != null) {
+//                    wallTempPoint.setParent(null);
+//                    wallTempPoint = null;
+//                }
+//
+//                currentGuideIndex = -1;
+//                currentWallIndex = -1;
+            }
+            else if(floorGuideList.size() > 1) {
+
+                ARUtil.removeChildFormNode(floorGuideList.get(floorGuideList.size() - 2));
+                floorGuideList.get(floorGuideList.size() - 1).setParent(null);
+                floorGuideList.remove(floorGuideList.size() - 1);
+//                textViewSizeList.remove(textViewSizeList.size() - 1);
+
+                clearTemp();
+                clearGuide();
+
+            }
+        }
+
+        isAutoClosed = false;
+        isReadyToAutoClose = false;
+    }
+
     public void clearGuide() {
         if(guidePointNode != null) {
             guidePointNode.setParent(null);
