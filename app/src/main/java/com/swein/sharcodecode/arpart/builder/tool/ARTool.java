@@ -239,6 +239,9 @@ public class ARTool {
         }
     }
 
+    /**
+     * calculate polygon plane area in 3D
+     */
     public static float calculateArea(List<Node> list, Vector3 normalVectorOfPlane) {
 
         List<Vector3> vector3List = new ArrayList<>();

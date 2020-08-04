@@ -53,7 +53,7 @@ public class ARActivity extends FragmentActivity {
     private FrameLayout frameLayoutTooCloseTooFar;
     private TextView textViewTooCloseTooFar;
 
-    private LinearLayout linearLayout;
+    private LinearLayout linearLayoutInfo;
     private TextView textViewArea;
     private TextView textViewCircumference;
     private TextView textViewHeight;
@@ -183,7 +183,7 @@ public class ARActivity extends FragmentActivity {
         buttonReDetect = findViewById(R.id.buttonReDetect);
         textViewPlaneType = findViewById(R.id.textViewPlaneType);
 
-        linearLayout = findViewById(R.id.linearLayout);
+        linearLayoutInfo = findViewById(R.id.linearLayoutInfo);
         textViewArea = findViewById(R.id.textViewArea);
         textViewCircumference = findViewById(R.id.textViewCircumference);
         textViewHeight = findViewById(R.id.textViewHeight);
@@ -206,7 +206,7 @@ public class ARActivity extends FragmentActivity {
         ARBuilder.getInstance().init(this, new ARBuilder.ARBuilderDelegate() {
             @Override
             public void onCalculate(float height, float area, float circumference, float wallArea, float volume) {
-                linearLayout.setVisibility(View.VISIBLE);
+                linearLayoutInfo.setVisibility(View.VISIBLE);
 
                 textViewHeight.setText(getString(R.string.ar_area_height_title) + " " +
                         String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.getInstance().arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
@@ -533,7 +533,7 @@ public class ARActivity extends FragmentActivity {
 
         buttonBack.setOnClickListener(view -> {
             ARBuilder.getInstance().back();
-            linearLayout.setVisibility(View.GONE);
+            linearLayoutInfo.setVisibility(View.GONE);
         });
 
         buttonReDetect.setOnClickListener(view -> AREnvironment.getInstance().reset(this, arSceneView, this::finish, () -> textView.setVisibility(View.VISIBLE)));
@@ -587,33 +587,6 @@ public class ARActivity extends FragmentActivity {
         return indexList;
     }
 
-
-    private void createCellPolygon() {
-//        cellPolygonList.clear();
-//
-//        Node node;
-//        for(int i = 0; i < floorPolygonList.size(); i++) {
-//            node = ARUtil.createLocalNode(
-//                    floorPolygonList.get(i).getLocalPosition().x,
-//                    floorPolygonList.get(i).getLocalPosition().y + height,
-//                    floorPolygonList.get(i).getLocalPosition().z ,
-//                    pointMaterial, shadow);
-////            node.setParent(bottomAnchorPolygon.get(i));
-//            node.setParent(anchorNode);
-//            cellPolygonList.add(node);
-//        }
-//
-//        // draw vertical line
-//        for(int i = 0; i < floorPolygonList.size(); i++) {
-//            drawLine(floorPolygonList.get(i), cellPolygonList.get(i));
-//        }
-//
-//        // connect node and make line close
-//        for(int i = 0; i < cellPolygonList.size() - 1; i++) {
-//            drawLine(cellPolygonList.get(i), cellPolygonList.get(i + 1));
-//        }
-//        drawLine(cellPolygonList.get(cellPolygonList.size() - 1), cellPolygonList.get(0));
-    }
 
     private void createWall() {
 

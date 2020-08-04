@@ -28,6 +28,7 @@ import com.swein.sharcodecode.arpart.constants.ARESSArrows;
 import com.swein.sharcodecode.framework.util.ar.ARUtil;
 import com.swein.sharcodecode.framework.util.device.DeviceUtil;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
+import com.swein.sharcodecode.framework.util.thread.ThreadUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -106,6 +107,8 @@ public class ARBuilder {
 
     private ARBuilderDelegate arBuilderDelegate;
 
+    private List<ViewRenderable> textViewSizeMarkList;
+
     public void init(Context context, ARBuilderDelegate arBuilderDelegate) {
         this.arBuilderDelegate = arBuilderDelegate;
 
@@ -133,6 +136,8 @@ public class ARBuilder {
         }, false);
 
         floorGuideList = new ArrayList<>();
+
+        textViewSizeMarkList = new ArrayList<>();
     }
 
     public void checkPlaneSize(Collection<Plane> planeCollection) {
@@ -363,6 +368,7 @@ public class ARBuilder {
             pointBean.point.setParent(anchorNode);
             roomBean.floor.pointList.add(pointBean);
         }
+        roomBean.floor.createSegment();
 
         // create ceiling
         for(int i = 0; i < floorGuideList.size(); i++) {
@@ -377,6 +383,7 @@ public class ARBuilder {
             pointBean.point.setParent(anchorNode);
             roomBean.ceiling.pointList.add(pointBean);
         }
+        roomBean.ceiling.createSegment();
 
         // connect floor and ceiling
         for(int i = 0; i < roomBean.floor.pointList.size() - 1; i++) {
@@ -398,22 +405,16 @@ public class ARBuilder {
 
 
         // calculate
-        roomBean.calculate(arUnit);
-        arBuilderDelegate.onCalculate(roomBean.height, roomBean.area, roomBean.circumference, roomBean.wallArea, roomBean.volume);
+        ThreadUtil.startThread(() -> {
+            roomBean.calculate(arUnit);
+            ThreadUtil.startUIThread(0, () -> {
+                arBuilderDelegate.onCalculate(roomBean.height, roomBean.area, roomBean.circumference, roomBean.wallArea, roomBean.volume);
+            });
+        });
 
-        // clear guide
-        for(Node node : floorGuideList) {
-            ARTool.removeChildFormNode(node);
-            node.setParent(null);
-        }
-        floorGuideList.clear();
-
+        clearGuidePlane();
         clearGuide();
         clearTemp();
-    }
-
-    public void calculate() {
-
     }
 
     public void clearTemp() {
@@ -440,7 +441,7 @@ public class ARBuilder {
                 anchorNode = null;
             }
 
-            floorGuideList.clear();
+            clearGuidePlane();
 
             // clear room bean
             if(roomBean != null) {
@@ -473,13 +474,6 @@ public class ARBuilder {
 //            currentGuideIndex = -1;
 //            currentWallIndex = -1;
 
-//            linearLayout.setVisibility(View.GONE);
-//            textViewHeight.setText("");
-//            textViewArea.setText("");
-//            textViewCircumference.setText("");
-//            textViewWallArea.setText("");
-//            textViewVolume.setText("");
-
         }
         else {
 
@@ -490,7 +484,7 @@ public class ARBuilder {
                     anchorNode = null;
                 }
 
-                floorGuideList.clear();
+                clearGuidePlane();
 //                textViewSizeList.clear();
 //                wallBeanList.clear();
 //
@@ -536,6 +530,14 @@ public class ARBuilder {
         isReadyToAutoClose = false;
     }
 
+    public void clearGuidePlane() {
+        for(Node node : floorGuideList) {
+            ARTool.removeChildFormNode(node);
+            node.setParent(null);
+        }
+        floorGuideList.clear();
+    }
+
     public void clearGuide() {
         if(guidePointNode != null) {
             guidePointNode.setParent(null);
@@ -575,8 +577,11 @@ public class ARBuilder {
 
         anchorNode = null;
 
-        floorGuideList.clear();
+        clearGuidePlane();
         floorGuideList = null;
+
+        textViewSizeMarkList.clear();
+        textViewSizeMarkList = null;
 
         isReadyToAutoClose = false;
         isAutoClosed = false;

@@ -52,18 +52,15 @@ public class RoomBean {
 
         // 둘레
         circumference = 0;
-        for(int i = 0; i < floor.pointList.size() - 1; i++) {
-            circumference += Vector3.subtract(
-                    floor.pointList.get(i + 1).point.getWorldPosition(),
-                    floor.pointList.get(i).point.getWorldPosition()).length();
+        for(int i = 0; i < floor.segmentList.size(); i++) {
+            circumference += floor.segmentList.get(i).length;
         }
-        circumference += Vector3.subtract(
-                floor.pointList.get(floor.pointList.size() - 1).point.getWorldPosition(),
-                floor.pointList.get(0).point.getWorldPosition()
-        ).length();
 
         // 벽 면적
-        wallArea = ARTool.getLengthByUnit(arUnit, circumference) * ARTool.getLengthByUnit(arUnit, height);
+        wallArea = 0;
+        for(int i = 0; i < floor.segmentList.size(); i++) {
+            wallArea += ARTool.getLengthByUnit(arUnit, floor.segmentList.get(i).length) * ARTool.getLengthByUnit(arUnit, height);
+        }
 
         // 면적
         List<Node> list = new ArrayList<>();

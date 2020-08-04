@@ -127,11 +127,7 @@ public class AREnvironment {
 
                     ARBuilder.getInstance().autoCloseFloorSegment(activity);
                     ARBuilder.getInstance().createRoom(activity);
-                    ARBuilder.getInstance().calculate();
 
-//                    createCellPolygon();
-//                    calculate();
-//                    createWall();
                     return;
                 }
 
