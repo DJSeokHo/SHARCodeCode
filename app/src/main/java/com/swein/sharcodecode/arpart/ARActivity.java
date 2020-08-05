@@ -147,6 +147,8 @@ public class ARActivity extends FragmentActivity {
 
             textViewHint.setVisibility(View.GONE);
             textViewHint.setText("");
+
+            showMeasureHeightPopup();
         });
 
         EventCenter.getInstance().addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_TOO_CLOSE, this, (arrow, poster, data) -> {
@@ -236,7 +238,7 @@ public class ARActivity extends FragmentActivity {
             }
 
             @Override
-            public void showMeasureHeightHint() {
+            public void showMeasureHeightSelectPopup() {
                 showMeasureHeightPopup();
             }
 
@@ -300,6 +302,9 @@ public class ARActivity extends FragmentActivity {
             @Override
             public void backToMeasureHeight() {
                 textViewHeightRealTime.setText("");
+                textViewHint.setText("");
+                textViewHint.setVisibility(View.GONE);
+                showMeasureHeightPopup();
             }
         });
 
@@ -608,24 +613,48 @@ public class ARActivity extends FragmentActivity {
 
         imageViewBack.setOnClickListener(view -> {
             ARBuilder.getInstance().back();
-            linearLayoutInfo.setVisibility(View.GONE);
+            clearRoomInfo();
         });
 
-        imageViewReset.setOnClickListener(view -> AREnvironment.getInstance().reset(this, arSceneView, this::finish, () -> textViewHint.setVisibility(View.GONE)));
+        imageViewReset.setOnClickListener(view -> AREnvironment.getInstance().reset(this, arSceneView, this::finish, () -> {
+
+            clearRoomInfo();
+
+            textViewHint.setText("");
+            textViewHint.setVisibility(View.GONE);
+            textViewHeightRealTime.setText("");
+
+            ARBuilder.getInstance().clearGuidePlane();
+            ARBuilder.getInstance().clearGuide();
+            ARBuilder.getInstance().clearTemp();
+            ARBuilder.getInstance().clearAnchor();
+            ARBuilder.getInstance().height = 0;
+            ARBuilder.getInstance().floorFixedY = 0;
+            ARBuilder.getInstance().normalVectorOfPlane = null;
+            ARBuilder.getInstance().roomBean = null;
+
+            ARBuilder.getInstance().isReadyToAutoClose = false;
+            ARBuilder.getInstance().isAutoClosed = false;
+
+            ARBuilder.getInstance().arProcess = ARBuilder.ARProcess.DETECT_PLANE;
+            ARBuilder.getInstance().measureHeightWay = ARBuilder.MeasureHeightWay.NONE;
+
+        }));
 
         imageViewSetting.setOnClickListener(view -> showSelectUnitPopup());
     }
 
+    private void clearRoomInfo() {
+        linearLayoutInfo.setVisibility(View.GONE);
+        textViewArea.setText("");
+        textViewCircumference.setText("");
+        textViewHeight.setText("");
+        textViewWallArea.setText("");
+        textViewVolume.setText("");
+    }
+
     private void showDetectFloorPopup() {
-        arHintPopupViewHolder = new ARHintPopupViewHolder(this, () -> {
-
-            switch (ARBuilder.getInstance().arProcess) {
-                case MEASURE_HEIGHT_HINT:
-                    closeDetectFloorPopup();
-                    break;
-            }
-
-        });
+        arHintPopupViewHolder = new ARHintPopupViewHolder(this, this::closeDetectFloorPopup);
 
         arHintPopupViewHolder.setTitle(getString(R.string.ar_scan_floor));
         arHintPopupViewHolder.setMessage(getString(R.string.ar_scan_ready_hint));

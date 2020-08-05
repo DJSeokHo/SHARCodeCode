@@ -34,7 +34,7 @@ public class AREnvironment {
         void onUpdatePlaneType(String type);
 
         void showDetectFloorHint();
-        void showMeasureHeightHint();
+        void showMeasureHeightSelectPopup();
         void onMeasureHeight(float height);
     }
 
@@ -121,8 +121,12 @@ public class AREnvironment {
 
     public void onTouch(ArSceneView arSceneView) {
 
+        if(ARBuilder.getInstance().arProcess == ARBuilder.ARProcess.DETECT_PLANE) {
+            return;
+        }
+
         if(ARBuilder.getInstance().arProcess == ARBuilder.ARProcess.MEASURE_HEIGHT_HINT) {
-            arEnvironmentDelegate.showMeasureHeightHint();
+            arEnvironmentDelegate.showMeasureHeightSelectPopup();
         }
         else if(ARBuilder.getInstance().arProcess == ARBuilder.ARProcess.MEASURE_HEIGHT) {
 
@@ -143,6 +147,12 @@ public class AREnvironment {
             for (HitResult hitResult : hitTestResultList) {
                 Trackable trackable = hitResult.getTrackable();
                 if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+
+
+                    if(ARBuilder.getInstance().isAutoClosed) {
+
+                        return;
+                    }
 
                     // if ready to auto close
                     if(ARBuilder.getInstance().isReadyToAutoClose) {
