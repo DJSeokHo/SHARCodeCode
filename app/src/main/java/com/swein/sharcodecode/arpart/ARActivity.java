@@ -929,18 +929,16 @@ public class ARActivity extends FragmentActivity {
             ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
         }
         else {
-            if(tempLineNode != null) {
 
-                ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
 
-                tempTextNode = new FaceToCameraNode();
-                tempTextNode.setParent(tempLineNode);
+            tempTextNode = new FaceToCameraNode();
+            tempTextNode.setParent(tempLineNode);
 
-                tempTextNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
-                tempTextNode.setLocalPosition(new Vector3(0f, 0.08f, 0f));
-                tempTextNode.setRenderable(viewRenderableSizeText);
+            tempTextNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
+            tempTextNode.setLocalPosition(new Vector3(0f, 0.08f, 0f));
+            tempTextNode.setRenderable(viewRenderableSizeText);
 
-            }
         }
     }
 
