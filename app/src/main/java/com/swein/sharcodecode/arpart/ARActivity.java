@@ -5,8 +5,8 @@ import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -36,9 +36,11 @@ import com.swein.sharcodecode.arpart.builder.tool.ARTool;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
 import com.swein.sharcodecode.arpart.environment.AREnvironment;
 import com.swein.sharcodecode.framework.util.ar.ARUtil;
-import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.device.DeviceUtil;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
+import com.swein.sharcodecode.popup.ARHintPopupViewHolder;
+import com.swein.sharcodecode.popup.ARMeasureHeightHintViewHolder;
+import com.swein.sharcodecode.popup.ARSelectUnitViewHolder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +51,7 @@ public class ARActivity extends FragmentActivity {
 
     private ArSceneView arSceneView;
 
-    private TextView textView;
+    private TextView textViewHint;
     private FrameLayout frameLayoutTooCloseTooFar;
     private TextView textViewTooCloseTooFar;
 
@@ -66,14 +68,17 @@ public class ARActivity extends FragmentActivity {
 
     private TextView textViewNearest;
 
+    private FrameLayout frameLayoutPopup;
+
     private Node centerPoint;
     private Node wallGuidePoint;
     private Node wallTempPoint;
     private int currentWallIndex = -1;
     private int currentGuideIndex = -1;
 
-    private Button buttonBack;
-    private Button buttonReDetect;
+    private ImageView imageViewBack;
+    private ImageView imageViewReset;
+    private ImageView imageViewSetting;
 
     private Node tempLineNode;
     private FaceToCameraNode tempTextNode;
@@ -104,6 +109,12 @@ public class ARActivity extends FragmentActivity {
 
     private float fixedY = 0;
 
+
+    private ARSelectUnitViewHolder arSelectUnitViewHolder;
+    private ARMeasureHeightHintViewHolder arMeasureHeightHintViewHolder;
+
+    private ARHintPopupViewHolder arHintPopupViewHolder;
+
 //    private ARBuilder.ARUnit ARUnit = ARBuilder.ARUnit.CM;
 
     //*******
@@ -117,13 +128,26 @@ public class ARActivity extends FragmentActivity {
 
         initESS();
         initData();
-        initAR();
+
         findView();
         setListener();
+
+        initAR();
     }
 
     private void initESS() {
-        EventCenter.getInstance().addEventObserver(ARESSArrows.DETECTED_TARGET_MINIMUM_AREA_SIZE_FINISHED, this, (arrow, poster, data) -> textView.setVisibility(View.GONE));
+
+        EventCenter.getInstance().addEventObserver(ARESSArrows.DETECTING_TARGET_MINIMUM_AREA_SIZE, this, (arrow, poster, data) -> {
+            int percentage = (int) data.get("percentage");
+            textViewHint.setVisibility(View.VISIBLE);
+            textViewHint.setText(percentage + "%");
+        });
+
+        EventCenter.getInstance().addEventObserver(ARESSArrows.DETECTED_TARGET_MINIMUM_AREA_SIZE_FINISHED, this, (arrow, poster, data) -> {
+
+            textViewHint.setVisibility(View.GONE);
+            textViewHint.setText("");
+        });
 
         EventCenter.getInstance().addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_TOO_CLOSE, this, (arrow, poster, data) -> {
             frameLayoutTooCloseTooFar.setVisibility(View.VISIBLE);
@@ -176,11 +200,11 @@ public class ARActivity extends FragmentActivity {
     private void findView() {
 
         arSceneView = findViewById(R.id.arSceneView);
-        textView = findViewById(R.id.textView);
+        textViewHint = findViewById(R.id.textViewHint);
         frameLayoutTooCloseTooFar = findViewById(R.id.frameLayoutTooCloseTooFar);
         textViewTooCloseTooFar = findViewById(R.id.textViewTooCloseTooFar);
-        buttonBack = findViewById(R.id.buttonBack);
-        buttonReDetect = findViewById(R.id.buttonReDetect);
+        imageViewBack = findViewById(R.id.imageViewBack);
+        imageViewReset = findViewById(R.id.imageViewReset);
         textViewPlaneType = findViewById(R.id.textViewPlaneType);
 
         linearLayoutInfo = findViewById(R.id.linearLayoutInfo);
@@ -193,13 +217,58 @@ public class ARActivity extends FragmentActivity {
         textViewHeightRealTime = findViewById(R.id.textViewHeightRealTime);
 
         textViewNearest = findViewById(R.id.textViewNearest);
+
+        imageViewSetting = findViewById(R.id.imageViewSetting);
+
+        frameLayoutPopup = findViewById(R.id.frameLayoutPopup);
     }
 
     private void initAR() {
         AREnvironment.getInstance().init(this, new AREnvironment.AREnvironmentDelegate() {
             @Override
-            public void onPlaneType(String type) {
+            public void onUpdatePlaneType(String type) {
                 textViewPlaneType.setText(type);
+            }
+
+            @Override
+            public void showDetectFloorHint() {
+                showDetectFloorPopup();
+            }
+
+            @Override
+            public void showMeasureHeightHint() {
+                showMeasureHeightPopup();
+            }
+
+            @Override
+            public void onMeasureHeight(float height) {
+                ARBuilder.getInstance().height = height;
+                String heightString = String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.getInstance().arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit);
+                textViewHeightRealTime.setText(heightString);
+                ARBuilder.getInstance().arProcess = ARBuilder.ARProcess.MEASURE_ROOM;
+
+                // clear node when measure height finished
+                ARTool.removeChildFormNode(ARBuilder.getInstance().anchorNode);
+
+                if(ARBuilder.getInstance().anchorNode != null) {
+                    ARBuilder.getInstance().anchorNode.setParent(null);
+                    ARBuilder.getInstance().anchorNode = null;
+                }
+
+                if(ARBuilder.getInstance().measureHeightFloorNode != null) {
+                    ARBuilder.getInstance().measureHeightFloorNode.setParent(null);
+                    ARBuilder.getInstance().measureHeightFloorNode = null;
+                }
+
+                if(ARBuilder.getInstance().measureHeightCeilingNode != null) {
+                    ARBuilder.getInstance().measureHeightCeilingNode.setParent(null);
+                    ARBuilder.getInstance().measureHeightCeilingNode = null;
+                }
+
+                textViewHint.setText("");
+                textViewHint.setVisibility(View.GONE);
+
+                showMeasureRoomPopup();
             }
         });
 
@@ -227,6 +296,11 @@ public class ARActivity extends FragmentActivity {
                 volumeString.append(ARTool.getVolumeUnitString(ARBuilder.getInstance().arUnit));
                 textViewVolume.setText(volumeString);
             }
+
+            @Override
+            public void backToMeasureHeight() {
+                textViewHeightRealTime.setText("");
+            }
         });
 
         AREnvironment.getInstance().hitPointX = DeviceUtil.getScreenCenterX(this);
@@ -238,6 +312,7 @@ public class ARActivity extends FragmentActivity {
         // Set a touch listener on the Scene to listen for taps.
         arSceneView.getScene().setOnTouchListener(
                 (HitTestResult hitTestResult, MotionEvent event) -> {
+
 
                     if(!AREnvironment.getInstance().checkPlanEnable(arSceneView.getArFrame())) {
                         return false;
@@ -531,14 +606,170 @@ public class ARActivity extends FragmentActivity {
 
                 });
 
-        buttonBack.setOnClickListener(view -> {
+        imageViewBack.setOnClickListener(view -> {
             ARBuilder.getInstance().back();
             linearLayoutInfo.setVisibility(View.GONE);
         });
 
-        buttonReDetect.setOnClickListener(view -> AREnvironment.getInstance().reset(this, arSceneView, this::finish, () -> textView.setVisibility(View.VISIBLE)));
+        imageViewReset.setOnClickListener(view -> AREnvironment.getInstance().reset(this, arSceneView, this::finish, () -> textViewHint.setVisibility(View.GONE)));
+
+        imageViewSetting.setOnClickListener(view -> showSelectUnitPopup());
     }
 
+    private void showDetectFloorPopup() {
+        arHintPopupViewHolder = new ARHintPopupViewHolder(this, () -> {
+
+            switch (ARBuilder.getInstance().arProcess) {
+                case MEASURE_HEIGHT_HINT:
+                    closeDetectFloorPopup();
+                    break;
+            }
+
+        });
+
+        arHintPopupViewHolder.setTitle(getString(R.string.ar_scan_floor));
+        arHintPopupViewHolder.setMessage(getString(R.string.ar_scan_ready_hint));
+
+        frameLayoutPopup.addView(arHintPopupViewHolder.getView());
+        frameLayoutPopup.setVisibility(View.VISIBLE);
+    }
+
+    private boolean closeDetectFloorPopup() {
+
+        if(arHintPopupViewHolder != null) {
+            frameLayoutPopup.setVisibility(View.GONE);
+            frameLayoutPopup.removeAllViews();
+            arHintPopupViewHolder = null;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private void showMeasureHeightPopup() {
+        arMeasureHeightHintViewHolder = new ARMeasureHeightHintViewHolder(this, new ARMeasureHeightHintViewHolder.ARMeasureHeightHintViewHolderDelegate() {
+            @Override
+            public void onConfirm(ARBuilder.MeasureHeightWay measureHeightWay) {
+
+                ARBuilder.getInstance().measureHeightWay = measureHeightWay;
+                closeMeasureHeightPopup();
+
+                switch (ARBuilder.getInstance().measureHeightWay) {
+                    case AUTO:
+                        textViewHint.setText(getString(R.string.ar_draw_height_by_ceiling_auto));
+                        textViewHint.setVisibility(View.VISIBLE);
+                        break;
+
+                    case DRAW:
+                        textViewHint.setText(getString(R.string.ar_draw_height_direct));
+                        textViewHint.setVisibility(View.VISIBLE);
+                        break;
+                }
+
+                ARBuilder.getInstance().arProcess = ARBuilder.ARProcess.MEASURE_HEIGHT;
+            }
+
+            @Override
+            public void onClose() {
+                closeMeasureHeightPopup();
+            }
+
+            @Override
+            public void onConfirmInput(float height) {
+                ARBuilder.getInstance().height = height;
+                closeMeasureHeightPopup();
+                ARBuilder.getInstance().arProcess = ARBuilder.ARProcess.MEASURE_ROOM;
+
+                String heightString = String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.getInstance().arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit);
+                textViewHeightRealTime.setText(heightString);
+
+                showMeasureRoomPopup();
+            }
+
+        }, ARBuilder.getInstance().arUnit);
+
+        frameLayoutPopup.addView(arMeasureHeightHintViewHolder.getView());
+        frameLayoutPopup.setVisibility(View.VISIBLE);
+    }
+
+    private boolean closeMeasureHeightPopup() {
+        if(arMeasureHeightHintViewHolder != null) {
+            frameLayoutPopup.setVisibility(View.GONE);
+            frameLayoutPopup.removeAllViews();
+            arMeasureHeightHintViewHolder = null;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private void showMeasureRoomPopup() {
+        arHintPopupViewHolder = new ARHintPopupViewHolder(this, this::closeMeasureRoom);
+
+        arHintPopupViewHolder.setTitle(getString(R.string.ar_draw_floor_title));
+        arHintPopupViewHolder.setMessage(getString(R.string.ar_draw_floor));
+        frameLayoutPopup.addView(arHintPopupViewHolder.getView());
+        frameLayoutPopup.setVisibility(View.VISIBLE);
+
+        textViewHint.setVisibility(View.VISIBLE);
+        textViewHint.setText(getString(R.string.ar_draw_floor));
+    }
+
+    private boolean closeMeasureRoom() {
+        if(arHintPopupViewHolder != null) {
+            frameLayoutPopup.setVisibility(View.GONE);
+            frameLayoutPopup.removeAllViews();
+            arHintPopupViewHolder = null;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private void showSelectUnitPopup() {
+        arSelectUnitViewHolder = new ARSelectUnitViewHolder(this, ARBuilder.getInstance().arUnit, new ARSelectUnitViewHolder.ARSelectUnitViewHolderDelegate() {
+            @Override
+            public void onSelectUnit(String unit) {
+
+
+                switch (unit) {
+                    case "m":
+                        ARBuilder.getInstance().arUnit = ARBuilder.ARUnit.M;
+                        break;
+
+                    case "cm":
+                        ARBuilder.getInstance().arUnit = ARBuilder.ARUnit.CM;
+                        break;
+                }
+
+                closeSelectUnitPopup();
+                // update all text view
+            }
+
+            @Override
+            public void onClose() {
+                closeSelectUnitPopup();
+            }
+        });
+
+        frameLayoutPopup.addView(arSelectUnitViewHolder.getView());
+        frameLayoutPopup.setVisibility(View.VISIBLE);
+    }
+
+    private boolean closeSelectUnitPopup() {
+
+        if(arSelectUnitViewHolder != null) {
+            frameLayoutPopup.removeAllViews();
+            arSelectUnitViewHolder = null;
+
+            return true;
+        }
+
+        return false;
+    }
 
     private List<Integer> getThoughWall(List<Vector3> resultList, HitResult hitResult) {
 
@@ -615,52 +846,6 @@ public class ARActivity extends FragmentActivity {
 
     }
 
-    private void calculate() {
-
-//        linearLayout.setVisibility(View.VISIBLE);
-//
-//        textViewHeight.setText(getString(R.string.ar_area_height_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(ARUnit, height)) + ARUtil.getLengthUnitString(ARUnit));
-//
-//        float circumference = 0;
-//        for(int i = 0; i < floorPolygonList.size() - 1; i++) {
-//            circumference += Vector3.subtract(floorPolygonList.get(i + 1).getWorldPosition(), floorPolygonList.get(i).getWorldPosition()).length();
-//        }
-//        circumference += Vector3.subtract(floorPolygonList.get(floorPolygonList.size() - 1).getWorldPosition(), floorPolygonList.get(0).getWorldPosition()).length();
-//        textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " + String.format("%.2f", ARUtil.getLengthByUnit(ARUnit, circumference)) + ARUtil.getLengthUnitString(ARUnit));
-//
-//        float wallArea = ARUtil.getLengthByUnit(ARUnit, circumference) * ARUtil.getLengthByUnit(ARUnit, height);
-//
-//        SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", wallArea));
-//        wallAreaString.append(ARUtil.getAreaUnitString(ARUnit));
-//        textViewWallArea.setText(wallAreaString);
-//
-//
-//        float area = ARUtil.getAreaByUnit(ARUnit, calculateArea());
-//        SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
-//        areaString.append(ARUtil.getAreaUnitString(ARUnit));
-//        textViewArea.setText(areaString);
-//
-//        float volume = ARUtil.getLengthByUnit(ARUnit, height) * area;
-//        SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
-//        volumeString.append(ARUtil.getVolumeUnitString(ARUnit));
-//        textViewVolume.setText(volumeString);
-
-    }
-
-    private float calculateArea() {
-
-        List<Vector3> vector3List = new ArrayList<>();
-        for(int i = 0; i < floorPolygonList.size(); i++) {
-            vector3List.add(floorPolygonList.get(i).getWorldPosition());
-        }
-        vector3List.add(floorPolygonList.get(0).getWorldPosition());
-
-        float area = Math.abs(ARUtil.area3DPolygon(floorPolygonList.size(), vector3List, normalVectorOfPlane));
-        ILog.iLogDebug(TAG, "area is " + area);
-        return area;
-    }
-
-
     private void clearCenter() {
         if(centerPoint != null) {
             centerPoint.setParent(null);
@@ -736,11 +921,32 @@ public class ARActivity extends FragmentActivity {
         }
     }
 
+    @Override
+    public void onBackPressed() {
+
+        if(closeMeasureRoom()) {
+            return;
+        }
+
+        if(closeDetectFloorPopup()) {
+            return;
+        }
+
+        if(closeSelectUnitPopup()) {
+            return;
+        }
+
+        if(closeMeasureHeightPopup()) {
+            return;
+        }
+
+        finish();
+    }
 
     @Override
     protected void onResume() {
         super.onResume();
-        AREnvironment.getInstance().resume(this, arSceneView, this::finish, () -> textView.setVisibility(View.VISIBLE));
+        AREnvironment.getInstance().resume(this, arSceneView, this::finish, () -> textViewHint.setVisibility(View.GONE));
     }
 
 
@@ -753,7 +959,7 @@ public class ARActivity extends FragmentActivity {
     @Override
     public void onDestroy() {
         AREnvironment.getInstance().destroy(arSceneView);
-        ARBuilder.getInstance().clear();
+        ARBuilder.getInstance().destroy();
 
         super.onDestroy();
     }

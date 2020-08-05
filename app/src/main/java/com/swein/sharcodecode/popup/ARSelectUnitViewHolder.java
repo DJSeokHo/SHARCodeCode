@@ -5,19 +5,22 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.Spinner;
 
 import com.swein.sharcodecode.R;
+import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.framework.util.view.ViewUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
-class ARSelectUnitViewHolder {
+public class ARSelectUnitViewHolder {
 
 
     public interface ARSelectUnitViewHolderDelegate {
-        void onSelectUnit(String type);
+        void onSelectUnit(String unit);
+        void onClose();
     }
 
     private View view;
@@ -30,8 +33,14 @@ class ARSelectUnitViewHolder {
 
     private Button buttonConfirm;
 
-    public ARSelectUnitViewHolder(Context context, ARSelectUnitViewHolderDelegate arSelectUnitViewHolderDelegate) {
+    private FrameLayout frameLayoutRoot;
+
+    private ARBuilder.ARUnit arUnit;
+
+    public ARSelectUnitViewHolder(Context context, ARBuilder.ARUnit arUnit, ARSelectUnitViewHolderDelegate arSelectUnitViewHolderDelegate) {
         this.arSelectUnitViewHolderDelegate = arSelectUnitViewHolderDelegate;
+
+        this.arUnit = arUnit;
         view = ViewUtil.inflateView(context, R.layout.view_holder_ar_select_unit_popup, null);
 
         initData();
@@ -50,6 +59,7 @@ class ARSelectUnitViewHolder {
     private void findView() {
         spinnerUnit = view.findViewById(R.id.spinnerUnit);
         buttonConfirm = view.findViewById(R.id.buttonConfirm);
+        frameLayoutRoot = view.findViewById(R.id.frameLayoutRoot);
     }
 
     private void initSpinner() {
@@ -75,10 +85,20 @@ class ARSelectUnitViewHolder {
 
             }
         });
+
+        switch (arUnit) {
+            case M:
+                spinnerUnit.setSelection(0);
+                break;
+            case CM:
+                spinnerUnit.setSelection(1);
+                break;
+        }
     }
 
     private void setListener() {
         buttonConfirm.setOnClickListener(view -> arSelectUnitViewHolderDelegate.onSelectUnit(unit));
+        frameLayoutRoot.setOnClickListener(view -> arSelectUnitViewHolderDelegate.onClose());
     }
 
     public View getView() {

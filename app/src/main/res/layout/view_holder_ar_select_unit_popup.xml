@@ -10,18 +10,35 @@
     <LinearLayout
         android:layout_gravity="center"
         android:background="@color/white"
-        android:layout_width="310dp"
+        android:layout_width="300dp"
         android:orientation="vertical"
         android:layout_height="wrap_content">
 
-        <Spinner
-            android:layout_marginTop="30dp"
-            android:dropDownWidth="80dp"
-            android:background="@null"
+        <LinearLayout
             android:layout_gravity="center"
-            android:id="@+id/spinnerUnit"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"/>
+            android:layout_marginTop="30dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_gravity="center_vertical"
+                android:text="@string/ar_input_length_unit"
+                android:textSize="7pt"
+                android:textColor="@color/black"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <Spinner
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="20dp"
+                android:dropDownWidth="80dp"
+                android:background="@null"
+                android:id="@+id/spinnerUnit"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
 
         <Button
             android:textSize="6.75pt"

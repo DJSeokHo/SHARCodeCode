@@ -8,7 +8,7 @@ import android.widget.TextView;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.framework.util.view.ViewUtil;
 
-class ARHintPopupViewHolder {
+public class ARHintPopupViewHolder {
 
     public interface ARHintPopupViewHolderDelegate {
         void onConfirm();

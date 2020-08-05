@@ -17,9 +17,11 @@ import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.sceneform.ArSceneView;
+import com.google.ar.sceneform.math.Vector3;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
+import com.swein.sharcodecode.framework.util.ar.ARUtil;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.toast.ToastUtil;
 
@@ -29,7 +31,11 @@ import java.util.List;
 public class AREnvironment {
 
     public interface AREnvironmentDelegate {
-        void onPlaneType(String type);
+        void onUpdatePlaneType(String type);
+
+        void showDetectFloorHint();
+        void showMeasureHeightHint();
+        void onMeasureHeight(float height);
     }
 
     private final static String TAG = "AREnvironment";
@@ -58,6 +64,8 @@ public class AREnvironment {
         this.activity = activity;
         this.arEnvironmentDelegate = arEnvironmentDelegate;
         planeFindingMode = Config.PlaneFindingMode.HORIZONTAL;
+
+        arEnvironmentDelegate.showDetectFloorHint();
     }
 
 
@@ -108,28 +116,128 @@ public class AREnvironment {
 
         isHitCeiling = planType.equals(arSceneView.getContext().getString(R.string.ar_plane_type_ceiling));
 
-        arEnvironmentDelegate.onPlaneType(planType);
+        arEnvironmentDelegate.onUpdatePlaneType(planType);
     }
 
     public void onTouch(ArSceneView arSceneView) {
-        Frame frame = arSceneView.getArFrame();
 
+        if(ARBuilder.getInstance().arProcess == ARBuilder.ARProcess.MEASURE_HEIGHT_HINT) {
+            arEnvironmentDelegate.showMeasureHeightHint();
+        }
+        else if(ARBuilder.getInstance().arProcess == ARBuilder.ARProcess.MEASURE_HEIGHT) {
+
+            switch (ARBuilder.getInstance().measureHeightWay) {
+                case AUTO:
+                    measureHeightAutoWhenTouch(arSceneView);
+                    break;
+
+                case DRAW:
+                    measureHeightDrawWhenTouch(arSceneView);
+                    break;
+            }
+        }
+        else if(ARBuilder.getInstance().arProcess == ARBuilder.ARProcess.MEASURE_ROOM) {
+
+            Frame frame = arSceneView.getArFrame();
+            List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
+            for (HitResult hitResult : hitTestResultList) {
+                Trackable trackable = hitResult.getTrackable();
+                if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+
+                    // if ready to auto close
+                    if(ARBuilder.getInstance().isReadyToAutoClose) {
+
+                        ARBuilder.getInstance().clearTemp();
+                        ARBuilder.getInstance().clearGuide();
+
+                        ARBuilder.getInstance().autoCloseFloorSegment(activity);
+                        ARBuilder.getInstance().createRoom(activity);
+
+                        return;
+                    }
+
+                    // calculate normal vector of detected plane
+                    ARBuilder.getInstance().createDetectedPlaneNormalVector(trackable);
+
+                    // create first anchorNode
+                    ARBuilder.getInstance().createAnchorNode(hitResult, arSceneView);
+
+                    // two vector is too near
+                    if(ARBuilder.getInstance().isNodesTooNearClosed()) {
+                        return;
+                    }
+
+                    // create guide floor node
+                    ARBuilder.getInstance().createGuideFloorNode(hitResult, activity);
+
+                    if(ARBuilder.getInstance().floorGuideList.size() >= 2) {
+                        ARBuilder.getInstance().drawSegment(activity,
+                                ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 2),
+                                ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 1)
+                        );
+                    }
+
+                    ARBuilder.getInstance().clearTemp();
+
+                }
+            }
+        }
+    }
+
+    public void onUpdateFrame(ArSceneView arSceneView) {
+
+        if(ARBuilder.getInstance().arProcess == ARBuilder.ARProcess.MEASURE_HEIGHT) {
+
+            switch (ARBuilder.getInstance().measureHeightWay) {
+                case AUTO:
+                    measureHeightAutoWhenUpdate(arSceneView);
+                    break;
+
+                case DRAW:
+                    measureHeightDrawWhenUpdate(arSceneView);
+                    break;
+            }
+        }
+        else if(ARBuilder.getInstance().arProcess == ARBuilder.ARProcess.MEASURE_ROOM) {
+
+            Frame frame = arSceneView.getArFrame();
+
+            List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
+            for (HitResult hitResult : hitTestResultList) {
+                Trackable trackable = hitResult.getTrackable();
+                if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+
+                    ARBuilder.getInstance().checkDistanceBetweenCameraAndPlane(hitResult.getDistance());
+                    ARBuilder.getInstance().showGuidePoint(hitResult, arSceneView, true);
+
+                    if(ARBuilder.getInstance().checkFloorGuideEmpty()) {
+                        return;
+                    }
+
+                    // auto closed
+                    if(ARBuilder.getInstance().isAutoClosed) {
+
+                    }
+                    else {
+                        ARBuilder.getInstance().drawFloorGuideSegment(
+                                ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 1),
+                                ARBuilder.getInstance().guidePointNode);
+
+                        ARBuilder.getInstance().checkPolygonAutoClose(activity);
+                    }
+
+                    return;
+                }
+            }
+        }
+    }
+
+    private void measureHeightDrawWhenTouch(ArSceneView arSceneView) {
+        Frame frame = arSceneView.getArFrame();
         List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
         for (HitResult hitResult : hitTestResultList) {
             Trackable trackable = hitResult.getTrackable();
             if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
-
-                // if ready to auto close
-                if(ARBuilder.getInstance().isReadyToAutoClose) {
-
-                    ARBuilder.getInstance().clearTemp();
-                    ARBuilder.getInstance().clearGuide();
-
-                    ARBuilder.getInstance().autoCloseFloorSegment(activity);
-                    ARBuilder.getInstance().createRoom(activity);
-
-                    return;
-                }
 
                 // calculate normal vector of detected plane
                 ARBuilder.getInstance().createDetectedPlaneNormalVector(trackable);
@@ -142,24 +250,45 @@ public class AREnvironment {
                     return;
                 }
 
-                // create guide floor node
-                ARBuilder.getInstance().createGuideFloorNode(hitResult, activity);
+                // only one node can on floor
+                if(ARBuilder.getInstance().measureHeightFloorNode != null && ARBuilder.getInstance().measureHeightCeilingNode == null) {
+                    if(!isHitCeiling) {
+                        return;
+                    }
+                }
 
-                if(ARBuilder.getInstance().floorGuideList.size() >= 2) {
-                    ARBuilder.getInstance().drawSegment(activity,
-                            ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 2),
-                            ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 1)
-                    );
+                ARBuilder.getInstance().createMeasureHeightDrawNode(hitResult, activity);
+
+                if(ARBuilder.getInstance().measureHeightFloorNode != null && ARBuilder.getInstance().measureHeightCeilingNode != null) {
+                    // finish measure height
+
+                    if(isHitCeiling) {
+                        // get distance ceiling
+
+                        Vector3 floorPoint = new Vector3(
+                                ARBuilder.getInstance().measureHeightFloorNode.getWorldPosition().x,
+                                ARBuilder.getInstance().measureHeightFloorNode.getWorldPosition().y,
+                                ARBuilder.getInstance().measureHeightFloorNode.getWorldPosition().z
+                        );
+                        Vector3 ceilingPoint = new Vector3(
+                                ARBuilder.getInstance().measureHeightCeilingNode.getWorldPosition().x,
+                                ARBuilder.getInstance().measureHeightCeilingNode.getWorldPosition().y,
+                                ARBuilder.getInstance().measureHeightCeilingNode.getWorldPosition().z
+                        );
+
+                        float height = ARUtil.getLengthBetweenPointToPlane(ceilingPoint, floorPoint, ARBuilder.getInstance().normalVectorOfPlane);
+                        arEnvironmentDelegate.onMeasureHeight(height);
+                    }
+
+                    return;
                 }
 
                 ARBuilder.getInstance().clearTemp();
-
             }
         }
     }
 
-    public void onUpdateFrame(ArSceneView arSceneView) {
-
+    private void measureHeightDrawWhenUpdate(ArSceneView arSceneView) {
         Frame frame = arSceneView.getArFrame();
 
         List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
@@ -168,41 +297,18 @@ public class AREnvironment {
             if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
 
                 ARBuilder.getInstance().checkDistanceBetweenCameraAndPlane(hitResult.getDistance());
-                ARBuilder.getInstance().showGuidePoint(hitResult, arSceneView);
+                ARBuilder.getInstance().showGuidePoint(hitResult, arSceneView, false);
 
-                if(ARBuilder.getInstance().checkFloorGuideEmpty()) {
+                if (ARBuilder.getInstance().measureHeightFloorNode != null && ARBuilder.getInstance().measureHeightCeilingNode != null) {
                     return;
                 }
 
-                // auto closed
-                if(ARBuilder.getInstance().isAutoClosed) {
-
+                if (ARBuilder.getInstance().measureHeightFloorNode == null && ARBuilder.getInstance().measureHeightCeilingNode == null) {
+                    return;
                 }
-                else {
-                    ARBuilder.getInstance().drawFloorGuideSegment(
-                            ARBuilder.getInstance().floorGuideList.get(ARBuilder.getInstance().floorGuideList.size() - 1),
-                            ARBuilder.getInstance().guidePointNode);
 
-//                if(isHitCeiling) {
-//                    // get distance ceiling
-//                    if(centerPoint != null) {
-//                        centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
-//                    }
-//                    else {
-//                        centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
-//                    }
-////                                Vector3 floorPoint = new Vector3(bottomAnchorPolygon.get(0).getWorldPosition().x, bottomAnchorPolygon.get(0).getWorldPosition().y, bottomAnchorPolygon.get(0).getWorldPosition().z);
-//                    Vector3 floorPoint = new Vector3(anchorNode.getWorldPosition().x, anchorNode.getWorldPosition().y, anchorNode.getWorldPosition().z);
-//                    Vector3 ceiling = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
-//
-//                    height = ARUtil.getLengthBetweenPointToPlane(ceiling, floorPoint, normalVectorOfPlane);
-//                    textViewHeightRealTime.setText(String.valueOf(height));
-//                }
-//                else {
-//                    drawTempLine(floorPolygonList.get(floorPolygonList.size() - 1), centerPoint);
-//                }
-
-                    ARBuilder.getInstance().checkPolygonAutoClose(activity);
+                if (ARBuilder.getInstance().measureHeightFloorNode != null) {
+                    ARBuilder.getInstance().drawFloorGuideSegment(ARBuilder.getInstance().measureHeightFloorNode, ARBuilder.getInstance().guidePointNode);
                 }
 
                 return;
@@ -210,10 +316,70 @@ public class AREnvironment {
         }
     }
 
+    private void measureHeightAutoWhenTouch(ArSceneView arSceneView) {
+        Frame frame = arSceneView.getArFrame();
+        List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
+        for (HitResult hitResult : hitTestResultList) {
+            Trackable trackable = hitResult.getTrackable();
+            if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+
+                // calculate normal vector of detected plane
+                ARBuilder.getInstance().createDetectedPlaneNormalVector(trackable);
+
+                // can only one node on floor
+                if(ARBuilder.getInstance().anchorNode != null) {
+                    return;
+                }
+
+                // create first anchorNode
+                ARBuilder.getInstance().createAnchorNode(hitResult, arSceneView);
+
+                ARBuilder.getInstance().createMeasureHeightAutoNode(hitResult, activity);
+
+            }
+        }
+    }
+
+    private void measureHeightAutoWhenUpdate(ArSceneView arSceneView) {
+        Frame frame = arSceneView.getArFrame();
+        List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
+        for (HitResult hitResult : hitTestResultList) {
+            Trackable trackable = hitResult.getTrackable();
+            if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+
+                ARBuilder.getInstance().checkDistanceBetweenCameraAndPlane(hitResult.getDistance());
+                ARBuilder.getInstance().showGuidePoint(hitResult, arSceneView, false);
+
+                if(isHitCeiling) {
+                    // get distance ceiling
+
+                    Vector3 floorPoint = new Vector3(
+                            ARBuilder.getInstance().anchorNode.getWorldPosition().x,
+                            ARBuilder.getInstance().anchorNode.getWorldPosition().y,
+                            ARBuilder.getInstance().anchorNode.getWorldPosition().z
+                    );
+                    Vector3 ceiling = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
+
+                    float height = ARUtil.getLengthBetweenPointToPlane(ceiling, floorPoint, ARBuilder.getInstance().normalVectorOfPlane);
+                    arEnvironmentDelegate.onMeasureHeight(height);
+
+                    return;
+                }
+
+                return;
+            }
+        }
+    }
+
+
     public void reset(Activity activity, ArSceneView arSceneView, Runnable finishActivity, Runnable findingPlane) {
 
         if (arSceneView == null) {
             return;
+        }
+
+        if(arSceneView.getArFrame() != null) {
+            arSceneView.getArFrame().acquirePointCloud().release();
         }
 
         arSceneView.pause();

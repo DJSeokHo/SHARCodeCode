@@ -32,22 +32,28 @@ import com.swein.sharcodecode.framework.util.thread.ThreadUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 public class ARBuilder {
 
     public interface ARBuilderDelegate {
         void onCalculate(float height, float area, float circumference, float wallArea, float volume);
+        void backToMeasureHeight();
     }
 
     private final static String TAG = "ARBuilder";
+
+    public enum MeasureHeightWay {
+        NONE, AUTO, DRAW
+    }
 
     public enum ARUnit {
         M, CM
     }
 
     public enum ARProcess {
-        READY, MEASURE_HEIGHT, MEASURE_ROOM, DRAW_WALL_OBJECT
+        MEASURE_HEIGHT_HINT, MEASURE_HEIGHT, MEASURE_ROOM, DRAW_WALL_OBJECT
     }
 
     private static ARBuilder instance = new ARBuilder();
@@ -74,7 +80,9 @@ public class ARBuilder {
     public ViewRenderable guideSizeTextView;
 
     // build process state
-    public ARProcess arProcess = ARProcess.READY;
+    public ARProcess arProcess = ARProcess.MEASURE_HEIGHT_HINT;
+
+    public MeasureHeightWay measureHeightWay = MeasureHeightWay.NONE;
 
     // current unit
     public ARUnit arUnit = ARUnit.M;
@@ -96,7 +104,10 @@ public class ARBuilder {
     public List<Node> floorGuideList;
     public float floorFixedY;
 
-    public float height = 1;
+    public Node measureHeightFloorNode;
+    public Node measureHeightCeilingNode;
+
+    public float height = 0;
 
     // anchor of room
     public AnchorNode anchorNode;
@@ -141,11 +152,23 @@ public class ARBuilder {
     }
 
     public void checkPlaneSize(Collection<Plane> planeCollection) {
+
+        if(arProcess != ARProcess.MEASURE_HEIGHT_HINT) {
+            return;
+        }
+
         for (Plane plane : planeCollection) {
             if (plane.getTrackingState() == TrackingState.TRACKING) {
+
+                HashMap<String, Object> hashMap = new HashMap<>();
+                int percentage = (int) (((plane.getExtentX() * plane.getExtentZ() * 2) / targetMinimumAreaSize) * 100);
+                hashMap.put("percentage", percentage);
+                EventCenter.getInstance().sendEvent(ARESSArrows.DETECTING_TARGET_MINIMUM_AREA_SIZE, this, hashMap);
+
                 if((plane.getExtentX() * plane.getExtentZ() * 2) > targetMinimumAreaSize) {
                     EventCenter.getInstance().sendEvent(ARESSArrows.DETECTED_TARGET_MINIMUM_AREA_SIZE_FINISHED, this, null);
                 }
+
             }
         }
     }
@@ -162,11 +185,11 @@ public class ARBuilder {
         }
     }
 
-    public void showGuidePoint(HitResult hitResult, ArSceneView arSceneView) {
+    public void showGuidePoint(HitResult hitResult, ArSceneView arSceneView, boolean limitY) {
 
         floorFixedY = hitResult.getHitPose().ty();
 
-        if(anchorNode != null) {
+        if(anchorNode != null && limitY) {
             floorFixedY = anchorNode.getWorldPosition().y;
         }
 
@@ -225,6 +248,46 @@ public class ARBuilder {
         node.setParent(anchorNode);
         floorGuideList.add(node);
 
+        DeviceUtil.vibrate(activity, 5);
+
+        if(anchorNode != null) {
+            floorFixedY = anchorNode.getWorldPosition().y;
+        }
+    }
+
+    public void createMeasureHeightDrawNode(HitResult hitResult, Activity activity) {
+
+        if(measureHeightFloorNode != null && measureHeightCeilingNode != null) {
+            ARTool.removeChildFormNode(measureHeightFloorNode);
+            ARTool.removeChildFormNode(measureHeightCeilingNode);
+
+            measureHeightFloorNode.setParent(null);
+            measureHeightCeilingNode.setParent(null);
+
+            measureHeightFloorNode = null;
+            measureHeightCeilingNode = null;
+        }
+
+        Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
+        Vector3 localPosition = ARTool.transformWorldPositionToLocalPositionOfParent(anchorNode, hitWorldPosition);
+
+        Node node = ARUtil.createLocalNode(localPosition.x, localPosition.y, localPosition.z, pointMaterial, nodeShadow);
+
+        node.setParent(anchorNode);
+
+        if(measureHeightFloorNode == null && measureHeightCeilingNode == null) {
+            measureHeightFloorNode = node;
+        }
+        else if(measureHeightFloorNode != null && measureHeightCeilingNode == null) {
+            measureHeightCeilingNode = node;
+        }
+
+        DeviceUtil.vibrate(activity, 5);
+    }
+
+    public void createMeasureHeightAutoNode(HitResult hitResult, Activity activity) {
+        Node node = ARUtil.createLocalNode(0, 0, 0, pointMaterial, nodeShadow);
+        node.setParent(anchorNode);
         DeviceUtil.vibrate(activity, 5);
 
         if(anchorNode != null) {
@@ -433,21 +496,53 @@ public class ARBuilder {
 
     public void back() {
 
-        if(isAutoClosed) {
+        if(arProcess == ARProcess.MEASURE_HEIGHT) {
 
-            if(anchorNode != null) {
-                ARTool.removeChildFormNode(anchorNode);
-                anchorNode.setParent(null);
-                anchorNode = null;
+            if(measureHeightWay == MeasureHeightWay.AUTO) {
+                if (anchorNode != null) {
+                    ARTool.removeChildFormNode(anchorNode);
+                    anchorNode.setParent(null);
+                    anchorNode = null;
+                }
             }
+            else if(measureHeightWay == MeasureHeightWay.DRAW) {
 
-            clearGuidePlane();
+                if(measureHeightFloorNode == null && measureHeightCeilingNode == null) {
+                    ARTool.removeChildFormNode(anchorNode);
+                    anchorNode.setParent(null);
+                    anchorNode = null;
+                }
 
-            // clear room bean
-            if(roomBean != null) {
-                roomBean.clear();
-                roomBean = null;
+                if(measureHeightFloorNode != null) {
+                    ARTool.removeChildFormNode(measureHeightFloorNode);
+                    measureHeightFloorNode.setParent(null);
+                    measureHeightFloorNode = null;
+                }
+
+                if(measureHeightCeilingNode != null) {
+                    ARTool.removeChildFormNode(measureHeightCeilingNode);
+                    measureHeightCeilingNode.setParent(null);
+                    measureHeightCeilingNode = null;
+                }
             }
+        }
+        else if(arProcess == ARProcess.MEASURE_ROOM) {
+
+            if(isAutoClosed) {
+
+                if(anchorNode != null) {
+                    ARTool.removeChildFormNode(anchorNode);
+                    anchorNode.setParent(null);
+                    anchorNode = null;
+                }
+
+                clearGuidePlane();
+
+                // clear room bean
+                if(roomBean != null) {
+                    roomBean.clear();
+                    roomBean = null;
+                }
 
 //            for(WallObjectBean wallObjectBean : wallObjectBeans) {
 //                for(Node node : wallObjectBean.objectPointList) {
@@ -456,10 +551,10 @@ public class ARBuilder {
 //            }
 //            wallObjectBeans.clear();
 
-            clearTemp();
-            clearGuide();
+                clearTemp();
+                clearGuide();
 
-            floorFixedY = 0;
+                floorFixedY = 0;
 
 //            if(wallGuidePoint != null) {
 //                wallGuidePoint.setParent(null);
@@ -474,17 +569,18 @@ public class ARBuilder {
 //            currentGuideIndex = -1;
 //            currentWallIndex = -1;
 
-        }
-        else {
+                backToMeasureHeight();
+            }
+            else {
 
-            if(floorGuideList.size() == 1) {
+                if(floorGuideList.size() == 1) {
 
-                if(anchorNode != null) {
-                    ARTool.removeChildFormNode(anchorNode);
-                    anchorNode = null;
-                }
+                    if(anchorNode != null) {
+                        ARTool.removeChildFormNode(anchorNode);
+                        anchorNode = null;
+                    }
 
-                clearGuidePlane();
+                    clearGuidePlane();
 //                textViewSizeList.clear();
 //                wallBeanList.clear();
 //
@@ -495,10 +591,10 @@ public class ARBuilder {
 //                }
 //                wallObjectBeans.clear();
 
-                clearTemp();
-                clearGuide();
+                    clearTemp();
+                    clearGuide();
 
-                floorFixedY = 0;
+                    floorFixedY = 0;
 
 //                if(wallGuidePoint != null) {
 //                    wallGuidePoint.setParent(null);
@@ -512,22 +608,35 @@ public class ARBuilder {
 //
 //                currentGuideIndex = -1;
 //                currentWallIndex = -1;
-            }
-            else if(floorGuideList.size() > 1) {
+                }
+                else if(floorGuideList.size() > 1) {
 
-                ARTool.removeChildFormNode(floorGuideList.get(floorGuideList.size() - 2));
-                floorGuideList.get(floorGuideList.size() - 1).setParent(null);
-                floorGuideList.remove(floorGuideList.size() - 1);
+                    ARTool.removeChildFormNode(floorGuideList.get(floorGuideList.size() - 2));
+                    floorGuideList.get(floorGuideList.size() - 1).setParent(null);
+                    floorGuideList.remove(floorGuideList.size() - 1);
 //                textViewSizeList.remove(textViewSizeList.size() - 1);
 
-                clearTemp();
-                clearGuide();
+                    clearTemp();
+                    clearGuide();
 
+                }
+                else {
+                    backToMeasureHeight();
+                }
             }
+
+            isAutoClosed = false;
+            isReadyToAutoClose = false;
+
         }
 
-        isAutoClosed = false;
-        isReadyToAutoClose = false;
+    }
+
+    private void backToMeasureHeight() {
+        height = 0;
+        measureHeightWay = MeasureHeightWay.NONE;
+        arProcess = ARProcess.MEASURE_HEIGHT_HINT;
+        arBuilderDelegate.backToMeasureHeight();
     }
 
     public void clearGuidePlane() {
@@ -545,7 +654,12 @@ public class ARBuilder {
         }
     }
 
-    public void clear() {
+    public void destroy() {
+
+        if(anchorNode != null) {
+            ARTool.removeChildFormNode(anchorNode);
+            anchorNode = null;
+        }
 
         targetMinimumAreaSize = 0;
 
@@ -559,10 +673,12 @@ public class ARBuilder {
         guideSizeTextView = null;
 
         // build process state
-        arProcess = ARProcess.READY;
+        arProcess = ARProcess.MEASURE_HEIGHT_HINT;
 
         // current unit
         arUnit = ARUnit.M;
+
+        measureHeightWay = MeasureHeightWay.NONE;
 
         // material
         pointMaterial = null;
@@ -575,8 +691,6 @@ public class ARBuilder {
         guideNodeMaterial = null;
         guideSegmentMaterial = null;
 
-        anchorNode = null;
-
         clearGuidePlane();
         floorGuideList = null;
 
@@ -585,5 +699,9 @@ public class ARBuilder {
 
         isReadyToAutoClose = false;
         isAutoClosed = false;
+
+        measureHeightFloorNode = null;
+        measureHeightCeilingNode = null;
+
     }
 }

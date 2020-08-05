@@ -14,6 +14,12 @@
     <string name="ar_unit_m">m</string>
     <string name="ar_unit_cm">cm</string>
 
+    <string name="ar_input_length_unit">단위</string>
+    <string name="ar_measure_height_title">높이 측정</string>
+    <string name="ar_measure_height_auto">자동 측정</string>
+    <string name="ar_measure_height_draw">직접 측정</string>
+    <string name="ar_measure_height_input">직접 입력</string>
+
     <string name="hello_world">Hello Square World!</string>
     <string name="ar_too_close">사용자와 지면/벽면 사이의 거리가 너무 가깝습니다. 0.5m ~ 2m 유지하는 것 권장합니다.</string>
     <string name="ar_too_far">사용자와 지면/벽면 사이의 거리가 너무 멀습니다. 0.5m ~ 2m 유지하는 것 권장합니다.</string>
@@ -29,17 +35,19 @@
 
     <string name="ar_select_unit">단위 선택</string>
 
-    <string name="ar_scan_hint">폰 카메라가 바닥 또는 천장 겨눠서 손이 좌우 계속 이동하면 바닥 또는 천장을 감지됩니다</string>
+    <string name="ar_scan_ready_hint">폰 카메라가 바닥 겨눠서 손이 좌우 계속 이동하면 바닥을 감지됩니다</string>
+    <string name="ar_scan_ceiling_hint">폰 카메라가 천장 겨눠서 손이 좌우 계속 이동하면 천장을 감지됩니다</string>
 
     <string name="ar_draw_height">방의 높이 측정 해 주세요</string>
     <string name="ar_draw_height_by_ceiling_auto">먼저 바닥에서 점 1개 찍은 다음에 천장을 감지한면 방 높이 자동으로 측정됩니다</string>
-    <string name="ar_draw_height_direct">방의 높이 직접 선 그려주세요</string>
+    <string name="ar_draw_height_direct">먼저 벽이랑 바닥을 연결하는 곳에서 점 1개 찍고 천장을 감지해서 벽에 따라 벽이랑 천장을 연결하는 곳에서 점 1개 더 찍으세요</string>
     <string name="ar_draw_height_input">방의 높이 직접 입력 해주세요</string>
 
     <string name="ar_scan_floor">바닥 감지 해 주세요</string>
     <string name="ar_scan_floor_hint">방 안에 한 바퀴 걷어 주세요</string>
     <string name="ar_scan_ceiling">천장을 감지 해 주세요</string>
     <string name="ar_draw_floor">방의 귀퉁이에 점 찍어 주세요</string>
+    <string name="ar_draw_floor_title">방 측정</string>
 
     <string name="ar_draw_window">창을 그려 주세요</string>
     <string name="ar_draw_door">문을 그려 주세요</string>
