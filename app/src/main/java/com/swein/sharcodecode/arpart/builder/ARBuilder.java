@@ -118,8 +118,6 @@ public class ARBuilder {
 
     private ARBuilderDelegate arBuilderDelegate;
 
-    private List<ViewRenderable> textViewSizeMarkList;
-
     public void init(Context context, ARBuilderDelegate arBuilderDelegate) {
         this.arBuilderDelegate = arBuilderDelegate;
 
@@ -147,8 +145,6 @@ public class ARBuilder {
         }, false);
 
         floorGuideList = new ArrayList<>();
-
-        textViewSizeMarkList = new ArrayList<>();
     }
 
     public void checkPlaneSize(Collection<Plane> planeCollection) {
@@ -449,7 +445,7 @@ public class ARBuilder {
         }
         roomBean.ceiling.createSegment();
 
-        // connect floor and ceiling
+        // connect floor and ceiling and vertical
         for(int i = 0; i < roomBean.floor.pointList.size() - 1; i++) {
             drawSegment(context, roomBean.floor.pointList.get(i).point, roomBean.floor.pointList.get(i + 1).point);
         }
@@ -721,11 +717,6 @@ public class ARBuilder {
 
         clearGuidePlane();
         floorGuideList = null;
-
-        if(textViewSizeMarkList != null) {
-            textViewSizeMarkList.clear();
-            textViewSizeMarkList = null;
-        }
 
         isReadyToAutoClose = false;
         isAutoClosed = false;

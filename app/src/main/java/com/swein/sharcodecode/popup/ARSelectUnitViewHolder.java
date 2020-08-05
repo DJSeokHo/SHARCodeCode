@@ -10,6 +10,7 @@ import android.widget.Spinner;
 
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
+import com.swein.sharcodecode.arpart.builder.tool.ARTool;
 import com.swein.sharcodecode.framework.util.view.ViewUtil;
 
 import java.util.ArrayList;
@@ -53,7 +54,7 @@ public class ARSelectUnitViewHolder {
         unitList.clear();
         unitList.add(view.getContext().getString(R.string.ar_unit_m));
         unitList.add(view.getContext().getString(R.string.ar_unit_cm));
-        unit = "";
+        unit = ARTool.getLengthUnitString(arUnit);
     }
 
     private void findView() {

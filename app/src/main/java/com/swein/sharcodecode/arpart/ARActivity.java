@@ -78,7 +78,6 @@ public class ARActivity extends FragmentActivity {
 
     private ImageView imageViewBack;
     private ImageView imageViewReset;
-    private ImageView imageViewSetting;
 
     private Node tempLineNode;
     private FaceToCameraNode tempTextNode;
@@ -117,9 +116,6 @@ public class ARActivity extends FragmentActivity {
 
 //    private ARBuilder.ARUnit ARUnit = ARBuilder.ARUnit.CM;
 
-    //*******
-
-    //*******
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -219,8 +215,6 @@ public class ARActivity extends FragmentActivity {
         textViewHeightRealTime = findViewById(R.id.textViewHeightRealTime);
 
         textViewNearest = findViewById(R.id.textViewNearest);
-
-        imageViewSetting = findViewById(R.id.imageViewSetting);
 
         frameLayoutPopup = findViewById(R.id.frameLayoutPopup);
     }
@@ -641,7 +635,6 @@ public class ARActivity extends FragmentActivity {
 
         }));
 
-        imageViewSetting.setOnClickListener(view -> showSelectUnitPopup());
     }
 
     private void clearRoomInfo() {
@@ -758,47 +751,49 @@ public class ARActivity extends FragmentActivity {
         return false;
     }
 
-    private void showSelectUnitPopup() {
-        arSelectUnitViewHolder = new ARSelectUnitViewHolder(this, ARBuilder.getInstance().arUnit, new ARSelectUnitViewHolder.ARSelectUnitViewHolderDelegate() {
-            @Override
-            public void onSelectUnit(String unit) {
-
-
-                switch (unit) {
-                    case "m":
-                        ARBuilder.getInstance().arUnit = ARBuilder.ARUnit.M;
-                        break;
-
-                    case "cm":
-                        ARBuilder.getInstance().arUnit = ARBuilder.ARUnit.CM;
-                        break;
-                }
-
-                closeSelectUnitPopup();
-                // update all text view
-            }
-
-            @Override
-            public void onClose() {
-                closeSelectUnitPopup();
-            }
-        });
-
-        frameLayoutPopup.addView(arSelectUnitViewHolder.getView());
-        frameLayoutPopup.setVisibility(View.VISIBLE);
-    }
-
-    private boolean closeSelectUnitPopup() {
-
-        if(arSelectUnitViewHolder != null) {
-            frameLayoutPopup.removeAllViews();
-            arSelectUnitViewHolder = null;
-
-            return true;
-        }
-
-        return false;
-    }
+//    private void showSelectUnitPopup() {
+//        arSelectUnitViewHolder = new ARSelectUnitViewHolder(this, ARBuilder.getInstance().arUnit, new ARSelectUnitViewHolder.ARSelectUnitViewHolderDelegate() {
+//            @Override
+//            public void onSelectUnit(String unit) {
+//
+//
+//                switch (unit) {
+//                    case "m":
+//                        ARBuilder.getInstance().arUnit = ARBuilder.ARUnit.M;
+//                        break;
+//
+//                    case "cm":
+//                        ARBuilder.getInstance().arUnit = ARBuilder.ARUnit.CM;
+//                        break;
+//                }
+//
+//                closeSelectUnitPopup();
+//
+//                // update all text view
+//                EventCenter.getInstance().sendEvent(ARESSArrows.CHANGE_UNIT, this, null);
+//            }
+//
+//            @Override
+//            public void onClose() {
+//                closeSelectUnitPopup();
+//            }
+//        });
+//
+//        frameLayoutPopup.addView(arSelectUnitViewHolder.getView());
+//        frameLayoutPopup.setVisibility(View.VISIBLE);
+//    }
+//
+//    private boolean closeSelectUnitPopup() {
+//
+//        if(arSelectUnitViewHolder != null) {
+//            frameLayoutPopup.removeAllViews();
+//            arSelectUnitViewHolder = null;
+//
+//            return true;
+//        }
+//
+//        return false;
+//    }
 
     private List<Integer> getThoughWall(List<Vector3> resultList, HitResult hitResult) {
 
@@ -961,10 +956,6 @@ public class ARActivity extends FragmentActivity {
             return;
         }
 
-        if(closeSelectUnitPopup()) {
-            return;
-        }
-
         if(closeMeasureHeightPopup()) {
             return;
         }
@@ -985,11 +976,15 @@ public class ARActivity extends FragmentActivity {
         AREnvironment.getInstance().pause(arSceneView);
     }
 
+    private void removeESS() {
+        EventCenter.getInstance().removeAllObserver(this);
+    }
+
     @Override
     public void onDestroy() {
         AREnvironment.getInstance().destroy(arSceneView);
         ARBuilder.getInstance().destroy();
-
+        removeESS();
         super.onDestroy();
     }
 }

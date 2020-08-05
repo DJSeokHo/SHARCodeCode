@@ -202,7 +202,7 @@ public class ARTool {
                 .thenAccept(viewRenderable -> {
 
                     TextView textView = ((TextView)viewRenderable.getView());
-                    textView.setText(String.format("%.2f", length) + ARTool.getLengthUnitString(arUnit));
+                    textView.setText(String.format("%.2f", length) + " " + ARTool.getLengthUnitString(arUnit));
                     viewRenderable.setShadowCaster(false);
                     viewRenderable.setShadowReceiver(false);
 
