@@ -35,7 +35,6 @@ import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
 import com.swein.sharcodecode.arpart.environment.AREnvironment;
-import com.swein.sharcodecode.framework.util.ar.ARUtil;
 import com.swein.sharcodecode.framework.util.device.DeviceUtil;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
 import com.swein.sharcodecode.popup.ARHintPopupViewHolder;
@@ -350,7 +349,7 @@ public class ARActivity extends FragmentActivity {
                                     Vector3 vector3Local = ARTool.transformWorldPositionToLocalPositionOfParent(anchorNode, vector3World);
 
 
-                                    wallTempPoint = ARUtil.createLocalNode(
+                                    wallTempPoint = ARTool.createLocalNode(
                                             vector3Local.x,
                                             vector3Local.y,
                                             vector3Local.z,
@@ -369,7 +368,7 @@ public class ARActivity extends FragmentActivity {
 
                                         Vector3 horizontalVector3 = new Vector3(wallGuidePoint.getWorldPosition().x, wallGuidePoint.getWorldPosition().y, wallGuidePoint.getWorldPosition().z);
                                         Vector3 horizontalLocalPosition = ARTool.transformWorldPositionToLocalPositionOfParent(this.anchorNode, horizontalVector3);
-                                        Node horizontalNode = ARUtil.createLocalNode(horizontalLocalPosition.x, horizontalLocalPosition.y, horizontalLocalPosition.z, wallPointMaterial, shadow);
+                                        Node horizontalNode = ARTool.createLocalNode(horizontalLocalPosition.x, horizontalLocalPosition.y, horizontalLocalPosition.z, wallPointMaterial, shadow);
                                         horizontalNode.setParent(anchorNode);
                                         wallObjectBean.objectPointList.add(horizontalNode);
 
@@ -379,7 +378,7 @@ public class ARActivity extends FragmentActivity {
                                         verticalVector3.x = wallTempPoint.getWorldPosition().x;
                                         verticalVector3.y = wallGuidePoint.getWorldPosition().y;
                                         verticalVector3.z = wallTempPoint.getWorldPosition().z;
-                                        Node verticalNode = ARUtil.createLocalNode(verticalVector3.x, verticalVector3.y, verticalVector3.z, wallPointMaterial, shadow);
+                                        Node verticalNode = ARTool.createLocalNode(verticalVector3.x, verticalVector3.y, verticalVector3.z, wallPointMaterial, shadow);
                                         verticalNode.setParent(anchorNode);
                                         wallObjectBean.objectPointList.add(verticalNode);
 
@@ -485,7 +484,7 @@ public class ARActivity extends FragmentActivity {
                                 centerPoint.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz()));
                             }
                             else {
-                                centerPoint = ARUtil.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
+                                centerPoint = ARTool.createWorldNode(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz(), pointMaterial, shadow);
                                 centerPoint.setParent(arSceneView.getScene());
                             }
                             // draw center point
@@ -541,7 +540,7 @@ public class ARActivity extends FragmentActivity {
                                 wallGuidePoint.setWorldPosition(new Vector3(result.get(resultIndex).x, result.get(resultIndex).y, result.get(resultIndex).z));
                             }
                             else {
-                                wallGuidePoint = ARUtil.createWorldNode(result.get(resultIndex).x, result.get(resultIndex).y, result.get(resultIndex).z, wallPointMaterial, shadow);
+                                wallGuidePoint = ARTool.createWorldNode(result.get(resultIndex).x, result.get(resultIndex).y, result.get(resultIndex).z, wallPointMaterial, shadow);
                             }
                             wallGuidePoint.setParent(arSceneView.getScene());
 
@@ -798,7 +797,7 @@ public class ARActivity extends FragmentActivity {
     private List<Integer> getThoughWall(List<Vector3> resultList, HitResult hitResult) {
 
         List<Integer> indexList = new ArrayList<>();
-
+//
 //        Vector3 normalVector;
 //        Vector3 rayVector;
 //        Vector3 rayOrigin;
@@ -807,7 +806,7 @@ public class ARActivity extends FragmentActivity {
 //        for(int i = 0; i < wallBeanList.size(); i++) {
 //
 //            // check wall test
-//            normalVector = ARUtil.getNormalVectorOfThreeVectors(
+//            normalVector = ARTool.getNormalVectorOfThreeVectors(
 //                    new Vector3(wallBeanList.get(i).endPointList.get(0).x, wallBeanList.get(i).endPointList.get(0).y, wallBeanList.get(i).endPointList.get(0).z),
 //                    new Vector3(wallBeanList.get(i).endPointList.get(1).x, wallBeanList.get(i).endPointList.get(1).y, wallBeanList.get(i).endPointList.get(1).z),
 //                    new Vector3(wallBeanList.get(i).endPointList.get(3).x, wallBeanList.get(i).endPointList.get(3).y, wallBeanList.get(i).endPointList.get(3).z)

@@ -25,7 +25,6 @@ import com.swein.sharcodecode.arpart.bean.RoomBean;
 import com.swein.sharcodecode.arpart.bean.basic.PointBean;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
-import com.swein.sharcodecode.framework.util.ar.ARUtil;
 import com.swein.sharcodecode.framework.util.device.DeviceUtil;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
 import com.swein.sharcodecode.framework.util.thread.ThreadUtil;
@@ -231,7 +230,7 @@ public class ARBuilder {
     public void createGuideFloorNode(HitResult hitResult, Activity activity) {
         Node node;
         if(floorGuideList.isEmpty()) {
-            node = ARUtil.createLocalNode(0, 0, 0, pointMaterial, nodeShadow);
+            node = ARTool.createLocalNode(0, 0, 0, pointMaterial, nodeShadow);
         }
         else {
 //                                Quaternion localRotation = new Quaternion(hitResult.getHitPose().qx(), hitResult.getHitPose().qy(), hitResult.getHitPose().qz(), hitResult.getHitPose().qw());
@@ -239,7 +238,7 @@ public class ARBuilder {
             Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
             Vector3 localPosition = ARTool.transformWorldPositionToLocalPositionOfParent(anchorNode, hitWorldPosition);
 
-            node = ARUtil.createLocalNode(localPosition.x, localPosition.y, localPosition.z, pointMaterial, nodeShadow);
+            node = ARTool.createLocalNode(localPosition.x, localPosition.y, localPosition.z, pointMaterial, nodeShadow);
         }
 
         node.setParent(anchorNode);
@@ -268,7 +267,7 @@ public class ARBuilder {
         Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
         Vector3 localPosition = ARTool.transformWorldPositionToLocalPositionOfParent(anchorNode, hitWorldPosition);
 
-        Node node = ARUtil.createLocalNode(localPosition.x, localPosition.y, localPosition.z, pointMaterial, nodeShadow);
+        Node node = ARTool.createLocalNode(localPosition.x, localPosition.y, localPosition.z, pointMaterial, nodeShadow);
 
         node.setParent(anchorNode);
 
@@ -283,7 +282,7 @@ public class ARBuilder {
     }
 
     public void createMeasureHeightAutoNode(HitResult hitResult, Activity activity) {
-        Node node = ARUtil.createLocalNode(0, 0, 0, pointMaterial, nodeShadow);
+        Node node = ARTool.createLocalNode(0, 0, 0, pointMaterial, nodeShadow);
         node.setParent(anchorNode);
         DeviceUtil.vibrate(activity, 5);
 

@@ -253,6 +253,12 @@ public class ARTool {
         return Math.abs(area3DPolygon(list.size(), vector3List, normalVectorOfPlane));
     }
 
+    public static float getLengthBetweenPointToPlane(Vector3 pointInAir, Vector3 pointAtPlane, Vector3 normalVectorOfPlane) {
+
+        Vector3 ab = new Vector3(pointInAir.x - pointAtPlane.x, pointInAir.y - pointAtPlane.y, pointInAir.z - pointAtPlane.z);
+        return Math.abs(Vector3.dot(ab, normalVectorOfPlane) / normalVectorOfPlane.length());
+    }
+
     /**
      * computes the area of a 3D planar polygon
      *

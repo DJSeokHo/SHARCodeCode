@@ -21,7 +21,6 @@ import com.google.ar.sceneform.math.Vector3;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
-import com.swein.sharcodecode.framework.util.ar.ARUtil;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.toast.ToastUtil;
 
@@ -286,7 +285,7 @@ public class AREnvironment {
                                 ARBuilder.getInstance().measureHeightCeilingNode.getWorldPosition().z
                         );
 
-                        float height = ARUtil.getLengthBetweenPointToPlane(ceilingPoint, floorPoint, ARBuilder.getInstance().normalVectorOfPlane);
+                        float height = ARTool.getLengthBetweenPointToPlane(ceilingPoint, floorPoint, ARBuilder.getInstance().normalVectorOfPlane);
                         arEnvironmentDelegate.onMeasureHeight(height);
                     }
 
@@ -370,7 +369,7 @@ public class AREnvironment {
                     );
                     Vector3 ceiling = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
 
-                    float height = ARUtil.getLengthBetweenPointToPlane(ceiling, floorPoint, ARBuilder.getInstance().normalVectorOfPlane);
+                    float height = ARTool.getLengthBetweenPointToPlane(ceiling, floorPoint, ARBuilder.getInstance().normalVectorOfPlane);
                     arEnvironmentDelegate.onMeasureHeight(height);
 
                     return;
