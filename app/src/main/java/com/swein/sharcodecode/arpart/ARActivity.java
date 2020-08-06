@@ -48,8 +48,6 @@ public class ARActivity extends FragmentActivity {
 
     private TextView textViewPlaneType;
 
-    private FrameLayout frameLayoutPopup;
-
     private ImageView imageViewBack;
     private ImageView imageViewReset;
 
@@ -57,7 +55,7 @@ public class ARActivity extends FragmentActivity {
     private ARMeasureHeightHintViewHolder arMeasureHeightHintViewHolder;
     private ARDrawObjectViewHolder arDrawObjectViewHolder;
     private ARHintPopupViewHolder arHintPopupViewHolder;
-
+    private FrameLayout frameLayoutPopup;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +63,6 @@ public class ARActivity extends FragmentActivity {
         setContentView(R.layout.activity_a_r);
 
         initESS();
-        initData();
 
         findView();
         setListener();
@@ -103,11 +100,6 @@ public class ARActivity extends FragmentActivity {
             textViewTooCloseTooFar.setText("");
             frameLayoutTooCloseTooFar.setVisibility(View.GONE);
         });
-    }
-
-
-    private void initData() {
-
     }
 
     private void findView() {
