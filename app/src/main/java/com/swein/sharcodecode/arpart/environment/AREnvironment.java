@@ -731,6 +731,18 @@ public class AREnvironment {
                     Vector3 ceiling = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
 
                     float height = MathTool.getLengthBetweenPointToPlane(ceiling, floorPoint, ARBuilder.instance.normalVectorOfPlane);
+
+                    ARBuilder.instance.height = height;
+
+                    // clear node when measure height finished
+                    ARBuilder.instance.clearAnchor();
+                    ARBuilder.instance.clearMeasureHeightFloorNode();
+                    ARBuilder.instance.clearMeasureHeightCeilingNode();
+
+                    // to next process - measure room
+                    ARConstants.arProcess = ARConstants.ARProcess.MEASURE_ROOM;
+
+                    // update UI
                     arEnvironmentDelegate.onMeasureHeight(height);
 
                     return;
