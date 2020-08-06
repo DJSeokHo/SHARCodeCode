@@ -634,47 +634,61 @@ public class ARBuilder {
         }
         else if(ARConstants.arProcess == ARConstants.ARProcess.DRAW_WALL_OBJECT) {
 
-//            if(anchorNode != null) {
-//                ARTool.removeChildFormNode(anchorNode);
-//                anchorNode.setParent(null);
-//                anchorNode = null;
-//            }
-//            else {
-//                backToMeasureHeight();
-//            }
-//
-//            clearGuidePlane();
-//
-//            // clear room bean
-//            if(roomBean != null) {
-//                roomBean.clear();
-//                roomBean = null;
-//            }
-//
-//            for(WallObjectBean wallObjectBean : wallObjectBeans) {
-//                for(Node node : wallObjectBean.objectPointList) {
-//                    node.setParent(null);
-//                }
-//            }
-//            wallObjectBeans.clear();
-//
-//            clearTemp();
-//            clearGuide();
-//
-//            floorFixedY = 0;
-//
-//            if(wallGuidePoint != null) {
-//                wallGuidePoint.setParent(null);
-//                wallGuidePoint = null;
-//            }
-//
-//            if(wallTempPoint != null) {
-//                wallTempPoint.setParent(null);
-//                wallTempPoint = null;
-//            }
-//
-//            currentGuideIndex = -1;
-//            currentWallIndex = -1;
+            if(!wallObjectBeanList.isEmpty()) {
+
+                for(WallObjectBean wallObjectBean : wallObjectBeanList) {
+                    wallObjectBean.clear();
+                }
+                wallObjectBeanList.clear();
+
+                if(wallGuidePoint != null) {
+                    wallGuidePoint.setParent(null);
+                    wallGuidePoint = null;
+                }
+
+                if(wallTempPoint != null) {
+                    wallTempPoint.setParent(null);
+                    wallTempPoint = null;
+                }
+
+                currentGuideIndex = -1;
+                currentWallIndex = -1;
+
+                return;
+            }
+
+            if(wallGuidePoint != null) {
+                wallGuidePoint.setParent(null);
+                wallGuidePoint = null;
+            }
+
+            if(wallTempPoint != null) {
+                wallTempPoint.setParent(null);
+                wallTempPoint = null;
+            }
+
+            currentGuideIndex = -1;
+            currentWallIndex = -1;
+
+            ARConstants.arProcess = ARConstants.ARProcess.MEASURE_ROOM;
+
+            if (anchorNode != null) {
+                ARTool.removeChildFormNode(anchorNode);
+                anchorNode.setParent(null);
+                anchorNode = null;
+            }
+
+            clearGuidePlane();
+            clearTemp();
+            clearGuide();
+            clearAnchor();
+
+            if(roomBean != null) {
+                roomBean.clear();
+                roomBean = null;
+            }
+
+            isReadyToAutoClose = false;
 
         }
     }
