@@ -258,6 +258,8 @@ public class ARActivity extends FragmentActivity {
             ARBuilder.instance.clearGuide();
             ARBuilder.instance.clearTemp();
             ARBuilder.instance.clearAnchor();
+            ARBuilder.instance.clearWallObject();
+
             ARBuilder.instance.height = 0;
             ARBuilder.instance.floorFixedY = 0;
             ARBuilder.instance.normalVectorOfPlane = null;
