@@ -22,6 +22,7 @@ import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.FaceToCameraNode;
 import com.swein.sharcodecode.arpart.bean.RoomBean;
+import com.swein.sharcodecode.arpart.bean.basic.PlaneBean;
 import com.swein.sharcodecode.arpart.bean.basic.PointBean;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
@@ -206,7 +207,6 @@ public class ARBuilder {
                     new Vector3(((Plane) trackable).getCenterPose().tx() + ((Plane) trackable).getExtentX(), ((Plane) trackable).getCenterPose().ty(), ((Plane) trackable).getCenterPose().tz()),
                     new Vector3(((Plane) trackable).getCenterPose().tx(), ((Plane) trackable).getCenterPose().ty(), ((Plane) trackable).getCenterPose().tz() + ((Plane) trackable).getExtentZ())
             );
-//                    ILog.iLogDebug(TAG, "normalVectorOfPlane by cal " + normalVectorOfPlane.x + " " + normalVectorOfPlane.y + " " + normalVectorOfPlane.z);
         }
     }
 
@@ -461,7 +461,28 @@ public class ARBuilder {
 
 
         // create wall
+        PlaneBean planeBean;
+        for(int i = 0; i < roomBean.floor.pointList.size(); i++) {
 
+            planeBean = new PlaneBean();
+
+            if(i < roomBean.floor.pointList.size() - 1) {
+                planeBean.pointList.add(roomBean.floor.pointList.get(i));
+                planeBean.pointList.add(roomBean.floor.pointList.get(i + 1));
+                planeBean.pointList.add(roomBean.ceiling.pointList.get(i + 1));
+                planeBean.pointList.add(roomBean.ceiling.pointList.get(i));
+            }
+            else {
+
+                planeBean.pointList.add(roomBean.floor.pointList.get(i));
+                planeBean.pointList.add(roomBean.floor.pointList.get(0));
+                planeBean.pointList.add(roomBean.ceiling.pointList.get(0));
+                planeBean.pointList.add(roomBean.ceiling.pointList.get(i));
+            }
+
+            planeBean.createSegment();
+            roomBean.wallList.add(planeBean);
+        }
 
         // calculate
         ThreadUtil.startThread(() -> {
@@ -588,7 +609,6 @@ public class ARBuilder {
                     }
 
                     clearGuidePlane();
-//                textViewSizeList.clear();
 //                wallBeanList.clear();
 //
 //                for(WallObjectBean wallObjectBean : wallObjectBeans) {
@@ -621,7 +641,6 @@ public class ARBuilder {
                     ARTool.removeChildFormNode(floorGuideList.get(floorGuideList.size() - 2));
                     floorGuideList.get(floorGuideList.size() - 1).setParent(null);
                     floorGuideList.remove(floorGuideList.size() - 1);
-//                textViewSizeList.remove(textViewSizeList.size() - 1);
 
                     clearTemp();
                     clearGuide();
@@ -636,7 +655,6 @@ public class ARBuilder {
             isReadyToAutoClose = false;
 
         }
-
     }
 
     private void backToMeasureHeight() {

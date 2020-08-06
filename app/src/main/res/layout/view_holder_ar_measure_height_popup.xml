@@ -79,6 +79,7 @@
                 android:layout_height="wrap_content"/>
 
             <EditText
+                android:background="@drawable/ar_input_height_bg"
                 android:imeOptions="actionDone"
                 android:layout_gravity="center_vertical"
                 android:padding="5dp"

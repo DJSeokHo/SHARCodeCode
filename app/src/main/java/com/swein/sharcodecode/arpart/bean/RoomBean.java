@@ -75,17 +75,35 @@ public class RoomBean {
 
     public void clear() {
 
-        for(int i = 0; i < ceiling.pointList.size(); i++) {
-            ceiling.pointList.get(i).point.setParent(null);
+        if(wallList != null) {
+            for(int i = 0; i < wallList.size(); i++) {
+                for(int j = 0; j < wallList.get(i).pointList.size(); j++) {
+                    wallList.get(i).pointList.get(j).point.setParent(null);
+                }
+                wallList.get(i).pointList.clear();
+            }
+            wallList.clear();
+            wallList = null;
         }
-        ceiling.pointList.clear();
-        ceiling = null;
 
-        for(int i = 0; i < floor.pointList.size(); i++) {
-            floor.pointList.get(i).point.setParent(null);
+
+        if(ceiling != null) {
+            for(int i = 0; i < ceiling.pointList.size(); i++) {
+                ceiling.pointList.get(i).point.setParent(null);
+            }
+            ceiling.pointList.clear();
+            ceiling = null;
         }
-        floor.pointList.clear();
-        floor = null;
+
+
+        if(floor != null) {
+            for(int i = 0; i < floor.pointList.size(); i++) {
+                floor.pointList.get(i).point.setParent(null);
+            }
+            floor.pointList.clear();
+            floor = null;
+        }
+
 
         normalVectorOfPlane = null;
 
