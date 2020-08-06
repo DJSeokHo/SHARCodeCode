@@ -785,6 +785,7 @@ public class AREnvironment {
             findingPlane.run();
         }
 
+        ARBuilder.instance.reset();
     }
 
     public void resume(Activity activity, ArSceneView arSceneView, Runnable finishActivity, Runnable findingPlane) {

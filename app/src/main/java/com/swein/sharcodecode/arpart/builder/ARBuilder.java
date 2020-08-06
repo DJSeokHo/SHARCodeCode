@@ -745,6 +745,21 @@ public class ARBuilder {
         }
     }
 
+    public void reset() {
+        clearGuidePlane();
+        clearGuide();
+        clearTemp();
+        clearAnchor();
+        clearWallObject();
+
+        height = 0;
+        floorFixedY = 0;
+        normalVectorOfPlane = null;
+        roomBean = null;
+
+        isReadyToAutoClose = false;
+    }
+
     public void destroy() {
 
         clearAnchor();

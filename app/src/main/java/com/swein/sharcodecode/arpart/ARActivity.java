@@ -15,7 +15,6 @@ import androidx.fragment.app.FragmentActivity;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.HitTestResult;
 import com.swein.sharcodecode.R;
-import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 import com.swein.sharcodecode.arpart.constants.ARConstants;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
@@ -201,23 +200,8 @@ public class ARActivity extends FragmentActivity {
             clearHint();
             clearRealTimeHeight();
 
-
-            ARBuilder.instance.clearGuidePlane();
-            ARBuilder.instance.clearGuide();
-            ARBuilder.instance.clearTemp();
-            ARBuilder.instance.clearAnchor();
-            ARBuilder.instance.clearWallObject();
-
-            ARBuilder.instance.height = 0;
-            ARBuilder.instance.floorFixedY = 0;
-            ARBuilder.instance.normalVectorOfPlane = null;
-            ARBuilder.instance.roomBean = null;
-
-            ARBuilder.instance.isReadyToAutoClose = false;
-
             ARConstants.arProcess = ARConstants.ARProcess.DETECT_PLANE;
             ARConstants.measureHeightWay = ARConstants.MeasureHeightWay.NONE;
-
         }));
 
     }
