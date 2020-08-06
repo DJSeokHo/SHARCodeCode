@@ -16,10 +16,12 @@ import com.google.ar.sceneform.math.Quaternion;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
+import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.arpart.FaceToCameraNode;
 import com.swein.sharcodecode.arpart.bean.RoomBean;
 import com.swein.sharcodecode.arpart.bean.basic.PlaneBean;
 import com.swein.sharcodecode.arpart.bean.basic.PointBean;
+import com.swein.sharcodecode.arpart.bean.object.WallObjectBean;
 import com.swein.sharcodecode.arpart.builder.material.ARMaterial;
 import com.swein.sharcodecode.arpart.builder.renderable.ARRenderable;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
@@ -83,6 +85,10 @@ public class ARBuilder {
 
     public Node guideSizeTextNode;
 
+    // point of screen center of wall
+    public Node wallGuidePoint;
+    public Node wallTempPoint;
+    public List<WallObjectBean> wallObjectBeans;
 
     // 감지 필요한 최소 cloud point 면적
     public int targetMinimumAreaSize = 0;
@@ -105,6 +111,10 @@ public class ARBuilder {
 
     private ARBuilderDelegate arBuilderDelegate;
 
+
+    public int currentWallIndex = -1;
+    public int currentGuideIndex = -1;
+
     public void init(Context context, ARBuilderDelegate arBuilderDelegate) {
         this.arBuilderDelegate = arBuilderDelegate;
 
@@ -112,6 +122,7 @@ public class ARBuilder {
         targetMinimumAreaSize = 3;
 
         floorGuideList = new ArrayList<>();
+        wallObjectBeans = new ArrayList<>();
 
         ARMaterial.instance.init(context);
         ARRenderable.instance.init(context);
@@ -467,6 +478,122 @@ public class ARBuilder {
         clearTemp();
     }
 
+    public void drawTempWallLine(Node startNode, Node endNode, Node tempLineNode, Node tempTextNode, ViewRenderable viewRenderableSizeText) {
+
+        Vector3 startVector3 = startNode.getWorldPosition();
+        Vector3 endVector3 = endNode.getWorldPosition();
+
+        Vector3 difference = Vector3.subtract(startVector3, endVector3);
+
+        Vector3 directionFromTopToBottom = difference.normalized();
+        Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
+
+        if(tempLineNode != null) {
+
+            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), ARMaterial.instance.wallLineMaterial);
+            lineMode.setShadowCaster(nodeShadow);
+            lineMode.setShadowReceiver(nodeShadow);
+
+            tempLineNode.setRenderable(lineMode);
+            tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
+            tempLineNode.setWorldRotation(rotationFromAToB);
+        }
+        else {
+            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), ARMaterial.instance.wallLineMaterial);
+            lineMode.setShadowCaster(nodeShadow);
+            lineMode.setShadowReceiver(nodeShadow);
+
+            tempLineNode = new Node();
+            tempLineNode.setParent(startNode);
+            tempLineNode.setRenderable(lineMode);
+            tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
+            tempLineNode.setWorldRotation(rotationFromAToB);
+        }
+
+        float length = MathTool.getLengthByUnit(ARBuilder.instance.arUnit, difference.length());
+
+        if(tempTextNode != null) {
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit));
+        }
+        else {
+
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit));
+
+            tempTextNode = new FaceToCameraNode();
+            tempTextNode.setParent(tempLineNode);
+
+            tempTextNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
+            tempTextNode.setLocalPosition(new Vector3(0f, 0.08f, 0f));
+            tempTextNode.setRenderable(viewRenderableSizeText);
+
+        }
+    }
+
+    public List<Integer> getThoughWall(ArSceneView arSceneView, List<Vector3> resultList, HitResult hitResult) {
+
+        List<Integer> indexList = new ArrayList<>();
+
+        if(roomBean == null) {
+            return indexList;
+        }
+
+        Vector3 normalVector;
+        Vector3 rayVector;
+        Vector3 rayOrigin;
+        Vector3 planePoint;
+
+        for(int i = 0; i < roomBean.wallList.size(); i++) {
+
+            // check wall test
+            normalVector = MathTool.getNormalVectorOfThreeVectors(
+                    new Vector3(
+                            roomBean.wallList.get(i).pointList.get(0).point.getWorldPosition().x,
+                            roomBean.wallList.get(i).pointList.get(0).point.getWorldPosition().y,
+                            roomBean.wallList.get(i).pointList.get(0).point.getWorldPosition().z),
+
+                    new Vector3(
+                            roomBean.wallList.get(i).pointList.get(1).point.getWorldPosition().x,
+                            roomBean.wallList.get(i).pointList.get(1).point.getWorldPosition().y,
+                            roomBean.wallList.get(i).pointList.get(1).point.getWorldPosition().z),
+
+                    new Vector3(
+                            roomBean.wallList.get(i).pointList.get(3).point.getWorldPosition().x,
+                            roomBean.wallList.get(i).pointList.get(3).point.getWorldPosition().y,
+                            roomBean.wallList.get(i).pointList.get(3).point.getWorldPosition().z)
+            );
+
+            rayVector = new Vector3(
+                    hitResult.getHitPose().tx(),
+                    hitResult.getHitPose().ty(),
+                    hitResult.getHitPose().tz()
+            );
+
+            rayOrigin = new Vector3(
+                    arSceneView.getArFrame().getCamera().getPose().tx(),
+                    arSceneView.getArFrame().getCamera().getPose().ty(),
+                    arSceneView.getArFrame().getCamera().getPose().tz()
+            );
+
+            planePoint = new Vector3(
+                    roomBean.wallList.get(i).pointList.get(0).point.getWorldPosition().x,
+                    roomBean.wallList.get(i).pointList.get(0).point.getWorldPosition().y,
+                    roomBean.wallList.get(i).pointList.get(0).point.getWorldPosition().z);
+
+            Vector3 result = new Vector3();
+            boolean isPointInPlane = MathTool.calculateIntersectionOfLineAndPlane(rayVector, rayOrigin, normalVector, planePoint, result) == 1;
+
+//            boolean isPointInPoly = ARUtil.checkIsVectorInPolygon(result, wallPoint);
+            boolean isPointInPoly = MathTool.checkIsVectorInPolygon(result, roomBean.wallList.get(i).pointList.get(0).point.getWorldPosition(), roomBean.wallList.get(i).pointList.get(2).point.getWorldPosition());
+
+            if(isPointInPlane && isPointInPoly) {
+                resultList.add(result);
+                indexList.add(i);
+            }
+        }
+
+        return indexList;
+    }
+
     public void clearTemp() {
 
         if(guideSizeTextNode != null) {
@@ -667,11 +794,16 @@ public class ARBuilder {
         targetMinimumAreaSize = 0;
         height = 0;
 
-        // temp guide line
+        currentWallIndex = -1;
+        currentGuideIndex = -1;
+
         guideSegmentNode = null;
-        // point of screen center
+
         guidePointNode = null;
         guideSizeTextNode = null;
+
+        wallGuidePoint = null;
+        wallTempPoint = null;
 
         arProcess = ARProcess.DETECT_PLANE;
         arUnit = ARUnit.M;
@@ -687,6 +819,9 @@ public class ARBuilder {
 
         ARMaterial.instance.destroy();
         ARRenderable.instance.destroy();
+
+        wallObjectBeans.clear();
+        wallObjectBeans = null;
 
     }
 }

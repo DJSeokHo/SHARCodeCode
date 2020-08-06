@@ -8,6 +8,8 @@
     android:id="@+id/frameLayoutRoot">
 
     <LinearLayout
+        android:clickable="true"
+        android:focusable="true"
         android:layout_gravity="center"
         android:background="@color/white"
         android:layout_width="310dp"

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 
 import com.google.ar.sceneform.rendering.Material;
+import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
 
 public class ARMaterial {
@@ -21,6 +22,9 @@ public class ARMaterial {
 
     public Material guideNodeMaterial;
     public Material guideSegmentMaterial;
+
+    public Material wallPointMaterial;
+    public Material wallLineMaterial;
 
 
     public void init(Context context) {
@@ -41,6 +45,12 @@ public class ARMaterial {
             objectGuideNodeMaterial = material;
         });
 
+        MaterialFactory
+                .makeOpaqueWithColor(context, new com.google.ar.sceneform.rendering.Color(android.graphics.Color.RED))
+                .thenAccept(material -> {
+                    wallPointMaterial = material;
+                    wallLineMaterial = material;
+                });
     }
 
     public void destroy() {

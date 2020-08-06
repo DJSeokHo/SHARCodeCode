@@ -143,6 +143,129 @@ public class MathTool {
         return area;
     }
 
+
+    /**
+     * find the 3D intersection of a segment and a plane
+     * return 0 = disjoint (no intersection)
+     * 1 =  intersection in the unique point intersectVector
+     * 2 = the  segment lies in the plane
+     */
+    public static int calculateIntersectionOfLineAndPlane(Vector3 rayVector, Vector3 rayPoint, Vector3 planeNormal, Vector3 planePoint, Vector3 intersectVector)
+    {
+        Vector3 u = new Vector3();
+        u.x = rayVector.x - rayPoint.x;
+        u.y = rayVector.y - rayPoint.y;
+        u.z = rayVector.z - rayPoint.z;
+
+        Vector3 w = new Vector3();
+        w.x = rayPoint.x - planePoint.x;
+        w.y = rayPoint.y - planePoint.y;
+        w.z = rayPoint.z - planePoint.z;
+
+        float D = Vector3.dot(planeNormal, u);
+        float N = -Vector3.dot(planeNormal, w);
+
+        if (Math.abs(D) < 0.00000001) {
+            // segment is parallel to plane
+            if (N == 0) {
+                // segment lies in plane
+                return 2;
+            }
+            else {
+                // no intersection
+                return 0;
+            }
+        }
+
+        // they are not parallel
+        // compute intersect param
+        float sI = N / D;
+        if (sI < 0 || sI > 1) {
+            // no intersection
+            return 0;
+        }
+
+        intersectVector.x = rayPoint.x + sI * u.x;
+        intersectVector.y = rayPoint.y + sI * u.y;
+        intersectVector.z = rayPoint.z + sI * u.z;
+
+        // compute segment intersect point
+        return 1;
+    }
+
+    public static boolean checkIsVectorInPolygon(Vector3 p, List<Vector3> poly) {
+        float px = p.x;
+        float py = p.z;
+        boolean flag = false;
+
+        for(int i = 0, l = poly.size(), j = l - 1; i < l; j = i, i++) {
+            float sx = poly.get(i).x;
+            float sy = poly.get(i).z;
+            float tx = poly.get(j).x;
+            float ty = poly.get(j).z;
+
+            // vector on polygon's side
+            if((sx == px && sy == py) || (tx == px && ty == py)) {
+                return false;
+            }
+
+
+            if((sy < py && ty >= py) || (sy >= py && ty < py)) {
+
+                float x = sx + (py - sy) * (tx - sx) / (ty - sy);
+
+                // vector on polygon's side
+                if(x == px) {
+                    return false;
+                }
+
+                if(x > px) {
+                    flag = !flag;
+                }
+            }
+        }
+
+        // vector in polygon
+        return flag;
+    }
+
+    public static boolean checkIsVectorInPolygon(Vector3 p, Vector3 leftBottom, Vector3 rightTop) {
+
+        boolean isIn = false;
+
+        boolean hr = false;
+        if(leftBottom.x <= p.x && p.x <= rightTop.x) {
+            hr = true;
+        }
+
+        boolean vr = false;
+        if(leftBottom.y <= p.y && p.y <= rightTop.y) {
+            vr = true;
+        }
+
+        if(hr && vr) {
+            isIn = true;
+        }
+
+
+        boolean hl = false;
+        if(leftBottom.x >= p.x && p.x >= rightTop.x) {
+            hl = true;
+        }
+
+        boolean vl = false;
+        if(leftBottom.y <= p.y && p.y <= rightTop.y) {
+            vl = true;
+        }
+
+        if(hl && vl) {
+            isIn = true;
+        }
+
+
+        return isIn;
+    }
+
     public static String getLengthUnitString(ARBuilder.ARUnit ARUnit) {
         switch (ARUnit) {
             case M:
