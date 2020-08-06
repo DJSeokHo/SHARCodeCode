@@ -386,7 +386,6 @@ public class AREnvironment {
                     ARBuilder.instance.wallGuidePoint.setParent(null);
                 }
                 ARBuilder.instance.currentGuideIndex = -1;
-//                textViewNearest.setText("");
                 return;
             }
 
@@ -409,8 +408,6 @@ public class AREnvironment {
                     distance = distanceList.get(i);
                 }
             }
-
-//                            ILog.iLogDebug(TAG, stringBuilder.toString());
 
             for(int i = 0; i < distanceList.size(); i++) {
                 if(distance == distanceList.get(i)) {
@@ -449,16 +446,13 @@ public class AREnvironment {
                     horizontalVector3.z = ARBuilder.instance.wallGuidePoint.getWorldPosition().z;
 
                     Vector3 horizontalLocalPosition = MathTool.transformWorldPositionToLocalPositionOfParent(ARBuilder.instance.anchorNode, horizontalVector3);
-//                                    Node horizontalNode = ARUtil.createLocalNode(horizontalLocalPosition.x, horizontalLocalPosition.y, horizontalLocalPosition.z, wallPointMaterial, shadow);
                     Vector3 verticalVector3 = new Vector3();
                     verticalVector3.x = ARBuilder.instance.wallTempPoint.getWorldPosition().x;
                     verticalVector3.y = ARBuilder.instance.wallGuidePoint.getWorldPosition().y;
                     verticalVector3.z = ARBuilder.instance.wallTempPoint.getWorldPosition().z;
                     Vector3 verticalLocalPosition = MathTool.transformWorldPositionToLocalPositionOfParent(ARBuilder.instance.anchorNode, verticalVector3);
-//                                    Node verticalNode = ARUtil.createLocalNode(verticalVector3.x, verticalVector3.y, verticalVector3.z, wallPointMaterial, shadow);
 
-//                                    drawWallTempLine
-
+                    // draw wall temp line
                     if(wallObjectBean.viewRenderableList.size() < 4) {
                         return;
                     }

@@ -188,7 +188,6 @@ public class ARActivity extends FragmentActivity {
                 wallAreaString.append(MathTool.getAreaUnitString(ARBuilder.instance.arUnit));
                 textViewWallArea.setText(wallAreaString);
 
-
                 SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
                 areaString.append(MathTool.getAreaUnitString(ARBuilder.instance.arUnit));
                 textViewArea.setText(areaString);
