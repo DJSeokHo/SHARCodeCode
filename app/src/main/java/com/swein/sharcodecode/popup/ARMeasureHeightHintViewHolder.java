@@ -7,15 +7,15 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import com.swein.sharcodecode.R;
-import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
+import com.swein.sharcodecode.arpart.constants.ARConstants;
 import com.swein.sharcodecode.framework.util.animation.AnimationUtil;
 import com.swein.sharcodecode.framework.util.view.ViewUtil;
 
 public class ARMeasureHeightHintViewHolder {
 
     public interface ARMeasureHeightHintViewHolderDelegate {
-        void onConfirm(ARBuilder.MeasureHeightWay measureHeightWay);
+        void onConfirm(ARConstants.MeasureHeightWay measureHeightWay);
         void onClose();
         void onConfirmInput(float height);
     }
@@ -32,7 +32,7 @@ public class ARMeasureHeightHintViewHolder {
 
     private ARMeasureHeightHintViewHolderDelegate arMeasureHeightHintViewHolderDelegate;
 
-    public ARMeasureHeightHintViewHolder(Context context, ARMeasureHeightHintViewHolderDelegate arMeasureHeightHintViewHolderDelegate, ARBuilder.ARUnit arUnit) {
+    public ARMeasureHeightHintViewHolder(Context context, ARMeasureHeightHintViewHolderDelegate arMeasureHeightHintViewHolderDelegate, ARConstants.ARUnit arUnit) {
         this.arMeasureHeightHintViewHolderDelegate = arMeasureHeightHintViewHolderDelegate;
         view = ViewUtil.inflateView(context, R.layout.view_holder_ar_measure_height_popup, null);
         findView();
@@ -51,8 +51,8 @@ public class ARMeasureHeightHintViewHolder {
     }
 
     private void setListener() {
-        textViewAuto.setOnClickListener(view -> arMeasureHeightHintViewHolderDelegate.onConfirm(ARBuilder.MeasureHeightWay.AUTO));
-        textViewDraw.setOnClickListener(view -> arMeasureHeightHintViewHolderDelegate.onConfirm(ARBuilder.MeasureHeightWay.DRAW));
+        textViewAuto.setOnClickListener(view -> arMeasureHeightHintViewHolderDelegate.onConfirm(ARConstants.MeasureHeightWay.AUTO));
+        textViewDraw.setOnClickListener(view -> arMeasureHeightHintViewHolderDelegate.onConfirm(ARConstants.MeasureHeightWay.DRAW));
         textViewConfirm.setOnClickListener(view -> {
 
             String heightString = editText.getText().toString().trim();

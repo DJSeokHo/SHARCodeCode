@@ -16,11 +16,10 @@ import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.HitTestResult;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
-import com.swein.sharcodecode.arpart.builder.tool.ARTool;
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
+import com.swein.sharcodecode.arpart.constants.ARConstants;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
 import com.swein.sharcodecode.arpart.environment.AREnvironment;
-import com.swein.sharcodecode.framework.util.device.DeviceUtil;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
 import com.swein.sharcodecode.popup.ARDrawObjectViewHolder;
 import com.swein.sharcodecode.popup.ARHintPopupViewHolder;
@@ -72,20 +71,6 @@ public class ARActivity extends FragmentActivity {
 
     private void initESS() {
 
-        EventCenter.instance.addEventObserver(ARESSArrows.DETECTING_TARGET_MINIMUM_AREA_SIZE, this, (arrow, poster, data) -> {
-            int percentage = (int) data.get("percentage");
-            textViewHint.setVisibility(View.VISIBLE);
-            textViewHint.setText(percentage + "%");
-        });
-
-        EventCenter.instance.addEventObserver(ARESSArrows.DETECTED_TARGET_MINIMUM_AREA_SIZE_FINISHED, this, (arrow, poster, data) -> {
-
-            textViewHint.setVisibility(View.GONE);
-            textViewHint.setText("");
-
-            showMeasureHeightPopup();
-        });
-
         EventCenter.instance.addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_TOO_CLOSE, this, (arrow, poster, data) -> {
             frameLayoutTooCloseTooFar.setVisibility(View.VISIBLE);
             textViewTooCloseTooFar.setText(R.string.ar_too_close);
@@ -132,6 +117,17 @@ public class ARActivity extends FragmentActivity {
             }
 
             @Override
+            public void onDetectingTargetMinimumPlaneAreaSize(int percentage) {
+                showHint(percentage + "%");
+            }
+
+            @Override
+            public void onDetectTargetMinimumPlaneAreaSizeFinished() {
+                clearHint();
+                showMeasureHeightPopup();
+            }
+
+            @Override
             public void showDetectFloorHint() {
                 showDetectFloorPopup();
             }
@@ -143,57 +139,32 @@ public class ARActivity extends FragmentActivity {
 
             @Override
             public void onMeasureHeight(float height) {
-                ARBuilder.instance.height = height;
-                String heightString = String.format("%.2f", MathTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit);
-                textViewHeightRealTime.setText(heightString);
-                ARBuilder.instance.arProcess = ARBuilder.ARProcess.MEASURE_ROOM;
 
-                // clear node when measure height finished
-                ARTool.removeChildFormNode(ARBuilder.instance.anchorNode);
-
-                if(ARBuilder.instance.anchorNode != null) {
-                    ARBuilder.instance.anchorNode.setParent(null);
-                    ARBuilder.instance.anchorNode = null;
-                }
-
-                if(ARBuilder.instance.measureHeightFloorNode != null) {
-                    ARBuilder.instance.measureHeightFloorNode.setParent(null);
-                    ARBuilder.instance.measureHeightFloorNode = null;
-                }
-
-                if(ARBuilder.instance.measureHeightCeilingNode != null) {
-                    ARBuilder.instance.measureHeightCeilingNode.setParent(null);
-                    ARBuilder.instance.measureHeightCeilingNode = null;
-                }
-
-                textViewHint.setText("");
-                textViewHint.setVisibility(View.GONE);
-
+                showRealTimeHeight(height);
+                clearHint();
                 showMeasureRoomPopup();
             }
-        });
 
-        ARBuilder.instance.init(this, new ARBuilder.ARBuilderDelegate() {
             @Override
             public void onCalculate(float height, float area, float circumference, float wallArea, float volume) {
                 linearLayoutInfo.setVisibility(View.VISIBLE);
 
                 textViewHeight.setText(getString(R.string.ar_area_height_title) + " " +
-                        String.format("%.2f", MathTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit));
+                        String.format("%.2f", MathTool.getLengthByUnit(AREnvironment.instance.arUnit, height)) + MathTool.getLengthUnitString(AREnvironment.instance.arUnit));
 
                 textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " +
-                        String.format("%.2f", MathTool.getLengthByUnit(ARBuilder.instance.arUnit, circumference)) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit));
+                        String.format("%.2f", MathTool.getLengthByUnit(AREnvironment.instance.arUnit, circumference)) + MathTool.getLengthUnitString(AREnvironment.instance.arUnit));
 
                 SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", wallArea));
-                wallAreaString.append(MathTool.getAreaUnitString(ARBuilder.instance.arUnit));
+                wallAreaString.append(MathTool.getAreaUnitString(AREnvironment.instance.arUnit));
                 textViewWallArea.setText(wallAreaString);
 
                 SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
-                areaString.append(MathTool.getAreaUnitString(ARBuilder.instance.arUnit));
+                areaString.append(MathTool.getAreaUnitString(AREnvironment.instance.arUnit));
                 textViewArea.setText(areaString);
 
                 SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
-                volumeString.append(MathTool.getVolumeUnitString(ARBuilder.instance.arUnit));
+                volumeString.append(MathTool.getVolumeUnitString(AREnvironment.instance.arUnit));
                 textViewVolume.setText(volumeString);
             }
 
@@ -205,9 +176,6 @@ public class ARActivity extends FragmentActivity {
                 showMeasureHeightPopup();
             }
         });
-
-        AREnvironment.instance.hitPointX = DeviceUtil.getScreenCenterX(this);
-        AREnvironment.instance.hitPointY = DeviceUtil.getScreenCenterY(this);
     }
 
     @SuppressLint("RestrictedApi")
@@ -215,43 +183,24 @@ public class ARActivity extends FragmentActivity {
         // Set a touch listener on the Scene to listen for taps.
         arSceneView.getScene().setOnTouchListener(
                 (HitTestResult hitTestResult, MotionEvent event) -> {
-
-
-                    if(!AREnvironment.instance.checkPlanEnable(arSceneView.getArFrame())) {
-                        return false;
-                    }
-
                     AREnvironment.instance.onTouch(arSceneView);
-
                     return false;
                 });
 
         arSceneView.getScene().addOnUpdateListener(
-                frameTime -> {
-
-                    if(!AREnvironment.instance.checkPlanEnable(arSceneView.getArFrame())) {
-                        return;
-                    }
-
-                    AREnvironment.instance.updateCloudPoint(arSceneView);
-                    AREnvironment.instance.updatePlaneType(arSceneView);
-
-                    AREnvironment.instance.onUpdateFrame(arSceneView);
-
-                });
+                frameTime -> AREnvironment.instance.onUpdateFrame(arSceneView));
 
         imageViewBack.setOnClickListener(view -> {
-            ARBuilder.instance.back();
+            AREnvironment.instance.back();
             clearRoomInfo();
         });
 
         imageViewReset.setOnClickListener(view -> AREnvironment.instance.reset(this, arSceneView, this::finish, () -> {
 
             clearRoomInfo();
+            clearHint();
+            clearRealTimeHeight();
 
-            textViewHint.setText("");
-            textViewHint.setVisibility(View.GONE);
-            textViewHeightRealTime.setText("");
 
             ARBuilder.instance.clearGuidePlane();
             ARBuilder.instance.clearGuide();
@@ -266,8 +215,8 @@ public class ARActivity extends FragmentActivity {
 
             ARBuilder.instance.isReadyToAutoClose = false;
 
-            ARBuilder.instance.arProcess = ARBuilder.ARProcess.DETECT_PLANE;
-            ARBuilder.instance.measureHeightWay = ARBuilder.MeasureHeightWay.NONE;
+            AREnvironment.instance.arProcess = ARConstants.ARProcess.DETECT_PLANE;
+            AREnvironment.instance.measureHeightWay = ARConstants.MeasureHeightWay.NONE;
 
         }));
 
@@ -280,6 +229,25 @@ public class ARActivity extends FragmentActivity {
         textViewHeight.setText("");
         textViewWallArea.setText("");
         textViewVolume.setText("");
+    }
+
+    private void showHint(String hint) {
+        textViewHint.setText(hint);
+        textViewHint.setVisibility(View.VISIBLE);
+    }
+
+    private void clearHint() {
+        textViewHint.setText("");
+        textViewHint.setVisibility(View.GONE);
+    }
+
+    public void showRealTimeHeight(float height) {
+        String heightString = String.format("%.2f", MathTool.getLengthByUnit(AREnvironment.instance.arUnit, height)) + MathTool.getLengthUnitString(AREnvironment.instance.arUnit);
+        textViewHeightRealTime.setText(heightString);
+    }
+
+    private void clearRealTimeHeight() {
+        textViewHeightRealTime.setText("");
     }
 
     private void showDetectFloorPopup() {
@@ -308,24 +276,22 @@ public class ARActivity extends FragmentActivity {
     private void showMeasureHeightPopup() {
         arMeasureHeightHintViewHolder = new ARMeasureHeightHintViewHolder(this, new ARMeasureHeightHintViewHolder.ARMeasureHeightHintViewHolderDelegate() {
             @Override
-            public void onConfirm(ARBuilder.MeasureHeightWay measureHeightWay) {
+            public void onConfirm(ARConstants.MeasureHeightWay measureHeightWay) {
 
-                ARBuilder.instance.measureHeightWay = measureHeightWay;
+                AREnvironment.instance.measureHeightWay = measureHeightWay;
                 closeMeasureHeightPopup();
 
-                switch (ARBuilder.instance.measureHeightWay) {
+                switch (AREnvironment.instance.measureHeightWay) {
                     case AUTO:
-                        textViewHint.setText(getString(R.string.ar_draw_height_by_ceiling_auto));
-                        textViewHint.setVisibility(View.VISIBLE);
+                        showHint(getString(R.string.ar_draw_height_by_ceiling_auto));
                         break;
 
                     case DRAW:
-                        textViewHint.setText(getString(R.string.ar_draw_height_direct));
-                        textViewHint.setVisibility(View.VISIBLE);
+                        showHint(getString(R.string.ar_draw_height_direct));
                         break;
                 }
 
-                ARBuilder.instance.arProcess = ARBuilder.ARProcess.MEASURE_HEIGHT;
+                AREnvironment.instance.arProcess = ARConstants.ARProcess.MEASURE_HEIGHT;
             }
 
             @Override
@@ -335,17 +301,19 @@ public class ARActivity extends FragmentActivity {
 
             @Override
             public void onConfirmInput(float height) {
-                ARBuilder.instance.height = height;
-                closeMeasureHeightPopup();
-                ARBuilder.instance.arProcess = ARBuilder.ARProcess.MEASURE_ROOM;
 
-                String heightString = String.format("%.2f", MathTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit);
-                textViewHeightRealTime.setText(heightString);
+                AREnvironment.instance.setInputHeight(height);
+
+                closeMeasureHeightPopup();
+
+                AREnvironment.instance.arProcess = ARConstants.ARProcess.MEASURE_ROOM;
+
+                showRealTimeHeight(height);
 
                 showMeasureRoomPopup();
             }
 
-        }, ARBuilder.instance.arUnit);
+        }, AREnvironment.instance.arUnit);
 
         frameLayoutPopup.addView(arMeasureHeightHintViewHolder.getView());
         frameLayoutPopup.setVisibility(View.VISIBLE);
@@ -469,7 +437,6 @@ public class ARActivity extends FragmentActivity {
     @Override
     public void onDestroy() {
         AREnvironment.instance.destroy(arSceneView);
-        ARBuilder.instance.destroy();
         removeESS();
         super.onDestroy();
     }

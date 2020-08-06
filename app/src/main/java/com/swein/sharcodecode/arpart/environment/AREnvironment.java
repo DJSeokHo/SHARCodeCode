@@ -28,7 +28,9 @@ import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.material.ARMaterial;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
+import com.swein.sharcodecode.arpart.constants.ARConstants;
 import com.swein.sharcodecode.framework.util.debug.ILog;
+import com.swein.sharcodecode.framework.util.device.DeviceUtil;
 import com.swein.sharcodecode.framework.util.toast.ToastUtil;
 
 import java.util.ArrayList;
@@ -40,9 +42,16 @@ public class AREnvironment {
     public interface AREnvironmentDelegate {
         void onUpdatePlaneType(String type);
 
+        void onDetectingTargetMinimumPlaneAreaSize(int percentage);
+        void onDetectTargetMinimumPlaneAreaSizeFinished();
+
         void showDetectFloorHint();
         void showMeasureHeightSelectPopup();
         void onMeasureHeight(float height);
+
+        // ar builder
+        void onCalculate(float height, float area, float circumference, float wallArea, float volume);
+        void backToMeasureHeight();
     }
 
     private final static String TAG = "AREnvironment";
@@ -60,6 +69,17 @@ public class AREnvironment {
     public float hitPointX;
     public float hitPointY;
 
+    // 감지 필요한 최소 cloud point 면적
+    public int targetMinimumAreaSize = 0;
+
+    // measure height way
+    public ARConstants.MeasureHeightWay measureHeightWay = ARConstants.MeasureHeightWay.NONE;
+
+    // current unit
+    public ARConstants.ARUnit arUnit = ARConstants.ARUnit.M;
+
+    // build process state
+    public ARConstants.ARProcess arProcess = ARConstants.ARProcess.DETECT_PLANE;
 
     private AREnvironmentDelegate arEnvironmentDelegate;
 
@@ -68,20 +88,66 @@ public class AREnvironment {
         this.arEnvironmentDelegate = arEnvironmentDelegate;
         planeFindingMode = Config.PlaneFindingMode.HORIZONTAL;
 
+        initARBuilder();
+
+        // 감지 필요한 최소 cloud point 면적
+        targetMinimumAreaSize = 3;
+
+        hitPointX = DeviceUtil.getScreenCenterX(activity);
+        hitPointY = DeviceUtil.getScreenCenterY(activity);
+
         arEnvironmentDelegate.showDetectFloorHint();
     }
 
+    private void initARBuilder() {
+        ARBuilder.instance.init(activity, new ARBuilder.ARBuilderDelegate() {
+            @Override
+            public void onCalculate(float height, float area, float circumference, float wallArea, float volume) {
+                arEnvironmentDelegate.onCalculate(height, area, circumference, wallArea, volume);
+            }
 
-    public boolean checkPlanEnable(Frame frame) {
-        if (frame == null) {
-            return false;
+            @Override
+            public void backToMeasureHeight() {
+
+                measureHeightWay = ARConstants.MeasureHeightWay.NONE;
+                arProcess = ARConstants.ARProcess.MEASURE_HEIGHT_HINT;
+
+                arEnvironmentDelegate.backToMeasureHeight();
+            }
+        });
+    }
+
+    public boolean checkCameraEnable(Frame frame) {
+        return frame.getCamera().getTrackingState() == TrackingState.TRACKING;
+    }
+
+    public boolean checkFrameEnable(Frame frame) {
+        return frame != null;
+    }
+
+    public void checkUpdatedPlaneSize(Collection<Plane> planeCollection) {
+
+        if(arProcess != ARConstants.ARProcess.DETECT_PLANE) {
+            return;
         }
 
-        if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
-            return false;
-        }
+        for (Plane plane : planeCollection) {
+            if (plane.getTrackingState() == TrackingState.TRACKING) {
 
-        return true;
+                // detecting size real-time, update UI
+                int percentage = (int) (((plane.getExtentX() * plane.getExtentZ() * 2) / targetMinimumAreaSize) * 100);
+                arEnvironmentDelegate.onDetectingTargetMinimumPlaneAreaSize(percentage);
+
+                if((plane.getExtentX() * plane.getExtentZ() * 2) > targetMinimumAreaSize) {
+
+                    arEnvironmentDelegate.onDetectTargetMinimumPlaneAreaSizeFinished();
+
+                    // detect size finished, update UI
+                    arProcess = ARConstants.ARProcess.MEASURE_HEIGHT_HINT;
+                }
+
+            }
+        }
     }
 
     public void updateCloudPoint(ArSceneView arSceneView) {
@@ -93,12 +159,6 @@ public class AREnvironment {
 
         // update plan cloud point area
         ARTool.updatePlanRenderer(arSceneView.getPlaneRenderer());
-
-        // if plan size big than target minimum area size
-        // then hide finding plan view
-        Collection<Plane> planeCollection = frame.getUpdatedTrackables(Plane.class);
-        ARBuilder.instance.checkPlaneSize(planeCollection);
-
     }
 
     public void updatePlaneType(ArSceneView arSceneView) {
@@ -122,18 +182,35 @@ public class AREnvironment {
         arEnvironmentDelegate.onUpdatePlaneType(planType);
     }
 
+    public void setInputHeight(float height) {
+        ARBuilder.instance.height = height;
+    }
+
     public void onTouch(ArSceneView arSceneView) {
 
-        if(ARBuilder.instance.arProcess == ARBuilder.ARProcess.DETECT_PLANE) {
+        Frame frame = arSceneView.getArFrame();
+
+        if(!AREnvironment.instance.checkCameraEnable(frame)) {
+            // if camera disable
             return;
         }
 
-        if(ARBuilder.instance.arProcess == ARBuilder.ARProcess.MEASURE_HEIGHT_HINT) {
+        if(!AREnvironment.instance.checkFrameEnable(frame)) {
+            // if frame disable
+            return;
+        }
+
+
+        if(arProcess == ARConstants.ARProcess.DETECT_PLANE) {
+            return;
+        }
+
+        if(arProcess == ARConstants.ARProcess.MEASURE_HEIGHT_HINT) {
             arEnvironmentDelegate.showMeasureHeightSelectPopup();
         }
-        else if(ARBuilder.instance.arProcess == ARBuilder.ARProcess.MEASURE_HEIGHT) {
+        else if(arProcess == ARConstants.ARProcess.MEASURE_HEIGHT) {
 
-            switch (ARBuilder.instance.measureHeightWay) {
+            switch (measureHeightWay) {
                 case AUTO:
                     measureHeightAutoWhenTouch(arSceneView);
                     break;
@@ -143,9 +220,8 @@ public class AREnvironment {
                     break;
             }
         }
-        else if(ARBuilder.instance.arProcess == ARBuilder.ARProcess.MEASURE_ROOM) {
+        else if(arProcess == ARConstants.ARProcess.MEASURE_ROOM) {
 
-            Frame frame = arSceneView.getArFrame();
             List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
             for (HitResult hitResult : hitTestResultList) {
                 Trackable trackable = hitResult.getTrackable();
@@ -157,8 +233,10 @@ public class AREnvironment {
                         ARBuilder.instance.clearTemp();
                         ARBuilder.instance.clearGuide();
 
-                        ARBuilder.instance.autoCloseFloorSegment(activity);
-                        ARBuilder.instance.createRoom(activity);
+                        arProcess = ARConstants.ARProcess.DRAW_WALL_OBJECT;
+
+                        ARBuilder.instance.autoCloseFloorSegment(activity, arUnit);
+                        ARBuilder.instance.createRoom(activity, arUnit);
 
                         return;
                     }
@@ -180,7 +258,8 @@ public class AREnvironment {
                     if(ARBuilder.instance.floorGuideList.size() >= 2) {
                         ARBuilder.instance.drawSegment(activity,
                                 ARBuilder.instance.floorGuideList.get(ARBuilder.instance.floorGuideList.size() - 2),
-                                ARBuilder.instance.floorGuideList.get(ARBuilder.instance.floorGuideList.size() - 1)
+                                ARBuilder.instance.floorGuideList.get(ARBuilder.instance.floorGuideList.size() - 1),
+                                arUnit
                         );
                     }
 
@@ -189,16 +268,42 @@ public class AREnvironment {
                 }
             }
         }
-        else if(ARBuilder.instance.arProcess == ARBuilder.ARProcess.DRAW_WALL_OBJECT) {
+        else if(arProcess == ARConstants.ARProcess.DRAW_WALL_OBJECT) {
             drawWallObjectWhenTouch();
         }
     }
 
     public void onUpdateFrame(ArSceneView arSceneView) {
 
-        if(ARBuilder.instance.arProcess == ARBuilder.ARProcess.MEASURE_HEIGHT) {
+        Frame frame = arSceneView.getArFrame();
 
-            switch (ARBuilder.instance.measureHeightWay) {
+
+        /* =============== real-time part =============== */
+        if(!AREnvironment.instance.checkCameraEnable(frame)) {
+            // if camera disable
+            return;
+        }
+
+        if(!AREnvironment.instance.checkFrameEnable(frame)) {
+            // if frame disable
+            return;
+        }
+
+        // update cloud point
+        AREnvironment.instance.updateCloudPoint(arSceneView);
+
+        // if plan size big than target minimum area size
+        // then hide finding plan view
+        checkUpdatedPlaneSize(frame.getUpdatedTrackables(Plane.class));
+
+        // update plane type real-time
+        AREnvironment.instance.updatePlaneType(arSceneView);
+        /* =============== real-time part =============== */
+
+
+        if(arProcess == ARConstants.ARProcess.MEASURE_HEIGHT) {
+
+            switch (measureHeightWay) {
                 case AUTO:
                     measureHeightAutoWhenUpdate(arSceneView);
                     break;
@@ -208,9 +313,7 @@ public class AREnvironment {
                     break;
             }
         }
-        else if(ARBuilder.instance.arProcess == ARBuilder.ARProcess.MEASURE_ROOM) {
-
-            Frame frame = arSceneView.getArFrame();
+        else if(arProcess == ARConstants.ARProcess.MEASURE_ROOM) {
 
             List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
             for (HitResult hitResult : hitTestResultList) {
@@ -226,15 +329,15 @@ public class AREnvironment {
 
                     ARBuilder.instance.drawFloorGuideSegment(
                             ARBuilder.instance.floorGuideList.get(ARBuilder.instance.floorGuideList.size() - 1),
-                            ARBuilder.instance.guidePointNode);
+                            ARBuilder.instance.guidePointNode, arUnit);
 
-                    ARBuilder.instance.checkPolygonAutoClose(activity);
+                    ARBuilder.instance.checkPolygonAutoClose(activity, arUnit);
 
                     return;
                 }
             }
         }
-        else if(ARBuilder.instance.arProcess == ARBuilder.ARProcess.DRAW_WALL_OBJECT) {
+        else if(arProcess == ARConstants.ARProcess.DRAW_WALL_OBJECT) {
             drawWallObjectWhenUpdate(arSceneView);
         }
     }
@@ -246,7 +349,6 @@ public class AREnvironment {
             // create wall object start point
 
             ARBuilder.instance.currentWallIndex = ARBuilder.instance.currentGuideIndex;
-
 
             Vector3 vector3World = new Vector3(
                     ARBuilder.instance.wallGuidePoint.getWorldPosition().x,
@@ -265,10 +367,10 @@ public class AREnvironment {
             ARBuilder.instance.wallTempPoint.setParent(ARBuilder.instance.anchorNode);
 
 
-            if(ARBuilder.instance.wallObjectBeans.isEmpty()) {
-                ARBuilder.instance.wallObjectBeans.add(new WallObjectBean());
+            if(ARBuilder.instance.wallObjectBeanList.isEmpty()) {
+                ARBuilder.instance.wallObjectBeanList.add(new WallObjectBean());
 
-                WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeans.get(0);
+                WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeanList.get(0);
 
                 // add point
                 wallObjectBean.objectPointList.add(ARBuilder.instance.wallTempPoint);
@@ -339,8 +441,8 @@ public class AREnvironment {
             ARBuilder.instance.currentWallIndex = -1;
             ARBuilder.instance.currentGuideIndex = -1;
 
-            for(int i = 0; i < ARBuilder.instance.wallObjectBeans.size(); i++) {
-                WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeans.get(i);
+            for(int i = 0; i < ARBuilder.instance.wallObjectBeanList.size(); i++) {
+                WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeanList.get(i);
 
                 for(Node node : wallObjectBean.objectPointList) {
                     ARTool.removeChildFormNode(node);
@@ -352,7 +454,7 @@ public class AREnvironment {
                 wallObjectBean.viewRenderableList.clear();
             }
 
-            ARBuilder.instance.wallObjectBeans.clear();
+            ARBuilder.instance.wallObjectBeanList.clear();
         }
     }
 
@@ -433,11 +535,11 @@ public class AREnvironment {
 
                 if(ARBuilder.instance.currentGuideIndex == ARBuilder.instance.currentWallIndex) {
 
-                    if(ARBuilder.instance.wallObjectBeans.isEmpty()) {
+                    if(ARBuilder.instance.wallObjectBeanList.isEmpty()) {
                         return;
                     }
 
-                    WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeans.get(0);
+                    WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeanList.get(0);
 
 
                     Vector3 horizontalVector3 = new Vector3();
@@ -461,16 +563,16 @@ public class AREnvironment {
                     wallObjectBean.objectPointList.get(3).setLocalPosition(verticalLocalPosition);
 
                     ARBuilder.instance.drawTempWallLine(wallObjectBean.objectPointList.get(0), wallObjectBean.objectPointList.get(1),
-                            wallObjectBean.objectLineList.get(0), wallObjectBean.objectTextList.get(0), wallObjectBean.viewRenderableList.get(0));
+                            wallObjectBean.objectLineList.get(0), wallObjectBean.objectTextList.get(0), wallObjectBean.viewRenderableList.get(0), arUnit);
 
                     ARBuilder.instance.drawTempWallLine(wallObjectBean.objectPointList.get(1), wallObjectBean.objectPointList.get(2),
-                            wallObjectBean.objectLineList.get(1), wallObjectBean.objectTextList.get(1), wallObjectBean.viewRenderableList.get(1));
+                            wallObjectBean.objectLineList.get(1), wallObjectBean.objectTextList.get(1), wallObjectBean.viewRenderableList.get(1), arUnit);
 
                     ARBuilder.instance.drawTempWallLine(wallObjectBean.objectPointList.get(2), wallObjectBean.objectPointList.get(3),
-                            wallObjectBean.objectLineList.get(2), wallObjectBean.objectTextList.get(2), wallObjectBean.viewRenderableList.get(2));
+                            wallObjectBean.objectLineList.get(2), wallObjectBean.objectTextList.get(2), wallObjectBean.viewRenderableList.get(2), arUnit);
 
                     ARBuilder.instance.drawTempWallLine(wallObjectBean.objectPointList.get(3), wallObjectBean.objectPointList.get(0),
-                            wallObjectBean.objectLineList.get(3), wallObjectBean.objectTextList.get(3), wallObjectBean.viewRenderableList.get(3));
+                            wallObjectBean.objectLineList.get(3), wallObjectBean.objectTextList.get(3), wallObjectBean.viewRenderableList.get(3), arUnit);
                 }
                 else {
                     ARBuilder.instance.wallGuidePoint.setWorldPosition(
@@ -518,8 +620,8 @@ public class AREnvironment {
                     // finish measure height
 
                     if(isHitCeiling) {
-                        // get distance ceiling
 
+                        // get distance between floor and ceiling
                         Vector3 floorPoint = new Vector3(
                                 ARBuilder.instance.measureHeightFloorNode.getWorldPosition().x,
                                 ARBuilder.instance.measureHeightFloorNode.getWorldPosition().y,
@@ -530,8 +632,19 @@ public class AREnvironment {
                                 ARBuilder.instance.measureHeightCeilingNode.getWorldPosition().y,
                                 ARBuilder.instance.measureHeightCeilingNode.getWorldPosition().z
                         );
-
                         float height = MathTool.getLengthBetweenPointToPlane(ceilingPoint, floorPoint, ARBuilder.instance.normalVectorOfPlane);
+
+                        ARBuilder.instance.height = height;
+
+                        // clear node when measure height finished
+                        ARBuilder.instance.clearAnchor();
+                        ARBuilder.instance.clearMeasureHeightFloorNode();
+                        ARBuilder.instance.clearMeasureHeightCeilingNode();
+
+                        // to next process - measure room
+                        arProcess = ARConstants.ARProcess.MEASURE_ROOM;
+
+                        // update UI
                         arEnvironmentDelegate.onMeasureHeight(height);
                     }
 
@@ -565,7 +678,7 @@ public class AREnvironment {
                 }
 
                 if (ARBuilder.instance.measureHeightFloorNode != null) {
-                    ARBuilder.instance.drawFloorGuideSegment(ARBuilder.instance.measureHeightFloorNode, ARBuilder.instance.guidePointNode);
+                    ARBuilder.instance.drawFloorGuideSegment(ARBuilder.instance.measureHeightFloorNode, ARBuilder.instance.guidePointNode, arUnit);
                 }
 
                 return;
@@ -772,6 +885,10 @@ public class AREnvironment {
         ToastUtil.showCustomShortToastNormal(activity, message);
     }
 
+    public void back() {
+        ARBuilder.instance.back(arProcess, measureHeightWay);
+    }
+
     public void pause(ArSceneView arSceneView) {
         if (arSceneView != null) {
             arSceneView.pause();
@@ -782,6 +899,14 @@ public class AREnvironment {
         if (arSceneView != null) {
             arSceneView.destroy();
         }
+
+        arProcess = ARConstants.ARProcess.DETECT_PLANE;
+        arUnit = ARConstants.ARUnit.M;
+        measureHeightWay = ARConstants.MeasureHeightWay.NONE;
+
+        ARBuilder.instance.destroy();
+        targetMinimumAreaSize = 0;
+
     }
 
 }

@@ -12,7 +12,7 @@ import android.widget.Toast;
 
 import com.google.ar.core.ArCoreApk;
 import com.swein.sharcodecode.arpart.ARActivity;
-import com.swein.sharcodecode.arpart.constants.Constants;
+import com.swein.sharcodecode.arpart.constants.ARConstants;
 import com.swein.sharcodecode.framework.module.basicpermission.BasicPermissionActivity;
 import com.swein.sharcodecode.framework.module.basicpermission.PermissionManager;
 import com.swein.sharcodecode.framework.module.basicpermission.RequestPermission;
@@ -132,7 +132,7 @@ public class MainActivity extends BasicPermissionActivity {
         String openGlVersionString = ((ActivityManager) activity.getSystemService(Context.ACTIVITY_SERVICE))
                         .getDeviceConfigurationInfo()
                         .getGlEsVersion();
-        if (Double.parseDouble(openGlVersionString) < Constants.MIN_OPEN_GL_VERSION) {
+        if (Double.parseDouble(openGlVersionString) < ARConstants.MIN_OPEN_GL_VERSION) {
             Log.e(TAG, "Sceneform requires OpenGL ES 3.0 later");
             Toast.makeText(activity, "Sceneform requires OpenGL ES 3.0 or later", Toast.LENGTH_LONG)
                     .show();

@@ -9,8 +9,8 @@ import android.widget.FrameLayout;
 import android.widget.Spinner;
 
 import com.swein.sharcodecode.R;
-import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
+import com.swein.sharcodecode.arpart.constants.ARConstants;
 import com.swein.sharcodecode.framework.util.view.ViewUtil;
 
 import java.util.ArrayList;
@@ -36,9 +36,9 @@ public class ARSelectUnitViewHolder {
 
     private FrameLayout frameLayoutRoot;
 
-    private ARBuilder.ARUnit arUnit;
+    private ARConstants.ARUnit arUnit;
 
-    public ARSelectUnitViewHolder(Context context, ARBuilder.ARUnit arUnit, ARSelectUnitViewHolderDelegate arSelectUnitViewHolderDelegate) {
+    public ARSelectUnitViewHolder(Context context, ARConstants.ARUnit arUnit, ARSelectUnitViewHolderDelegate arSelectUnitViewHolderDelegate) {
         this.arSelectUnitViewHolderDelegate = arSelectUnitViewHolderDelegate;
 
         this.arUnit = arUnit;

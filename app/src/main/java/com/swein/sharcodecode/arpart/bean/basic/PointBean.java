@@ -1,7 +1,6 @@
 package com.swein.sharcodecode.arpart.bean.basic;
 
 import com.google.ar.sceneform.Node;
-import com.google.ar.sceneform.rendering.Material;
 
 public class PointBean {
 
@@ -11,4 +10,10 @@ public class PointBean {
         point = new Node();
     }
 
+    public void clear() {
+        if(point != null) {
+            point.setParent(null);
+            point = null;
+        }
+    }
 }

@@ -7,7 +7,7 @@ import android.text.style.SuperscriptSpan;
 
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
-import com.swein.sharcodecode.arpart.builder.ARBuilder;
+import com.swein.sharcodecode.arpart.constants.ARConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -266,7 +266,7 @@ public class MathTool {
         return isIn;
     }
 
-    public static String getLengthUnitString(ARBuilder.ARUnit ARUnit) {
+    public static String getLengthUnitString(ARConstants.ARUnit ARUnit) {
         switch (ARUnit) {
             case M:
                 return "m";
@@ -279,7 +279,7 @@ public class MathTool {
         }
     }
 
-    public static SpannableString getAreaUnitString(ARBuilder.ARUnit ARUnit) {
+    public static SpannableString getAreaUnitString(ARConstants.ARUnit ARUnit) {
         switch (ARUnit) {
             case M:
                 return getM2();
@@ -292,7 +292,7 @@ public class MathTool {
         }
     }
 
-    public static SpannableString getVolumeUnitString(ARBuilder.ARUnit ARUnit) {
+    public static SpannableString getVolumeUnitString(ARConstants.ARUnit ARUnit) {
         switch (ARUnit) {
             case M:
                 return getM3();
@@ -305,7 +305,7 @@ public class MathTool {
         }
     }
 
-    public static float getLengthByUnit(ARBuilder.ARUnit ARUnit, float length) {
+    public static float getLengthByUnit(ARConstants.ARUnit ARUnit, float length) {
         switch (ARUnit) {
             case CM:
                 return length * 100;
@@ -318,7 +318,7 @@ public class MathTool {
         }
     }
 
-    public static float getAreaByUnit(ARBuilder.ARUnit ARUnit, float area) {
+    public static float getAreaByUnit(ARConstants.ARUnit ARUnit, float area) {
         switch (ARUnit) {
             case CM:
                 return area * 10000;

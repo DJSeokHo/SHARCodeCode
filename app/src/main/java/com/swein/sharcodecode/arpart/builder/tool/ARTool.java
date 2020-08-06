@@ -22,7 +22,7 @@ import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.FaceToCameraNode;
-import com.swein.sharcodecode.arpart.builder.ARBuilder;
+import com.swein.sharcodecode.arpart.constants.ARConstants;
 
 import java.util.List;
 
@@ -177,7 +177,7 @@ public class ARTool {
     public interface SetSegmentSizeTextViewDelegate {
         void onFinish(ViewRenderable viewRenderable, FaceToCameraNode faceToCameraNode);
     }
-    public static void setSegmentSizeTextView(Context context, float originalLength, ARBuilder.ARUnit arUnit, Node parentNode, @Nullable SetSegmentSizeTextViewDelegate setSegmentSizeTextViewDelegate) {
+    public static void setSegmentSizeTextView(Context context, float originalLength, ARConstants.ARUnit arUnit, Node parentNode, @Nullable SetSegmentSizeTextViewDelegate setSegmentSizeTextViewDelegate) {
         float length = MathTool.getLengthByUnit(arUnit, originalLength);
 
         ViewRenderable.builder()

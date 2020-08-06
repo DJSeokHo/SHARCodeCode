@@ -3,8 +3,8 @@ package com.swein.sharcodecode.arpart.bean;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
 import com.swein.sharcodecode.arpart.bean.basic.PlaneBean;
-import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
+import com.swein.sharcodecode.arpart.constants.ARConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +23,7 @@ public class RoomBean {
     public PlaneBean ceiling;
 
     // room wall
-    public List<PlaneBean> wallList;
+    public List<PlaneBean> wallList = new ArrayList<>();
 
     // room height
     public float height;
@@ -42,13 +42,18 @@ public class RoomBean {
 
         floor = new PlaneBean();
         ceiling = new PlaneBean();
-        wallList = new ArrayList<>();
+        wallList.clear();
 
         height = 0;
         floorFixedY = 0;
+
+        area = 0;
+        circumference = 0;
+        wallArea = 0;
+        volume = 0;
     }
 
-    public void calculate(ARBuilder.ARUnit arUnit) {
+    public void calculate(ARConstants.ARUnit arUnit) {
 
         // 둘레
         circumference = 0;
@@ -77,10 +82,7 @@ public class RoomBean {
 
         if(wallList != null) {
             for(int i = 0; i < wallList.size(); i++) {
-                for(int j = 0; j < wallList.get(i).pointList.size(); j++) {
-                    wallList.get(i).pointList.get(j).point.setParent(null);
-                }
-                wallList.get(i).pointList.clear();
+                wallList.get(i).clear();
             }
             wallList.clear();
             wallList = null;
@@ -88,22 +90,15 @@ public class RoomBean {
 
 
         if(ceiling != null) {
-            for(int i = 0; i < ceiling.pointList.size(); i++) {
-                ceiling.pointList.get(i).point.setParent(null);
-            }
-            ceiling.pointList.clear();
+            ceiling.clear();
             ceiling = null;
         }
 
 
         if(floor != null) {
-            for(int i = 0; i < floor.pointList.size(); i++) {
-                floor.pointList.get(i).point.setParent(null);
-            }
-            floor.pointList.clear();
+            floor.clear();
             floor = null;
         }
-
 
         normalVectorOfPlane = null;
 
