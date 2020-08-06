@@ -222,7 +222,7 @@ public class ARBuilder {
         }
     }
 
-    public void drawFloorGuideSegment(Node startNode, Node endNode, ARConstants.ARUnit arUnit) {
+    public void drawFloorGuideSegment(Node startNode, Node endNode) {
 
         Vector3 startVector3 = startNode.getWorldPosition();
         Vector3 endVector3 = endNode.getWorldPosition();
@@ -244,16 +244,16 @@ public class ARBuilder {
         guideSegmentNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
         guideSegmentNode.setWorldRotation(rotationFromAToB);
 
-        float length = MathTool.getLengthByUnit(arUnit, difference.length());
+        float length = MathTool.getLengthByUnit(ARConstants.arUnit, difference.length());
 
         if(guideSizeTextNode != null) {
 
-            ((TextView) ARRenderable.instance.guideSizeTextView.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(arUnit));
+            ((TextView) ARRenderable.instance.guideSizeTextView.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(ARConstants.arUnit));
 
         }
         else {
 
-            ((TextView) ARRenderable.instance.guideSizeTextView.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(arUnit));
+            ((TextView) ARRenderable.instance.guideSizeTextView.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(ARConstants.arUnit));
 
             guideSizeTextNode = new FaceToCameraNode();
 
@@ -268,17 +268,17 @@ public class ARBuilder {
         }
     }
 
-    public void drawSegment(Context context, Node startNode, Node endNode, ARConstants.ARUnit arUnit) {
+    public void drawSegment(Context context, Node startNode, Node endNode) {
 
         Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.segmentMaterial, nodeShadow);
 
         float length = MathTool.getLengthOfTwoNode(startNode, endNode);
-        ARTool.setSegmentSizeTextView(context, length, arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
+        ARTool.setSegmentSizeTextView(context, length, ARConstants.arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
 
         });
     }
 
-    public void autoCloseFloorSegment(Activity activity, ARConstants.ARUnit arUnit) {
+    public void autoCloseFloorSegment(Activity activity) {
 
         if(floorGuideList.size() > 2) {
 
@@ -288,7 +288,7 @@ public class ARBuilder {
             Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.segmentMaterial, nodeShadow);
 
             float length = MathTool.getLengthOfTwoNode(startNode, endNode);
-            ARTool.setSegmentSizeTextView(activity, length, arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
+            ARTool.setSegmentSizeTextView(activity, length, ARConstants.arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
 
             });
 
@@ -296,7 +296,7 @@ public class ARBuilder {
         }
     }
 
-    public void checkPolygonAutoClose(Activity activity, ARConstants.ARUnit arUnit) {
+    public void checkPolygonAutoClose(Activity activity) {
 
         // at least need 3 point
         if(floorGuideList.size() < 3) {
@@ -304,7 +304,7 @@ public class ARBuilder {
         }
 
         if(checkClose(guidePointNode, floorGuideList.get(0))) {
-            drawFloorGuideSegment(floorGuideList.get(floorGuideList.size() - 1), floorGuideList.get(0), arUnit);
+            drawFloorGuideSegment(floorGuideList.get(floorGuideList.size() - 1), floorGuideList.get(0));
 
             if(!isReadyToAutoClose) {
                 DeviceUtil.vibrate(activity, 5);
@@ -313,7 +313,7 @@ public class ARBuilder {
             isReadyToAutoClose = true;
         }
         else {
-            drawFloorGuideSegment(floorGuideList.get(floorGuideList.size() - 1), guidePointNode, arUnit);
+            drawFloorGuideSegment(floorGuideList.get(floorGuideList.size() - 1), guidePointNode);
             isReadyToAutoClose = false;
         }
     }
@@ -330,7 +330,7 @@ public class ARBuilder {
     }
 
 
-    public void createRoom(Context context, ARConstants.ARUnit arUnit) {
+    public void createRoom(Context context) {
 
         if(roomBean != null) {
             roomBean.clear();
@@ -376,17 +376,17 @@ public class ARBuilder {
 
         // connect floor and ceiling and vertical
         for(int i = 0; i < roomBean.floor.pointList.size() - 1; i++) {
-            drawSegment(context, roomBean.floor.pointList.get(i).point, roomBean.floor.pointList.get(i + 1).point, arUnit);
+            drawSegment(context, roomBean.floor.pointList.get(i).point, roomBean.floor.pointList.get(i + 1).point);
         }
-        drawSegment(context, roomBean.floor.pointList.get(roomBean.floor.pointList.size() - 1).point, roomBean.floor.pointList.get(0).point, arUnit);
+        drawSegment(context, roomBean.floor.pointList.get(roomBean.floor.pointList.size() - 1).point, roomBean.floor.pointList.get(0).point);
 
         for(int i = 0; i < roomBean.ceiling.pointList.size() - 1; i++) {
-            drawSegment(context, roomBean.ceiling.pointList.get(i).point, roomBean.ceiling.pointList.get(i + 1).point, arUnit);
+            drawSegment(context, roomBean.ceiling.pointList.get(i).point, roomBean.ceiling.pointList.get(i + 1).point);
         }
-        drawSegment(context, roomBean.ceiling.pointList.get(roomBean.ceiling.pointList.size() - 1).point, roomBean.ceiling.pointList.get(0).point, arUnit);
+        drawSegment(context, roomBean.ceiling.pointList.get(roomBean.ceiling.pointList.size() - 1).point, roomBean.ceiling.pointList.get(0).point);
 
         for(int i = 0; i < roomBean.floor.pointList.size(); i++) {
-            drawSegment(context, roomBean.floor.pointList.get(i).point, roomBean.ceiling.pointList.get(i).point, arUnit);
+            drawSegment(context, roomBean.floor.pointList.get(i).point, roomBean.ceiling.pointList.get(i).point);
         }
 
 
@@ -416,7 +416,7 @@ public class ARBuilder {
 
         // calculate
         ThreadUtil.startThread(() -> {
-            roomBean.calculate(arUnit);
+            roomBean.calculate();
             ThreadUtil.startUIThread(0, () -> {
                 arBuilderDelegate.onCalculate(roomBean.height, roomBean.area, roomBean.circumference, roomBean.wallArea, roomBean.volume);
             });
@@ -427,7 +427,7 @@ public class ARBuilder {
         clearTemp();
     }
 
-    public void drawTempWallLine(Node startNode, Node endNode, Node tempLineNode, Node tempTextNode, ViewRenderable viewRenderableSizeText, ARConstants.ARUnit arUnit) {
+    public void drawTempWallLine(Node startNode, Node endNode, Node tempLineNode, Node tempTextNode, ViewRenderable viewRenderableSizeText) {
 
         Vector3 startVector3 = startNode.getWorldPosition();
         Vector3 endVector3 = endNode.getWorldPosition();
@@ -459,14 +459,14 @@ public class ARBuilder {
             tempLineNode.setWorldRotation(rotationFromAToB);
         }
 
-        float length = MathTool.getLengthByUnit(arUnit, difference.length());
+        float length = MathTool.getLengthByUnit(ARConstants.arUnit, difference.length());
 
         if(tempTextNode != null) {
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(arUnit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(ARConstants.arUnit));
         }
         else {
 
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(arUnit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(ARConstants.arUnit));
 
             tempTextNode = new FaceToCameraNode();
             tempTextNode.setParent(tempLineNode);
@@ -556,11 +556,11 @@ public class ARBuilder {
         }
     }
 
-    public void back(ARConstants.ARProcess arProcess, ARConstants.MeasureHeightWay measureHeightWay) {
+    public void back() {
 
-        if(arProcess == ARConstants.ARProcess.MEASURE_HEIGHT) {
+        if(ARConstants.arProcess == ARConstants.ARProcess.MEASURE_HEIGHT) {
 
-            if(measureHeightWay == ARConstants.MeasureHeightWay.AUTO) {
+            if(ARConstants.measureHeightWay == ARConstants.MeasureHeightWay.AUTO) {
                 if (anchorNode != null) {
                     ARTool.removeChildFormNode(anchorNode);
                     anchorNode.setParent(null);
@@ -570,7 +570,7 @@ public class ARBuilder {
                     arBuilderDelegate.backToMeasureHeight();
                 }
             }
-            else if(measureHeightWay == ARConstants.MeasureHeightWay.DRAW) {
+            else if(ARConstants.measureHeightWay == ARConstants.MeasureHeightWay.DRAW) {
 
                 if(measureHeightFloorNode == null && measureHeightCeilingNode == null) {
 
@@ -598,7 +598,7 @@ public class ARBuilder {
                 }
             }
         }
-        else if(arProcess == ARConstants.ARProcess.MEASURE_ROOM) {
+        else if(ARConstants.arProcess == ARConstants.ARProcess.MEASURE_ROOM) {
 
             if(floorGuideList.size() == 1) {
 
@@ -632,7 +632,7 @@ public class ARBuilder {
 
             isReadyToAutoClose = false;
         }
-        else if(arProcess == ARConstants.ARProcess.DRAW_WALL_OBJECT) {
+        else if(ARConstants.arProcess == ARConstants.ARProcess.DRAW_WALL_OBJECT) {
 
 //            if(anchorNode != null) {
 //                ARTool.removeChildFormNode(anchorNode);

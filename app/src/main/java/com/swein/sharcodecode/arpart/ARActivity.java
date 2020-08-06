@@ -150,21 +150,21 @@ public class ARActivity extends FragmentActivity {
                 linearLayoutInfo.setVisibility(View.VISIBLE);
 
                 textViewHeight.setText(getString(R.string.ar_area_height_title) + " " +
-                        String.format("%.2f", MathTool.getLengthByUnit(AREnvironment.instance.arUnit, height)) + MathTool.getLengthUnitString(AREnvironment.instance.arUnit));
+                        String.format("%.2f", MathTool.getLengthByUnit(ARConstants.arUnit, height)) + MathTool.getLengthUnitString(ARConstants.arUnit));
 
                 textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " +
-                        String.format("%.2f", MathTool.getLengthByUnit(AREnvironment.instance.arUnit, circumference)) + MathTool.getLengthUnitString(AREnvironment.instance.arUnit));
+                        String.format("%.2f", MathTool.getLengthByUnit(ARConstants.arUnit, circumference)) + MathTool.getLengthUnitString(ARConstants.arUnit));
 
                 SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", wallArea));
-                wallAreaString.append(MathTool.getAreaUnitString(AREnvironment.instance.arUnit));
+                wallAreaString.append(MathTool.getAreaUnitString(ARConstants.arUnit));
                 textViewWallArea.setText(wallAreaString);
 
                 SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
-                areaString.append(MathTool.getAreaUnitString(AREnvironment.instance.arUnit));
+                areaString.append(MathTool.getAreaUnitString(ARConstants.arUnit));
                 textViewArea.setText(areaString);
 
                 SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
-                volumeString.append(MathTool.getVolumeUnitString(AREnvironment.instance.arUnit));
+                volumeString.append(MathTool.getVolumeUnitString(ARConstants.arUnit));
                 textViewVolume.setText(volumeString);
             }
 
@@ -215,8 +215,8 @@ public class ARActivity extends FragmentActivity {
 
             ARBuilder.instance.isReadyToAutoClose = false;
 
-            AREnvironment.instance.arProcess = ARConstants.ARProcess.DETECT_PLANE;
-            AREnvironment.instance.measureHeightWay = ARConstants.MeasureHeightWay.NONE;
+            ARConstants.arProcess = ARConstants.ARProcess.DETECT_PLANE;
+            ARConstants.measureHeightWay = ARConstants.MeasureHeightWay.NONE;
 
         }));
 
@@ -242,7 +242,7 @@ public class ARActivity extends FragmentActivity {
     }
 
     public void showRealTimeHeight(float height) {
-        String heightString = String.format("%.2f", MathTool.getLengthByUnit(AREnvironment.instance.arUnit, height)) + MathTool.getLengthUnitString(AREnvironment.instance.arUnit);
+        String heightString = String.format("%.2f", MathTool.getLengthByUnit(ARConstants.arUnit, height)) + MathTool.getLengthUnitString(ARConstants.arUnit);
         textViewHeightRealTime.setText(heightString);
     }
 
@@ -278,10 +278,10 @@ public class ARActivity extends FragmentActivity {
             @Override
             public void onConfirm(ARConstants.MeasureHeightWay measureHeightWay) {
 
-                AREnvironment.instance.measureHeightWay = measureHeightWay;
+                ARConstants.measureHeightWay = measureHeightWay;
                 closeMeasureHeightPopup();
 
-                switch (AREnvironment.instance.measureHeightWay) {
+                switch (ARConstants.measureHeightWay) {
                     case AUTO:
                         showHint(getString(R.string.ar_draw_height_by_ceiling_auto));
                         break;
@@ -291,7 +291,7 @@ public class ARActivity extends FragmentActivity {
                         break;
                 }
 
-                AREnvironment.instance.arProcess = ARConstants.ARProcess.MEASURE_HEIGHT;
+                ARConstants.arProcess = ARConstants.ARProcess.MEASURE_HEIGHT;
             }
 
             @Override
@@ -306,14 +306,14 @@ public class ARActivity extends FragmentActivity {
 
                 closeMeasureHeightPopup();
 
-                AREnvironment.instance.arProcess = ARConstants.ARProcess.MEASURE_ROOM;
+                ARConstants.arProcess = ARConstants.ARProcess.MEASURE_ROOM;
 
                 showRealTimeHeight(height);
 
                 showMeasureRoomPopup();
             }
 
-        }, AREnvironment.instance.arUnit);
+        }, ARConstants.arUnit);
 
         frameLayoutPopup.addView(arMeasureHeightHintViewHolder.getView());
         frameLayoutPopup.setVisibility(View.VISIBLE);

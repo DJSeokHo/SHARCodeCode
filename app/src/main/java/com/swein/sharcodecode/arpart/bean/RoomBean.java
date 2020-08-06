@@ -53,7 +53,7 @@ public class RoomBean {
         volume = 0;
     }
 
-    public void calculate(ARConstants.ARUnit arUnit) {
+    public void calculate() {
 
         // 둘레
         circumference = 0;
@@ -64,7 +64,7 @@ public class RoomBean {
         // 벽 면적
         wallArea = 0;
         for(int i = 0; i < floor.segmentList.size(); i++) {
-            wallArea += MathTool.getLengthByUnit(arUnit, floor.segmentList.get(i).length) * MathTool.getLengthByUnit(arUnit, height);
+            wallArea += MathTool.getLengthByUnit(ARConstants.arUnit, floor.segmentList.get(i).length) * MathTool.getLengthByUnit(ARConstants.arUnit, height);
         }
 
         // 면적
@@ -72,10 +72,10 @@ public class RoomBean {
         for(int i = 0; i < floor.pointList.size(); i++) {
             list.add(floor.pointList.get(i).point);
         }
-        area = MathTool.getAreaByUnit(arUnit, MathTool.calculateArea(list, normalVectorOfPlane));
+        area = MathTool.getAreaByUnit(ARConstants.arUnit, MathTool.calculateArea(list, normalVectorOfPlane));
 
         // 체적
-        volume = MathTool.getLengthByUnit(arUnit, height) * area;
+        volume = MathTool.getLengthByUnit(ARConstants.arUnit, height) * area;
     }
 
     public void clear() {
