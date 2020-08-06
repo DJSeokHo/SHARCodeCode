@@ -11,7 +11,7 @@ public class ARConstants {
         M, CM
     }
     public enum ARProcess {
-        DETECT_PLANE, MEASURE_HEIGHT_HINT, MEASURE_HEIGHT, MEASURE_ROOM, DRAW_WALL_OBJECT
+        DETECT_PLANE, MEASURE_HEIGHT_HINT, MEASURE_HEIGHT, MEASURE_ROOM, SELECTED_WALL_OBJECT, DRAW_WALL_OBJECT
     }
 
     // measure height way

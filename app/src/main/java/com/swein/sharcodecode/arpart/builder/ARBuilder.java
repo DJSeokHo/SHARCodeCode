@@ -212,7 +212,7 @@ public class ARBuilder {
         DeviceUtil.vibrate(activity, 5);
     }
 
-    public void createMeasureHeightAutoNode(HitResult hitResult, Activity activity) {
+    public void createMeasureHeightAutoNode(Activity activity) {
         Node node = ARTool.createLocalNode(0, 0, 0, ARMaterial.instance.pointMaterial, nodeShadow);
         node.setParent(anchorNode);
         DeviceUtil.vibrate(activity, 5);

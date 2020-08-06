@@ -228,7 +228,8 @@ public class AREnvironment {
                         ARBuilder.instance.clearGuideSegment();
                         ARBuilder.instance.clearGuide();
 
-                        ARConstants.arProcess = ARConstants.ARProcess.DRAW_WALL_OBJECT;
+//                        ARConstants.arProcess = ARConstants.ARProcess.DRAW_WALL_OBJECT;
+                        ARConstants.arProcess = ARConstants.ARProcess.SELECTED_WALL_OBJECT;
 
                         ARBuilder.instance.autoCloseFloorSegment(activity);
                         ARBuilder.instance.createRoom(activity);
@@ -693,7 +694,7 @@ public class AREnvironment {
                 // calculate normal vector of detected plane
                 ARBuilder.instance.createDetectedPlaneNormalVector(trackable);
 
-                // can only one node on floor
+                // can only one anchor node on floor
                 if(ARBuilder.instance.anchorNode != null) {
                     return;
                 }
@@ -701,7 +702,8 @@ public class AREnvironment {
                 // create first anchorNode
                 ARBuilder.instance.createAnchorNode(hitResult, arSceneView);
 
-                ARBuilder.instance.createMeasureHeightAutoNode(hitResult, activity);
+                // create temp node for measuring height
+                ARBuilder.instance.createMeasureHeightAutoNode(activity);
 
             }
         }
@@ -712,6 +714,7 @@ public class AREnvironment {
         if(frame == null) {
             return;
         }
+
         List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
         for (HitResult hitResult : hitTestResultList) {
             Trackable trackable = hitResult.getTrackable();
