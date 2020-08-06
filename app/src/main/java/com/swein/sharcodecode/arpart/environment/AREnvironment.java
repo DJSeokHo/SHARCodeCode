@@ -20,8 +20,6 @@ import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.math.Vector3;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
-import com.swein.sharcodecode.arpart.builder.material.ARMaterial;
-import com.swein.sharcodecode.arpart.builder.renderable.ARRenderable;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.toast.ToastUtil;
@@ -61,9 +59,6 @@ public class AREnvironment {
         this.activity = activity;
         this.arEnvironmentDelegate = arEnvironmentDelegate;
         planeFindingMode = Config.PlaneFindingMode.HORIZONTAL;
-
-        ARMaterial.instance.init(activity);
-        ARRenderable.instance.init(activity);
 
         arEnvironmentDelegate.showDetectFloorHint();
     }

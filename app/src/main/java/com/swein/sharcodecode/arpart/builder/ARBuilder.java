@@ -111,6 +111,9 @@ public class ARBuilder {
         targetMinimumAreaSize = 3;
 
         floorGuideList = new ArrayList<>();
+
+        ARMaterial.instance.init(context);
+        ARRenderable.instance.init(context);
     }
 
     public void checkPlaneSize(Collection<Plane> planeCollection) {
@@ -199,8 +202,8 @@ public class ARBuilder {
             node = ARTool.createLocalNode(0, 0, 0, ARMaterial.instance.pointMaterial, nodeShadow);
         }
         else {
-//                                Quaternion localRotation = new Quaternion(hitResult.getHitPose().qx(), hitResult.getHitPose().qy(), hitResult.getHitPose().qz(), hitResult.getHitPose().qw());
-//                                localRotation = Quaternion.multiply(this.anchorNode.getWorldRotation().inverted(), Preconditions.checkNotNull(localRotation));
+//            Quaternion localRotation = new Quaternion(hitResult.getHitPose().qx(), hitResult.getHitPose().qy(), hitResult.getHitPose().qz(), hitResult.getHitPose().qw());
+//            localRotation = Quaternion.multiply(this.anchorNode.getWorldRotation().inverted(), Preconditions.checkNotNull(localRotation));
             Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
             Vector3 localPosition = ARTool.transformWorldPositionToLocalPositionOfParent(anchorNode, hitWorldPosition);
 
