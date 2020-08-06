@@ -225,7 +225,7 @@ public class AREnvironment {
                     // if ready to auto close
                     if(ARBuilder.instance.isReadyToAutoClose) {
 
-                        ARBuilder.instance.clearTemp();
+                        ARBuilder.instance.clearGuideSegment();
                         ARBuilder.instance.clearGuide();
 
                         ARConstants.arProcess = ARConstants.ARProcess.DRAW_WALL_OBJECT;
@@ -257,7 +257,7 @@ public class AREnvironment {
                         );
                     }
 
-                    ARBuilder.instance.clearTemp();
+                    ARBuilder.instance.clearGuideSegment();
 
                 }
             }
@@ -427,7 +427,7 @@ public class AREnvironment {
         }
         else {
 
-            ARBuilder.instance.clearTemp();
+            ARBuilder.instance.clearGuideSegment();
             // create wall object end point
             ARBuilder.instance.wallTempPoint.setParent(null);
             ARBuilder.instance.wallTempPoint = null;
@@ -645,7 +645,7 @@ public class AREnvironment {
                     return;
                 }
 
-                ARBuilder.instance.clearTemp();
+                ARBuilder.instance.clearGuideSegment();
             }
         }
     }
