@@ -33,10 +33,12 @@ import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.bean.object.WallObjectBean;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
+import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
 import com.swein.sharcodecode.arpart.environment.AREnvironment;
 import com.swein.sharcodecode.framework.util.device.DeviceUtil;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
+import com.swein.sharcodecode.popup.ARDrawObjectViewHolder;
 import com.swein.sharcodecode.popup.ARHintPopupViewHolder;
 import com.swein.sharcodecode.popup.ARMeasureHeightHintViewHolder;
 import com.swein.sharcodecode.popup.ARSelectUnitViewHolder;
@@ -104,13 +106,12 @@ public class ARActivity extends FragmentActivity {
     private Config.PlaneFindingMode planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL;
 
     private float height = 1;
-
     private float fixedY = 0;
 
 
     private ARSelectUnitViewHolder arSelectUnitViewHolder;
     private ARMeasureHeightHintViewHolder arMeasureHeightHintViewHolder;
-
+    private ARDrawObjectViewHolder arDrawObjectViewHolder;
     private ARHintPopupViewHolder arHintPopupViewHolder;
 
 //    private ARBuilder.ARUnit ARUnit = ARBuilder.ARUnit.CM;
@@ -238,7 +239,7 @@ public class ARActivity extends FragmentActivity {
             @Override
             public void onMeasureHeight(float height) {
                 ARBuilder.instance.height = height;
-                String heightString = String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit);
+                String heightString = String.format("%.2f", MathTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit);
                 textViewHeightRealTime.setText(heightString);
                 ARBuilder.instance.arProcess = ARBuilder.ARProcess.MEASURE_ROOM;
 
@@ -273,22 +274,22 @@ public class ARActivity extends FragmentActivity {
                 linearLayoutInfo.setVisibility(View.VISIBLE);
 
                 textViewHeight.setText(getString(R.string.ar_area_height_title) + " " +
-                        String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit));
+                        String.format("%.2f", MathTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit));
 
                 textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " +
-                        String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.instance.arUnit, circumference)) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit));
+                        String.format("%.2f", MathTool.getLengthByUnit(ARBuilder.instance.arUnit, circumference)) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit));
 
                 SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", wallArea));
-                wallAreaString.append(ARTool.getAreaUnitString(ARBuilder.instance.arUnit));
+                wallAreaString.append(MathTool.getAreaUnitString(ARBuilder.instance.arUnit));
                 textViewWallArea.setText(wallAreaString);
 
 
                 SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
-                areaString.append(ARTool.getAreaUnitString(ARBuilder.instance.arUnit));
+                areaString.append(MathTool.getAreaUnitString(ARBuilder.instance.arUnit));
                 textViewArea.setText(areaString);
 
                 SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
-                volumeString.append(ARTool.getVolumeUnitString(ARBuilder.instance.arUnit));
+                volumeString.append(MathTool.getVolumeUnitString(ARBuilder.instance.arUnit));
                 textViewVolume.setText(volumeString);
             }
 
@@ -346,7 +347,7 @@ public class ARActivity extends FragmentActivity {
                                             wallGuidePoint.getWorldPosition().y,
                                             wallGuidePoint.getWorldPosition().z
                                     );
-                                    Vector3 vector3Local = ARTool.transformWorldPositionToLocalPositionOfParent(anchorNode, vector3World);
+                                    Vector3 vector3Local = MathTool.transformWorldPositionToLocalPositionOfParent(anchorNode, vector3World);
 
 
                                     wallTempPoint = ARTool.createLocalNode(
@@ -367,7 +368,7 @@ public class ARActivity extends FragmentActivity {
                                         wallObjectBean.objectPointList.add(wallTempPoint);
 
                                         Vector3 horizontalVector3 = new Vector3(wallGuidePoint.getWorldPosition().x, wallGuidePoint.getWorldPosition().y, wallGuidePoint.getWorldPosition().z);
-                                        Vector3 horizontalLocalPosition = ARTool.transformWorldPositionToLocalPositionOfParent(this.anchorNode, horizontalVector3);
+                                        Vector3 horizontalLocalPosition = MathTool.transformWorldPositionToLocalPositionOfParent(this.anchorNode, horizontalVector3);
                                         Node horizontalNode = ARTool.createLocalNode(horizontalLocalPosition.x, horizontalLocalPosition.y, horizontalLocalPosition.z, wallPointMaterial, shadow);
                                         horizontalNode.setParent(anchorNode);
                                         wallObjectBean.objectPointList.add(horizontalNode);
@@ -561,7 +562,7 @@ public class ARActivity extends FragmentActivity {
                                     horizontalVector3.y = wallTempPoint.getWorldPosition().y;
                                     horizontalVector3.z = wallGuidePoint.getWorldPosition().z;
 
-                                    Vector3 horizontalLocalPosition = ARTool.transformWorldPositionToLocalPositionOfParent(this.anchorNode, horizontalVector3);
+                                    Vector3 horizontalLocalPosition = MathTool.transformWorldPositionToLocalPositionOfParent(this.anchorNode, horizontalVector3);
 //                                    Node horizontalNode = ARUtil.createLocalNode(horizontalLocalPosition.x, horizontalLocalPosition.y, horizontalLocalPosition.z, wallPointMaterial, shadow);
 //
 //
@@ -569,7 +570,7 @@ public class ARActivity extends FragmentActivity {
                                     verticalVector3.x = wallTempPoint.getWorldPosition().x;
                                     verticalVector3.y = wallGuidePoint.getWorldPosition().y;
                                     verticalVector3.z = wallTempPoint.getWorldPosition().z;
-                                    Vector3 verticalLocalPosition = ARTool.transformWorldPositionToLocalPositionOfParent(this.anchorNode, verticalVector3);
+                                    Vector3 verticalLocalPosition = MathTool.transformWorldPositionToLocalPositionOfParent(this.anchorNode, verticalVector3);
 //                                    Node verticalNode = ARUtil.createLocalNode(verticalVector3.x, verticalVector3.y, verticalVector3.z, wallPointMaterial, shadow);
 
 //                                    drawWallTempLine
@@ -627,7 +628,6 @@ public class ARActivity extends FragmentActivity {
             ARBuilder.instance.roomBean = null;
 
             ARBuilder.instance.isReadyToAutoClose = false;
-            ARBuilder.instance.isAutoClosed = false;
 
             ARBuilder.instance.arProcess = ARBuilder.ARProcess.DETECT_PLANE;
             ARBuilder.instance.measureHeightWay = ARBuilder.MeasureHeightWay.NONE;
@@ -702,7 +702,7 @@ public class ARActivity extends FragmentActivity {
                 closeMeasureHeightPopup();
                 ARBuilder.instance.arProcess = ARBuilder.ARProcess.MEASURE_ROOM;
 
-                String heightString = String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit);
+                String heightString = String.format("%.2f", MathTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit);
                 textViewHeightRealTime.setText(heightString);
 
                 showMeasureRoomPopup();
@@ -923,14 +923,14 @@ public class ARActivity extends FragmentActivity {
             tempLineNode.setWorldRotation(rotationFromAToB);
         }
 
-        float length = ARTool.getLengthByUnit(ARBuilder.instance.arUnit, difference.length());
+        float length = MathTool.getLengthByUnit(ARBuilder.instance.arUnit, difference.length());
 
         if(tempTextNode != null) {
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit));
         }
         else {
 
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(ARBuilder.instance.arUnit));
 
             tempTextNode = new FaceToCameraNode();
             tempTextNode.setParent(tempLineNode);

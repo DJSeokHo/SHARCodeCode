@@ -23,6 +23,7 @@ import com.swein.sharcodecode.arpart.bean.basic.PointBean;
 import com.swein.sharcodecode.arpart.builder.material.ARMaterial;
 import com.swein.sharcodecode.arpart.builder.renderable.ARRenderable;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
+import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
 import com.swein.sharcodecode.framework.util.device.DeviceUtil;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
@@ -47,6 +48,7 @@ public class ARBuilder {
     }
 
 
+    // measure height way
     public enum MeasureHeightWay {
         NONE, AUTO, DRAW
     }
@@ -69,7 +71,6 @@ public class ARBuilder {
 
     // check floor build
     public boolean isReadyToAutoClose;
-    public boolean isAutoClosed;
 
     // node shadow
     public boolean nodeShadow = true;
@@ -171,7 +172,7 @@ public class ARBuilder {
     public void createDetectedPlaneNormalVector(Trackable trackable) {
         if(normalVectorOfPlane == null) {
             // calculate normal vector of detected plane
-            normalVectorOfPlane = ARTool.getNormalVectorOfThreeVectors(
+            normalVectorOfPlane = MathTool.getNormalVectorOfThreeVectors(
                     new Vector3(((Plane) trackable).getCenterPose().tx(), ((Plane) trackable).getCenterPose().ty(), ((Plane) trackable).getCenterPose().tz()),
                     new Vector3(((Plane) trackable).getCenterPose().tx() + ((Plane) trackable).getExtentX(), ((Plane) trackable).getCenterPose().ty(), ((Plane) trackable).getCenterPose().tz()),
                     new Vector3(((Plane) trackable).getCenterPose().tx(), ((Plane) trackable).getCenterPose().ty(), ((Plane) trackable).getCenterPose().tz() + ((Plane) trackable).getExtentZ())
@@ -205,7 +206,7 @@ public class ARBuilder {
 //            Quaternion localRotation = new Quaternion(hitResult.getHitPose().qx(), hitResult.getHitPose().qy(), hitResult.getHitPose().qz(), hitResult.getHitPose().qw());
 //            localRotation = Quaternion.multiply(this.anchorNode.getWorldRotation().inverted(), Preconditions.checkNotNull(localRotation));
             Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
-            Vector3 localPosition = ARTool.transformWorldPositionToLocalPositionOfParent(anchorNode, hitWorldPosition);
+            Vector3 localPosition = MathTool.transformWorldPositionToLocalPositionOfParent(anchorNode, hitWorldPosition);
 
             node = ARTool.createLocalNode(localPosition.x, localPosition.y, localPosition.z, ARMaterial.instance.pointMaterial, nodeShadow);
         }
@@ -234,7 +235,7 @@ public class ARBuilder {
         }
 
         Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
-        Vector3 localPosition = ARTool.transformWorldPositionToLocalPositionOfParent(anchorNode, hitWorldPosition);
+        Vector3 localPosition = MathTool.transformWorldPositionToLocalPositionOfParent(anchorNode, hitWorldPosition);
 
         Node node = ARTool.createLocalNode(localPosition.x, localPosition.y, localPosition.z, ARMaterial.instance.pointMaterial, nodeShadow);
 
@@ -282,16 +283,16 @@ public class ARBuilder {
         guideSegmentNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
         guideSegmentNode.setWorldRotation(rotationFromAToB);
 
-        float length = ARTool.getLengthByUnit(arUnit, difference.length());
+        float length = MathTool.getLengthByUnit(arUnit, difference.length());
 
         if(guideSizeTextNode != null) {
 
-            ((TextView) ARRenderable.instance.guideSizeTextView.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(arUnit));
+            ((TextView) ARRenderable.instance.guideSizeTextView.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(arUnit));
 
         }
         else {
 
-            ((TextView) ARRenderable.instance.guideSizeTextView.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(arUnit));
+            ((TextView) ARRenderable.instance.guideSizeTextView.getView()).setText(String.format("%.2f", length) + MathTool.getLengthUnitString(arUnit));
 
             guideSizeTextNode = new FaceToCameraNode();
 
@@ -310,7 +311,7 @@ public class ARBuilder {
 
         Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.segmentMaterial, nodeShadow);
 
-        float length = ARTool.getLengthOfTwoNode(startNode, endNode);
+        float length = MathTool.getLengthOfTwoNode(startNode, endNode);
         ARTool.setSegmentSizeTextView(context, length, arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
 
         });
@@ -325,12 +326,12 @@ public class ARBuilder {
 
             Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.segmentMaterial, nodeShadow);
 
-            float length = ARTool.getLengthOfTwoNode(startNode, endNode);
+            float length = MathTool.getLengthOfTwoNode(startNode, endNode);
             ARTool.setSegmentSizeTextView(activity, length, arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
 
             });
 
-            isAutoClosed = true;
+            arProcess = ARProcess.DRAW_WALL_OBJECT;
 
             DeviceUtil.vibrate(activity, 5);
         }
@@ -359,7 +360,7 @@ public class ARBuilder {
     }
 
     private boolean checkClose(Node startNode, Node endNode) {
-        return ARTool.getNodesDistanceMetersWithoutHeight(startNode, endNode) < 0.06;
+        return MathTool.getNodesDistanceMetersWithoutHeight(startNode, endNode) < 0.06;
     }
 
     /**
@@ -521,26 +522,23 @@ public class ARBuilder {
                 }
             }
         }
-        else if(arProcess == ARProcess.MEASURE_ROOM) {
+        else if(arProcess == ARProcess.DRAW_WALL_OBJECT) {
+            if(anchorNode != null) {
+                ARTool.removeChildFormNode(anchorNode);
+                anchorNode.setParent(null);
+                anchorNode = null;
+            }
+            else {
+                backToMeasureHeight();
+            }
 
-            if(isAutoClosed) {
+            clearGuidePlane();
 
-                if(anchorNode != null) {
-                    ARTool.removeChildFormNode(anchorNode);
-                    anchorNode.setParent(null);
-                    anchorNode = null;
-                }
-                else {
-                    backToMeasureHeight();
-                }
-
-                clearGuidePlane();
-
-                // clear room bean
-                if(roomBean != null) {
-                    roomBean.clear();
-                    roomBean = null;
-                }
+            // clear room bean
+            if(roomBean != null) {
+                roomBean.clear();
+                roomBean = null;
+            }
 
 //            for(WallObjectBean wallObjectBean : wallObjectBeans) {
 //                for(Node node : wallObjectBean.objectPointList) {
@@ -549,10 +547,10 @@ public class ARBuilder {
 //            }
 //            wallObjectBeans.clear();
 
-                clearTemp();
-                clearGuide();
+            clearTemp();
+            clearGuide();
 
-                floorFixedY = 0;
+            floorFixedY = 0;
 
 //            if(wallGuidePoint != null) {
 //                wallGuidePoint.setParent(null);
@@ -566,18 +564,17 @@ public class ARBuilder {
 //
 //            currentGuideIndex = -1;
 //            currentWallIndex = -1;
+        }
+        else if(arProcess == ARProcess.MEASURE_ROOM) {
 
-            }
-            else {
+            if(floorGuideList.size() == 1) {
 
-                if(floorGuideList.size() == 1) {
+                if(anchorNode != null) {
+                    ARTool.removeChildFormNode(anchorNode);
+                    anchorNode = null;
+                }
 
-                    if(anchorNode != null) {
-                        ARTool.removeChildFormNode(anchorNode);
-                        anchorNode = null;
-                    }
-
-                    clearGuidePlane();
+                clearGuidePlane();
 //                wallBeanList.clear();
 //
 //                for(WallObjectBean wallObjectBean : wallObjectBeans) {
@@ -587,10 +584,10 @@ public class ARBuilder {
 //                }
 //                wallObjectBeans.clear();
 
-                    clearTemp();
-                    clearGuide();
+                clearTemp();
+                clearGuide();
 
-                    floorFixedY = 0;
+                floorFixedY = 0;
 
 //                if(wallGuidePoint != null) {
 //                    wallGuidePoint.setParent(null);
@@ -604,25 +601,22 @@ public class ARBuilder {
 //
 //                currentGuideIndex = -1;
 //                currentWallIndex = -1;
-                }
-                else if(floorGuideList.size() > 1) {
+            }
+            else if(floorGuideList.size() > 1) {
 
-                    ARTool.removeChildFormNode(floorGuideList.get(floorGuideList.size() - 2));
-                    floorGuideList.get(floorGuideList.size() - 1).setParent(null);
-                    floorGuideList.remove(floorGuideList.size() - 1);
+                ARTool.removeChildFormNode(floorGuideList.get(floorGuideList.size() - 2));
+                floorGuideList.get(floorGuideList.size() - 1).setParent(null);
+                floorGuideList.remove(floorGuideList.size() - 1);
 
-                    clearTemp();
-                    clearGuide();
+                clearTemp();
+                clearGuide();
 
-                }
-                else {
-                    backToMeasureHeight();
-                }
+            }
+            else {
+                backToMeasureHeight();
             }
 
-            isAutoClosed = false;
             isReadyToAutoClose = false;
-
         }
     }
 
@@ -687,7 +681,6 @@ public class ARBuilder {
         floorGuideList = null;
 
         isReadyToAutoClose = false;
-        isAutoClosed = false;
 
         measureHeightFloorNode = null;
         measureHeightCeilingNode = null;

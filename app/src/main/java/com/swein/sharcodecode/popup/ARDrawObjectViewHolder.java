@@ -7,7 +7,7 @@ import android.widget.TextView;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.framework.util.view.ViewUtil;
 
-class ARDrawObjectViewHolder {
+public class ARDrawObjectViewHolder {
 
     public final static String WINDOW_TYPE = "WINDOW_TYPE";
     public final static String DOOR_TYPE = "DOOR_TYPE";

@@ -8,7 +8,7 @@ import android.widget.TextView;
 
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
-import com.swein.sharcodecode.arpart.builder.tool.ARTool;
+import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 import com.swein.sharcodecode.framework.util.animation.AnimationUtil;
 import com.swein.sharcodecode.framework.util.view.ViewUtil;
 
@@ -38,7 +38,7 @@ public class ARMeasureHeightHintViewHolder {
         findView();
         setListener();
 
-        textViewUnit.setText(ARTool.getLengthUnitString(arUnit));
+        textViewUnit.setText(MathTool.getLengthUnitString(arUnit));
     }
 
     private void findView() {

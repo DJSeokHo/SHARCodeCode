@@ -4,7 +4,7 @@ import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
 import com.swein.sharcodecode.arpart.bean.basic.PlaneBean;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
-import com.swein.sharcodecode.arpart.builder.tool.ARTool;
+import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,7 +59,7 @@ public class RoomBean {
         // 벽 면적
         wallArea = 0;
         for(int i = 0; i < floor.segmentList.size(); i++) {
-            wallArea += ARTool.getLengthByUnit(arUnit, floor.segmentList.get(i).length) * ARTool.getLengthByUnit(arUnit, height);
+            wallArea += MathTool.getLengthByUnit(arUnit, floor.segmentList.get(i).length) * MathTool.getLengthByUnit(arUnit, height);
         }
 
         // 면적
@@ -67,10 +67,10 @@ public class RoomBean {
         for(int i = 0; i < floor.pointList.size(); i++) {
             list.add(floor.pointList.get(i).point);
         }
-        area = ARTool.getAreaByUnit(arUnit, ARTool.calculateArea(list, normalVectorOfPlane));
+        area = MathTool.getAreaByUnit(arUnit, MathTool.calculateArea(list, normalVectorOfPlane));
 
         // 체적
-        volume = ARTool.getLengthByUnit(arUnit, height) * area;
+        volume = MathTool.getLengthByUnit(arUnit, height) * area;
     }
 
     public void clear() {

@@ -21,6 +21,7 @@ import com.google.ar.sceneform.math.Vector3;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.tool.ARTool;
+import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.toast.ToastUtil;
 
@@ -144,7 +145,7 @@ public class AREnvironment {
                 if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
 
 
-                    if(ARBuilder.instance.isAutoClosed) {
+                    if(ARBuilder.instance.arProcess == ARBuilder.ARProcess.DRAW_WALL_OBJECT) {
 
                         return;
                     }
@@ -220,7 +221,7 @@ public class AREnvironment {
                     }
 
                     // auto closed
-                    if(ARBuilder.instance.isAutoClosed) {
+                    if(ARBuilder.instance.arProcess == ARBuilder.ARProcess.DRAW_WALL_OBJECT) {
 
                     }
                     else {
@@ -235,6 +236,14 @@ public class AREnvironment {
                 }
             }
         }
+    }
+
+    private void drawWallObjectWhenTouch() {
+
+    }
+
+    private void drawWallObjectWhenUpdate() {
+
     }
 
     private void measureHeightDrawWhenTouch(ArSceneView arSceneView) {
@@ -281,7 +290,7 @@ public class AREnvironment {
                                 ARBuilder.instance.measureHeightCeilingNode.getWorldPosition().z
                         );
 
-                        float height = ARTool.getLengthBetweenPointToPlane(ceilingPoint, floorPoint, ARBuilder.instance.normalVectorOfPlane);
+                        float height = MathTool.getLengthBetweenPointToPlane(ceilingPoint, floorPoint, ARBuilder.instance.normalVectorOfPlane);
                         arEnvironmentDelegate.onMeasureHeight(height);
                     }
 
@@ -365,7 +374,7 @@ public class AREnvironment {
                     );
                     Vector3 ceiling = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
 
-                    float height = ARTool.getLengthBetweenPointToPlane(ceiling, floorPoint, ARBuilder.instance.normalVectorOfPlane);
+                    float height = MathTool.getLengthBetweenPointToPlane(ceiling, floorPoint, ARBuilder.instance.normalVectorOfPlane);
                     arEnvironmentDelegate.onMeasureHeight(height);
 
                     return;
