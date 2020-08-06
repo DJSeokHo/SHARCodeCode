@@ -6,16 +6,11 @@ import java.util.HashMap;
 
 public class EventCenter {
 
-    private static EventCenter instance = new EventCenter();
+    public static EventCenter instance = new EventCenter();
     private HashMap<String, ArrayList<EventObserver>> map = new HashMap<>();
 
     private EventCenter() {
     }
-
-    public static EventCenter getInstance() {
-        return instance;
-    }
-
 
     public interface EventRunnable {
         void run(String arrow, Object poster, HashMap<String, Object> data);

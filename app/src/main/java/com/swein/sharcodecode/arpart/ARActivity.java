@@ -132,13 +132,13 @@ public class ARActivity extends FragmentActivity {
 
     private void initESS() {
 
-        EventCenter.getInstance().addEventObserver(ARESSArrows.DETECTING_TARGET_MINIMUM_AREA_SIZE, this, (arrow, poster, data) -> {
+        EventCenter.instance.addEventObserver(ARESSArrows.DETECTING_TARGET_MINIMUM_AREA_SIZE, this, (arrow, poster, data) -> {
             int percentage = (int) data.get("percentage");
             textViewHint.setVisibility(View.VISIBLE);
             textViewHint.setText(percentage + "%");
         });
 
-        EventCenter.getInstance().addEventObserver(ARESSArrows.DETECTED_TARGET_MINIMUM_AREA_SIZE_FINISHED, this, (arrow, poster, data) -> {
+        EventCenter.instance.addEventObserver(ARESSArrows.DETECTED_TARGET_MINIMUM_AREA_SIZE_FINISHED, this, (arrow, poster, data) -> {
 
             textViewHint.setVisibility(View.GONE);
             textViewHint.setText("");
@@ -146,17 +146,17 @@ public class ARActivity extends FragmentActivity {
             showMeasureHeightPopup();
         });
 
-        EventCenter.getInstance().addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_TOO_CLOSE, this, (arrow, poster, data) -> {
+        EventCenter.instance.addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_TOO_CLOSE, this, (arrow, poster, data) -> {
             frameLayoutTooCloseTooFar.setVisibility(View.VISIBLE);
             textViewTooCloseTooFar.setText(R.string.ar_too_close);
         });
 
-        EventCenter.getInstance().addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_TOO_FAR, this, (arrow, poster, data) -> {
+        EventCenter.instance.addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_TOO_FAR, this, (arrow, poster, data) -> {
             frameLayoutTooCloseTooFar.setVisibility(View.VISIBLE);
             textViewTooCloseTooFar.setText(R.string.ar_too_far);
         });
 
-        EventCenter.getInstance().addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_OK, this, (arrow, poster, data) -> {
+        EventCenter.instance.addEventObserver(ARESSArrows.CAMERA_AND_PLANE_DISTANCE_OK, this, (arrow, poster, data) -> {
             textViewTooCloseTooFar.setText("");
             frameLayoutTooCloseTooFar.setVisibility(View.GONE);
         });
@@ -219,7 +219,7 @@ public class ARActivity extends FragmentActivity {
     }
 
     private void initAR() {
-        AREnvironment.getInstance().init(this, new AREnvironment.AREnvironmentDelegate() {
+        AREnvironment.instance.init(this, new AREnvironment.AREnvironmentDelegate() {
             @Override
             public void onUpdatePlaneType(String type) {
                 textViewPlaneType.setText(type);
@@ -237,27 +237,27 @@ public class ARActivity extends FragmentActivity {
 
             @Override
             public void onMeasureHeight(float height) {
-                ARBuilder.getInstance().height = height;
-                String heightString = String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.getInstance().arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit);
+                ARBuilder.instance.height = height;
+                String heightString = String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit);
                 textViewHeightRealTime.setText(heightString);
-                ARBuilder.getInstance().arProcess = ARBuilder.ARProcess.MEASURE_ROOM;
+                ARBuilder.instance.arProcess = ARBuilder.ARProcess.MEASURE_ROOM;
 
                 // clear node when measure height finished
-                ARTool.removeChildFormNode(ARBuilder.getInstance().anchorNode);
+                ARTool.removeChildFormNode(ARBuilder.instance.anchorNode);
 
-                if(ARBuilder.getInstance().anchorNode != null) {
-                    ARBuilder.getInstance().anchorNode.setParent(null);
-                    ARBuilder.getInstance().anchorNode = null;
+                if(ARBuilder.instance.anchorNode != null) {
+                    ARBuilder.instance.anchorNode.setParent(null);
+                    ARBuilder.instance.anchorNode = null;
                 }
 
-                if(ARBuilder.getInstance().measureHeightFloorNode != null) {
-                    ARBuilder.getInstance().measureHeightFloorNode.setParent(null);
-                    ARBuilder.getInstance().measureHeightFloorNode = null;
+                if(ARBuilder.instance.measureHeightFloorNode != null) {
+                    ARBuilder.instance.measureHeightFloorNode.setParent(null);
+                    ARBuilder.instance.measureHeightFloorNode = null;
                 }
 
-                if(ARBuilder.getInstance().measureHeightCeilingNode != null) {
-                    ARBuilder.getInstance().measureHeightCeilingNode.setParent(null);
-                    ARBuilder.getInstance().measureHeightCeilingNode = null;
+                if(ARBuilder.instance.measureHeightCeilingNode != null) {
+                    ARBuilder.instance.measureHeightCeilingNode.setParent(null);
+                    ARBuilder.instance.measureHeightCeilingNode = null;
                 }
 
                 textViewHint.setText("");
@@ -267,28 +267,28 @@ public class ARActivity extends FragmentActivity {
             }
         });
 
-        ARBuilder.getInstance().init(this, new ARBuilder.ARBuilderDelegate() {
+        ARBuilder.instance.init(this, new ARBuilder.ARBuilderDelegate() {
             @Override
             public void onCalculate(float height, float area, float circumference, float wallArea, float volume) {
                 linearLayoutInfo.setVisibility(View.VISIBLE);
 
                 textViewHeight.setText(getString(R.string.ar_area_height_title) + " " +
-                        String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.getInstance().arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
+                        String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit));
 
                 textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " +
-                        String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.getInstance().arUnit, circumference)) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
+                        String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.instance.arUnit, circumference)) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit));
 
                 SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", wallArea));
-                wallAreaString.append(ARTool.getAreaUnitString(ARBuilder.getInstance().arUnit));
+                wallAreaString.append(ARTool.getAreaUnitString(ARBuilder.instance.arUnit));
                 textViewWallArea.setText(wallAreaString);
 
 
                 SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
-                areaString.append(ARTool.getAreaUnitString(ARBuilder.getInstance().arUnit));
+                areaString.append(ARTool.getAreaUnitString(ARBuilder.instance.arUnit));
                 textViewArea.setText(areaString);
 
                 SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
-                volumeString.append(ARTool.getVolumeUnitString(ARBuilder.getInstance().arUnit));
+                volumeString.append(ARTool.getVolumeUnitString(ARBuilder.instance.arUnit));
                 textViewVolume.setText(volumeString);
             }
 
@@ -301,8 +301,8 @@ public class ARActivity extends FragmentActivity {
             }
         });
 
-        AREnvironment.getInstance().hitPointX = DeviceUtil.getScreenCenterX(this);
-        AREnvironment.getInstance().hitPointY = DeviceUtil.getScreenCenterY(this);
+        AREnvironment.instance.hitPointX = DeviceUtil.getScreenCenterX(this);
+        AREnvironment.instance.hitPointY = DeviceUtil.getScreenCenterY(this);
     }
 
     @SuppressLint("RestrictedApi")
@@ -312,11 +312,11 @@ public class ARActivity extends FragmentActivity {
                 (HitTestResult hitTestResult, MotionEvent event) -> {
 
 
-                    if(!AREnvironment.getInstance().checkPlanEnable(arSceneView.getArFrame())) {
+                    if(!AREnvironment.instance.checkPlanEnable(arSceneView.getArFrame())) {
                         return false;
                     }
 
-                    AREnvironment.getInstance().onTouch(arSceneView);
+                    AREnvironment.instance.onTouch(arSceneView);
 
                     Frame frame = arSceneView.getArFrame();
 
@@ -456,14 +456,14 @@ public class ARActivity extends FragmentActivity {
         arSceneView.getScene().addOnUpdateListener(
                 frameTime -> {
 
-                    if(!AREnvironment.getInstance().checkPlanEnable(arSceneView.getArFrame())) {
+                    if(!AREnvironment.instance.checkPlanEnable(arSceneView.getArFrame())) {
                         return;
                     }
 
-                    AREnvironment.getInstance().updateCloudPoint(arSceneView);
-                    AREnvironment.getInstance().updatePlaneType(arSceneView);
+                    AREnvironment.instance.updateCloudPoint(arSceneView);
+                    AREnvironment.instance.updatePlaneType(arSceneView);
 
-                    AREnvironment.getInstance().onUpdateFrame(arSceneView);
+                    AREnvironment.instance.onUpdateFrame(arSceneView);
 
                     if(true) {
                         return;
@@ -605,11 +605,11 @@ public class ARActivity extends FragmentActivity {
                 });
 
         imageViewBack.setOnClickListener(view -> {
-            ARBuilder.getInstance().back();
+            ARBuilder.instance.back();
             clearRoomInfo();
         });
 
-        imageViewReset.setOnClickListener(view -> AREnvironment.getInstance().reset(this, arSceneView, this::finish, () -> {
+        imageViewReset.setOnClickListener(view -> AREnvironment.instance.reset(this, arSceneView, this::finish, () -> {
 
             clearRoomInfo();
 
@@ -617,20 +617,20 @@ public class ARActivity extends FragmentActivity {
             textViewHint.setVisibility(View.GONE);
             textViewHeightRealTime.setText("");
 
-            ARBuilder.getInstance().clearGuidePlane();
-            ARBuilder.getInstance().clearGuide();
-            ARBuilder.getInstance().clearTemp();
-            ARBuilder.getInstance().clearAnchor();
-            ARBuilder.getInstance().height = 0;
-            ARBuilder.getInstance().floorFixedY = 0;
-            ARBuilder.getInstance().normalVectorOfPlane = null;
-            ARBuilder.getInstance().roomBean = null;
+            ARBuilder.instance.clearGuidePlane();
+            ARBuilder.instance.clearGuide();
+            ARBuilder.instance.clearTemp();
+            ARBuilder.instance.clearAnchor();
+            ARBuilder.instance.height = 0;
+            ARBuilder.instance.floorFixedY = 0;
+            ARBuilder.instance.normalVectorOfPlane = null;
+            ARBuilder.instance.roomBean = null;
 
-            ARBuilder.getInstance().isReadyToAutoClose = false;
-            ARBuilder.getInstance().isAutoClosed = false;
+            ARBuilder.instance.isReadyToAutoClose = false;
+            ARBuilder.instance.isAutoClosed = false;
 
-            ARBuilder.getInstance().arProcess = ARBuilder.ARProcess.DETECT_PLANE;
-            ARBuilder.getInstance().measureHeightWay = ARBuilder.MeasureHeightWay.NONE;
+            ARBuilder.instance.arProcess = ARBuilder.ARProcess.DETECT_PLANE;
+            ARBuilder.instance.measureHeightWay = ARBuilder.MeasureHeightWay.NONE;
 
         }));
 
@@ -673,10 +673,10 @@ public class ARActivity extends FragmentActivity {
             @Override
             public void onConfirm(ARBuilder.MeasureHeightWay measureHeightWay) {
 
-                ARBuilder.getInstance().measureHeightWay = measureHeightWay;
+                ARBuilder.instance.measureHeightWay = measureHeightWay;
                 closeMeasureHeightPopup();
 
-                switch (ARBuilder.getInstance().measureHeightWay) {
+                switch (ARBuilder.instance.measureHeightWay) {
                     case AUTO:
                         textViewHint.setText(getString(R.string.ar_draw_height_by_ceiling_auto));
                         textViewHint.setVisibility(View.VISIBLE);
@@ -688,7 +688,7 @@ public class ARActivity extends FragmentActivity {
                         break;
                 }
 
-                ARBuilder.getInstance().arProcess = ARBuilder.ARProcess.MEASURE_HEIGHT;
+                ARBuilder.instance.arProcess = ARBuilder.ARProcess.MEASURE_HEIGHT;
             }
 
             @Override
@@ -698,17 +698,17 @@ public class ARActivity extends FragmentActivity {
 
             @Override
             public void onConfirmInput(float height) {
-                ARBuilder.getInstance().height = height;
+                ARBuilder.instance.height = height;
                 closeMeasureHeightPopup();
-                ARBuilder.getInstance().arProcess = ARBuilder.ARProcess.MEASURE_ROOM;
+                ARBuilder.instance.arProcess = ARBuilder.ARProcess.MEASURE_ROOM;
 
-                String heightString = String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.getInstance().arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit);
+                String heightString = String.format("%.2f", ARTool.getLengthByUnit(ARBuilder.instance.arUnit, height)) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit);
                 textViewHeightRealTime.setText(heightString);
 
                 showMeasureRoomPopup();
             }
 
-        }, ARBuilder.getInstance().arUnit);
+        }, ARBuilder.instance.arUnit);
 
         frameLayoutPopup.addView(arMeasureHeightHintViewHolder.getView());
         frameLayoutPopup.setVisibility(View.VISIBLE);
@@ -751,25 +751,25 @@ public class ARActivity extends FragmentActivity {
     }
 
 //    private void showSelectUnitPopup() {
-//        arSelectUnitViewHolder = new ARSelectUnitViewHolder(this, ARBuilder.getInstance().arUnit, new ARSelectUnitViewHolder.ARSelectUnitViewHolderDelegate() {
+//        arSelectUnitViewHolder = new ARSelectUnitViewHolder(this, ARBuilder.instance.arUnit, new ARSelectUnitViewHolder.ARSelectUnitViewHolderDelegate() {
 //            @Override
 //            public void onSelectUnit(String unit) {
 //
 //
 //                switch (unit) {
 //                    case "m":
-//                        ARBuilder.getInstance().arUnit = ARBuilder.ARUnit.M;
+//                        ARBuilder.instance.arUnit = ARBuilder.ARUnit.M;
 //                        break;
 //
 //                    case "cm":
-//                        ARBuilder.getInstance().arUnit = ARBuilder.ARUnit.CM;
+//                        ARBuilder.instance.arUnit = ARBuilder.ARUnit.CM;
 //                        break;
 //                }
 //
 //                closeSelectUnitPopup();
 //
 //                // update all text view
-//                EventCenter.getInstance().sendEvent(ARESSArrows.CHANGE_UNIT, this, null);
+//                EventCenter.instance.sendEvent(ARESSArrows.CHANGE_UNIT, this, null);
 //            }
 //
 //            @Override
@@ -923,14 +923,14 @@ public class ARActivity extends FragmentActivity {
             tempLineNode.setWorldRotation(rotationFromAToB);
         }
 
-        float length = ARTool.getLengthByUnit(ARBuilder.getInstance().arUnit, difference.length());
+        float length = ARTool.getLengthByUnit(ARBuilder.instance.arUnit, difference.length());
 
         if(tempTextNode != null) {
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit));
         }
         else {
 
-            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(ARBuilder.getInstance().arUnit));
+            ((TextView) viewRenderableSizeText.getView()).setText(String.format("%.2f", length) + ARTool.getLengthUnitString(ARBuilder.instance.arUnit));
 
             tempTextNode = new FaceToCameraNode();
             tempTextNode.setParent(tempLineNode);
@@ -963,24 +963,24 @@ public class ARActivity extends FragmentActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        AREnvironment.getInstance().resume(this, arSceneView, this::finish, () -> textViewHint.setVisibility(View.GONE));
+        AREnvironment.instance.resume(this, arSceneView, this::finish, () -> textViewHint.setVisibility(View.GONE));
     }
 
 
     @Override
     public void onPause() {
         super.onPause();
-        AREnvironment.getInstance().pause(arSceneView);
+        AREnvironment.instance.pause(arSceneView);
     }
 
     private void removeESS() {
-        EventCenter.getInstance().removeAllObserver(this);
+        EventCenter.instance.removeAllObserver(this);
     }
 
     @Override
     public void onDestroy() {
-        AREnvironment.getInstance().destroy(arSceneView);
-        ARBuilder.getInstance().destroy();
+        AREnvironment.instance.destroy(arSceneView);
+        ARBuilder.instance.destroy();
         removeESS();
         super.onDestroy();
     }

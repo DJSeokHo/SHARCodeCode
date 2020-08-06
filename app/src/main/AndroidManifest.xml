@@ -15,7 +15,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".arpart.recordlist.ARRecordListActivity"></activity>
+        <activity android:name=".arpart.recordlist.ARRecordListActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".arpart.ARActivity"
             android:launchMode="singleTask"
