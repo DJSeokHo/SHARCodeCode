@@ -3,7 +3,6 @@ package com.swein.sharcodecode.arpart.recordlist.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -17,17 +16,17 @@ import java.util.List;
 
 public class ARRecordListAdapter extends RecyclerView.Adapter {
 
+    public interface ARRecordListAdapterDelegate {
+        void loadMore();
+    }
+
     private final static String TAG = "ARRecordListAdapter";
 
     private List<RoomBean> roomBeanList = new ArrayList<>();
 
     private static final int TYPE_ITEM_NORMAL_LIST = 0;
 
-    private TextView textViewHeight;
-    private TextView textViewArea;
-    private TextView textViewCircumference;
-    private TextView textViewWallArea;
-    private TextView textViewVolume;
+    public ARRecordListAdapterDelegate arRecordListAdapterDelegate;
 
     public ARRecordListAdapter() {
     }
@@ -67,6 +66,10 @@ public class ARRecordListAdapter extends RecyclerView.Adapter {
             ARRecordListItemViewHolder arRecordListItemViewHolder = (ARRecordListItemViewHolder) holder;
             arRecordListItemViewHolder.roomBean = roomBeanList.get(position);
             arRecordListItemViewHolder.updateView();
+        }
+
+        if(position == roomBeanList.size() - 1) {
+            arRecordListAdapterDelegate.loadMore();
         }
     }
 
