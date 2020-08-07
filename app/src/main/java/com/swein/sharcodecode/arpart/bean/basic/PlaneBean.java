@@ -10,9 +10,12 @@ public class PlaneBean {
     public List<PointBean> pointList = new ArrayList<>();
     public List<SegmentBean> segmentList = new ArrayList<>();
 
+    public String type;
+
     public PlaneBean() {
         pointList.clear();
         segmentList.clear();
+        type = "";
     }
 
     public void createSegment() {
@@ -49,5 +52,7 @@ public class PlaneBean {
             segmentList.get(i).clear();
         }
         segmentList.clear();
+
+        type = "";
     }
 }

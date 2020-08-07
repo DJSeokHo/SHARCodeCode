@@ -23,6 +23,8 @@ import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.FaceToCameraNode;
+import com.swein.sharcodecode.arpart.bean.basic.PlaneBean;
+import com.swein.sharcodecode.arpart.bean.basic.PointBean;
 import com.swein.sharcodecode.arpart.bean.object.WallObjectBean;
 import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.material.ARMaterial;
@@ -281,6 +283,13 @@ public class AREnvironment {
             }
         }
         else if(ARConstants.arProcess == ARConstants.ARProcess.DRAW_WALL_OBJECT) {
+
+            if(ARConstants.wallObjectType == ARConstants.WallObjectType.NONE) {
+                ARConstants.arProcess = ARConstants.ARProcess.SELECTED_WALL_OBJECT;
+                arEnvironmentShowHintDelegate.showSelectWallObjectPopup();
+                return;
+            }
+
             drawWallObjectWhenTouch();
         }
     }
@@ -379,10 +388,10 @@ public class AREnvironment {
             ARBuilder.instance.wallTempPoint.setParent(ARBuilder.instance.anchorNode);
 
 
-            if(ARBuilder.instance.wallObjectBeanList.isEmpty()) {
-                ARBuilder.instance.wallObjectBeanList.add(new WallObjectBean());
+            if(ARBuilder.instance.wallObjectBeanTemp == null) {
+                ARBuilder.instance.wallObjectBeanTemp = new WallObjectBean();
 
-                WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeanList.get(0);
+                WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeanTemp;
 
                 // add point
                 wallObjectBean.objectPointList.add(ARBuilder.instance.wallTempPoint);
@@ -444,28 +453,79 @@ public class AREnvironment {
         }
         else {
 
-            ARBuilder.instance.clearGuideSegment();
-            // create wall object end point
-            ARBuilder.instance.wallTempPoint.setParent(null);
-            ARBuilder.instance.wallTempPoint = null;
+            // create wall object
+            if(ARBuilder.instance.roomBean != null) {
 
-            ARBuilder.instance.currentWallIndex = -1;
-            ARBuilder.instance.currentGuideIndex = -1;
+                WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeanTemp;
 
-            for(int i = 0; i < ARBuilder.instance.wallObjectBeanList.size(); i++) {
-                WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeanList.get(i);
+                Vector3 guideVector3 = new Vector3();
+                guideVector3.x = ARBuilder.instance.wallGuidePoint.getWorldPosition().x;
+                guideVector3.y = ARBuilder.instance.wallGuidePoint.getWorldPosition().y;
+                guideVector3.z = ARBuilder.instance.wallGuidePoint.getWorldPosition().z;
+                Vector3 guideLocalPosition = MathTool.transformWorldPositionToLocalPositionOfParent(ARBuilder.instance.anchorNode, guideVector3);
 
-                for(Node node : wallObjectBean.objectPointList) {
-                    ARTool.removeChildFormNode(node);
-                    node.setParent(null);
+                Vector3 horizontalVector3 = new Vector3();
+                horizontalVector3.x = ARBuilder.instance.wallGuidePoint.getWorldPosition().x;
+                horizontalVector3.y = ARBuilder.instance.wallTempPoint.getWorldPosition().y;
+                horizontalVector3.z = ARBuilder.instance.wallGuidePoint.getWorldPosition().z;
+                Vector3 horizontalLocalPosition = MathTool.transformWorldPositionToLocalPositionOfParent(ARBuilder.instance.anchorNode, horizontalVector3);
+
+                Vector3 verticalVector3 = new Vector3();
+                verticalVector3.x = ARBuilder.instance.wallTempPoint.getWorldPosition().x;
+                verticalVector3.y = ARBuilder.instance.wallGuidePoint.getWorldPosition().y;
+                verticalVector3.z = ARBuilder.instance.wallTempPoint.getWorldPosition().z;
+                Vector3 verticalLocalPosition = MathTool.transformWorldPositionToLocalPositionOfParent(ARBuilder.instance.anchorNode, verticalVector3);
+
+                // draw wall temp line
+                if(wallObjectBean.objectPointList.size() < 4) {
+                    return;
                 }
-                wallObjectBean.objectPointList.clear();
-                wallObjectBean.objectTextList.clear();
-                wallObjectBean.objectLineList.clear();
-                wallObjectBean.viewRenderableList.clear();
-            }
 
-            ARBuilder.instance.wallObjectBeanList.clear();
+                wallObjectBean.objectPointList.get(1).setLocalPosition(horizontalLocalPosition);
+                wallObjectBean.objectPointList.get(2).setLocalPosition(guideLocalPosition);
+                wallObjectBean.objectPointList.get(3).setLocalPosition(verticalLocalPosition);
+
+                PlaneBean planeBean = new PlaneBean();
+
+                PointBean pointBean;
+                for(int i = 0; i < wallObjectBean.objectPointList.size(); i++) {
+                    pointBean = new PointBean();
+                    pointBean.point = ARTool.createLocalNode(
+                            wallObjectBean.objectPointList.get(i).getLocalPosition().x,
+                            wallObjectBean.objectPointList.get(i).getLocalPosition().y,
+                            wallObjectBean.objectPointList.get(i).getLocalPosition().z,
+                            ARMaterial.instance.objectPointMaterial, true);
+                    pointBean.point.setParent(ARBuilder.instance.anchorNode);
+
+                    planeBean.pointList.add(pointBean);
+                }
+
+                planeBean.createSegment();
+
+                ARBuilder.instance.roomBean.wallObjectList.add(planeBean);
+
+                if(ARConstants.wallObjectType == ARConstants.WallObjectType.WINDOW) {
+                    planeBean.type = "WINDOW";
+                }
+                else {
+                    planeBean.type = "DOOR";
+                }
+
+
+                for(int i = 0; i < planeBean.pointList.size() - 1; i++) {
+                    ARBuilder.instance.drawWallObjectSegment(activity, planeBean.pointList.get(i).point, planeBean.pointList.get(i + 1).point, 0.005f);
+                }
+                ARBuilder.instance.drawWallObjectSegment(activity, planeBean.pointList.get(planeBean.pointList.size() - 1).point, planeBean.pointList.get(0).point, 0.005f);
+
+                ARBuilder.instance.clearGuideSegment();
+                ARBuilder.instance.clearWallObject();
+
+                ARBuilder.instance.currentWallIndex = -1;
+                ARBuilder.instance.currentGuideIndex = -1;
+
+                ARConstants.arProcess = ARConstants.ARProcess.SELECTED_WALL_OBJECT;
+                arEnvironmentShowHintDelegate.showSelectWallObjectPopup();
+            }
         }
     }
 
@@ -546,11 +606,11 @@ public class AREnvironment {
 
                 if(ARBuilder.instance.currentGuideIndex == ARBuilder.instance.currentWallIndex) {
 
-                    if(ARBuilder.instance.wallObjectBeanList.isEmpty()) {
+                    if(ARBuilder.instance.wallObjectBeanTemp == null) {
                         return;
                     }
 
-                    WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeanList.get(0);
+                    WallObjectBean wallObjectBean = ARBuilder.instance.wallObjectBeanTemp;
 
 
                     Vector3 horizontalVector3 = new Vector3();

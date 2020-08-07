@@ -203,6 +203,32 @@ public class ARTool {
                 });
     }
 
+    public static void setSegmentSizeTextView(Context context, float originalLength, ARConstants.ARUnit arUnit, Node parentNode, float textHeight, @Nullable SetSegmentSizeTextViewDelegate setSegmentSizeTextViewDelegate) {
+        float length = MathTool.getLengthByUnit(arUnit, originalLength);
+
+        ViewRenderable.builder()
+                .setView(context, R.layout.view_renderable_text)
+                .build()
+                .thenAccept(viewRenderable -> {
+
+                    TextView textView = ((TextView)viewRenderable.getView());
+                    textView.setText(String.format("%.2f", length) + " " + MathTool.getLengthUnitString(arUnit));
+                    viewRenderable.setShadowCaster(false);
+                    viewRenderable.setShadowReceiver(false);
+
+                    FaceToCameraNode faceToCameraNode = new FaceToCameraNode();
+                    faceToCameraNode.setParent(parentNode);
+
+                    faceToCameraNode.setLocalRotation(Quaternion.axisAngle(new Vector3(0f, 1f, 0f), 0f));
+                    faceToCameraNode.setLocalPosition(new Vector3(0f, textHeight, 0f));
+                    faceToCameraNode.setRenderable(viewRenderable);
+
+                    if(setSegmentSizeTextViewDelegate != null) {
+                        setSegmentSizeTextViewDelegate.onFinish(viewRenderable, faceToCameraNode);
+                    }
+                });
+    }
+
     public static AnchorNode createAnchorNode(Anchor anchor) {
         return new AnchorNode(anchor);
     }

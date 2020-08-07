@@ -66,7 +66,7 @@ public class ARBuilder {
     // point of screen center of wall
     public Node wallGuidePoint;
     public Node wallTempPoint;
-    public List<WallObjectBean> wallObjectBeanList = new ArrayList<>();
+    public WallObjectBean wallObjectBeanTemp;
 
 
 
@@ -95,7 +95,6 @@ public class ARBuilder {
         this.arBuilderDelegate = arBuilderDelegate;
 
         floorGuideList = new ArrayList<>();
-        wallObjectBeanList = new ArrayList<>();
 
         ARMaterial.instance.init(context);
         ARRenderable.instance.init(context);
@@ -279,6 +278,16 @@ public class ARBuilder {
         });
     }
 
+    public void drawWallObjectSegment(Context context, Node startNode, Node endNode, float textHeight) {
+
+        Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.objectSegmentMaterial, nodeShadow);
+
+        float length = MathTool.getLengthOfTwoNode(startNode, endNode);
+        ARTool.setSegmentSizeTextView(context, length, ARConstants.arUnit, lineNode, textHeight, (viewRenderable, faceToCameraNode) -> {
+
+        });
+    }
+
     public void autoCloseFloorSegment(Activity activity) {
 
         if(floorGuideList.size() > 2) {
@@ -440,7 +449,7 @@ public class ARBuilder {
 
         if(tempLineNode != null) {
 
-            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), ARMaterial.instance.wallLineMaterial);
+            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), ARMaterial.instance.wallSegmentMaterial);
             lineMode.setShadowCaster(nodeShadow);
             lineMode.setShadowReceiver(nodeShadow);
 
@@ -449,7 +458,7 @@ public class ARBuilder {
             tempLineNode.setWorldRotation(rotationFromAToB);
         }
         else {
-            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), ARMaterial.instance.wallLineMaterial);
+            ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), ARMaterial.instance.wallSegmentMaterial);
             lineMode.setShadowCaster(nodeShadow);
             lineMode.setShadowReceiver(nodeShadow);
 
@@ -613,10 +622,11 @@ public class ARBuilder {
     }
 
     public void clearWallObject() {
-        for(WallObjectBean wallObjectBean : wallObjectBeanList) {
-            wallObjectBean.clear();
+
+        if(wallObjectBeanTemp != null) {
+            wallObjectBeanTemp.clear();
+            wallObjectBeanTemp = null;
         }
-        wallObjectBeanList.clear();
 
         if(wallGuidePoint != null) {
             wallGuidePoint.setParent(null);
@@ -689,14 +699,13 @@ public class ARBuilder {
         }
         else if(ARConstants.arProcess == ARConstants.ARProcess.DRAW_WALL_OBJECT) {
 
-            if(!wallObjectBeanList.isEmpty()) {
+            if(wallObjectBeanTemp != null) {
 
                 clearWallObject();
 
                 currentGuideIndex = -1;
                 currentWallIndex = -1;
 
-                clearWallObject();
                 clearGuide();
 
                 ARConstants.arProcess = ARConstants.ARProcess.SELECTED_WALL_OBJECT;
@@ -720,6 +729,35 @@ public class ARBuilder {
             clearRoomBean();
 
             isReadyToAutoClose = false;
+        }
+        else if(ARConstants.arProcess == ARConstants.ARProcess.SELECTED_WALL_OBJECT) {
+
+            if(roomBean != null) {
+                // clear object on the wall
+                if(!roomBean.wallObjectList.isEmpty()) {
+                    // get last one
+                    PlaneBean planeBean = roomBean.wallObjectList.get(roomBean.wallObjectList.size() - 1);
+                    planeBean.clear();
+                    roomBean.wallObjectList.remove(planeBean);
+                }
+                else {
+
+                    clearWallObject();
+
+                    currentGuideIndex = -1;
+                    currentWallIndex = -1;
+
+                    ARConstants.arProcess = ARConstants.ARProcess.MEASURE_ROOM;
+
+                    clearGuidePlane();
+                    clearGuideSegment();
+                    clearGuide();
+                    clearAnchor();
+                    clearRoomBean();
+
+                    isReadyToAutoClose = false;
+                }
+            }
         }
     }
 
@@ -760,7 +798,7 @@ public class ARBuilder {
         ARMaterial.instance.destroy();
         ARRenderable.instance.destroy();
 
-        wallObjectBeanList.clear();
+        clearWallObject();
 
         wallGuidePoint = null;
         wallTempPoint = null;

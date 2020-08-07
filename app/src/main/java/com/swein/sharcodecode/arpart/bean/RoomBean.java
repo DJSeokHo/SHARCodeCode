@@ -25,6 +25,9 @@ public class RoomBean {
     // room wall
     public List<PlaneBean> wallList = new ArrayList<>();
 
+    // object on the wall
+    public List<PlaneBean> wallObjectList = new ArrayList<>();
+
     // room height
     public float height;
 
@@ -43,6 +46,7 @@ public class RoomBean {
         floor = new PlaneBean();
         ceiling = new PlaneBean();
         wallList.clear();
+        wallObjectList.clear();
 
         height = 0;
         floorFixedY = 0;
@@ -80,20 +84,22 @@ public class RoomBean {
 
     public void clear() {
 
-        if(wallList != null) {
-            for(int i = 0; i < wallList.size(); i++) {
-                wallList.get(i).clear();
-            }
-            wallList.clear();
-            wallList = null;
+        for(int i = 0; i < wallObjectList.size(); i++) {
+            wallObjectList.get(i).clear();
         }
+        wallObjectList.clear();
+
+
+        for(int i = 0; i < wallList.size(); i++) {
+            wallList.get(i).clear();
+        }
+        wallList.clear();
 
 
         if(ceiling != null) {
             ceiling.clear();
             ceiling = null;
         }
-
 
         if(floor != null) {
             floor.clear();

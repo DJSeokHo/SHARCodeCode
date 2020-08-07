@@ -149,6 +149,8 @@ public class ARActivity extends FragmentActivity {
                 SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
                 volumeString.append(MathTool.getVolumeUnitString(ARConstants.arUnit));
                 textViewVolume.setText(volumeString);
+
+                clearHint();
             }
 
             @Override
@@ -177,8 +179,10 @@ public class ARActivity extends FragmentActivity {
 
             @Override
             public void showSelectWallObjectPopup() {
+                ARActivity.this.clearHint();
                 ARActivity.this.showSelectWallObjectPopup();
             }
+
         });
     }
 
@@ -272,6 +276,13 @@ public class ARActivity extends FragmentActivity {
                 closeSelectWallObjectPopup();
 
                 ARConstants.arProcess = ARConstants.ARProcess.DRAW_WALL_OBJECT;
+
+                if(ARConstants.wallObjectType == ARConstants.WallObjectType.WINDOW) {
+                    showHint(getString(R.string.ar_draw_window));
+                }
+                else {
+                    showHint(getString(R.string.ar_draw_door));
+                }
             }
 
             @Override

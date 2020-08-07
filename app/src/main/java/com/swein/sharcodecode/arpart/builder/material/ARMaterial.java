@@ -18,13 +18,12 @@ public class ARMaterial {
 
     public Material objectPointMaterial;
     public Material objectSegmentMaterial;
-    public Material objectGuideNodeMaterial;
 
     public Material guideNodeMaterial;
     public Material guideSegmentMaterial;
 
     public Material wallPointMaterial;
-    public Material wallLineMaterial;
+    public Material wallSegmentMaterial;
 
 
     public void init(Context context) {
@@ -42,14 +41,13 @@ public class ARMaterial {
         ARTool.createColorMaterial(context, Color.BLUE, material -> {
             objectPointMaterial = material;
             objectSegmentMaterial = material;
-            objectGuideNodeMaterial = material;
         });
 
         MaterialFactory
                 .makeOpaqueWithColor(context, new com.google.ar.sceneform.rendering.Color(android.graphics.Color.RED))
                 .thenAccept(material -> {
                     wallPointMaterial = material;
-                    wallLineMaterial = material;
+                    wallSegmentMaterial = material;
                 });
     }
 
@@ -60,7 +58,6 @@ public class ARMaterial {
 
         objectPointMaterial = null;
         objectSegmentMaterial = null;
-        objectGuideNodeMaterial = null;
 
         guideNodeMaterial = null;
         guideSegmentMaterial = null;
