@@ -278,14 +278,17 @@ public class ARBuilder {
         });
     }
 
-    public void drawWallObjectSegment(Context context, Node startNode, Node endNode, float textHeight) {
+    public void drawWallObjectSegment(Context context, Node startNode, Node endNode, float textHeight, boolean showSizeText) {
 
         Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.objectSegmentMaterial, nodeShadow);
 
-        float length = MathTool.getLengthOfTwoNode(startNode, endNode);
-        ARTool.setSegmentSizeTextView(context, length, ARConstants.arUnit, lineNode, textHeight, (viewRenderable, faceToCameraNode) -> {
+        if(showSizeText) {
+            float length = MathTool.getLengthOfTwoNode(startNode, endNode);
+            ARTool.setSegmentSizeTextView(context, length, ARConstants.arUnit, lineNode, textHeight, (viewRenderable, faceToCameraNode) -> {
 
-        });
+            });
+        }
+
     }
 
     public void autoCloseFloorSegment(Activity activity) {

@@ -511,11 +511,15 @@ public class AREnvironment {
                     planeBean.type = "DOOR";
                 }
 
-
                 for(int i = 0; i < planeBean.pointList.size() - 1; i++) {
-                    ARBuilder.instance.drawWallObjectSegment(activity, planeBean.pointList.get(i).point, planeBean.pointList.get(i + 1).point, 0.005f);
+                    if(i == 0 || i == 1) {
+                        ARBuilder.instance.drawWallObjectSegment(activity, planeBean.pointList.get(i).point, planeBean.pointList.get(i + 1).point, 0.005f, true);
+                    }
+                    else {
+                        ARBuilder.instance.drawWallObjectSegment(activity, planeBean.pointList.get(i).point, planeBean.pointList.get(i + 1).point, 0.005f, false);
+                    }
                 }
-                ARBuilder.instance.drawWallObjectSegment(activity, planeBean.pointList.get(planeBean.pointList.size() - 1).point, planeBean.pointList.get(0).point, 0.005f);
+                ARBuilder.instance.drawWallObjectSegment(activity, planeBean.pointList.get(planeBean.pointList.size() - 1).point, planeBean.pointList.get(0).point, 0.005f, false);
 
                 ARBuilder.instance.clearGuideSegment();
                 ARBuilder.instance.clearWallObject();
