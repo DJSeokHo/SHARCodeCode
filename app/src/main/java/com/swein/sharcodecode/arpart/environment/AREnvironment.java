@@ -41,17 +41,19 @@ public class AREnvironment {
 
     public interface AREnvironmentDelegate {
         void onUpdatePlaneType(String type);
-
         void onDetectingTargetMinimumPlaneAreaSize(int percentage);
-        void onDetectTargetMinimumPlaneAreaSizeFinished();
-
-        void showDetectFloorHint();
-        void showMeasureHeightSelectPopup();
         void onMeasureHeight(float height);
 
         // ar builder
         void onCalculate(float height, float area, float circumference, float wallArea, float volume);
         void backToMeasureHeight();
+    }
+
+    public interface AREnvironmentShowHintDelegate {
+        void onDetectTargetMinimumPlaneAreaSizeFinished();
+        void showDetectFloorHint();
+        void showMeasureHeightSelectPopup();
+        void showSelectWallObjectPopup();
     }
 
     private final static String TAG = "AREnvironment";
@@ -74,10 +76,12 @@ public class AREnvironment {
 
 
     private AREnvironmentDelegate arEnvironmentDelegate;
+    private AREnvironmentShowHintDelegate arEnvironmentShowHintDelegate;
 
-    public void init(Activity activity, AREnvironmentDelegate arEnvironmentDelegate) {
+    public void init(Activity activity, AREnvironmentDelegate arEnvironmentDelegate, AREnvironmentShowHintDelegate arEnvironmentShowHintDelegate) {
         this.activity = activity;
         this.arEnvironmentDelegate = arEnvironmentDelegate;
+        this.arEnvironmentShowHintDelegate = arEnvironmentShowHintDelegate;
         planeFindingMode = Config.PlaneFindingMode.HORIZONTAL;
 
         initARBuilder();
@@ -88,7 +92,7 @@ public class AREnvironment {
         hitPointX = DeviceUtil.getScreenCenterX(activity);
         hitPointY = DeviceUtil.getScreenCenterY(activity);
 
-        arEnvironmentDelegate.showDetectFloorHint();
+        arEnvironmentShowHintDelegate.showDetectFloorHint();
 
         ARConstants.arProcess = ARConstants.ARProcess.DETECT_PLANE;
         ARConstants.measureHeightWay = ARConstants.MeasureHeightWay.NONE;
@@ -108,6 +112,12 @@ public class AREnvironment {
                 ARConstants.arProcess = ARConstants.ARProcess.MEASURE_HEIGHT_HINT;
 
                 arEnvironmentDelegate.backToMeasureHeight();
+            }
+
+            @Override
+            public void backToSelectWallObject() {
+                ARConstants.wallObjectType = ARConstants.WallObjectType.NONE;
+                arEnvironmentShowHintDelegate.showSelectWallObjectPopup();
             }
         });
     }
@@ -135,7 +145,7 @@ public class AREnvironment {
 
                 if((plane.getExtentX() * plane.getExtentZ() * 2) > targetMinimumAreaSize) {
 
-                    arEnvironmentDelegate.onDetectTargetMinimumPlaneAreaSizeFinished();
+                    arEnvironmentShowHintDelegate.onDetectTargetMinimumPlaneAreaSizeFinished();
 
                     // detect size finished, update UI
                     ARConstants.arProcess = ARConstants.ARProcess.MEASURE_HEIGHT_HINT;
@@ -200,8 +210,13 @@ public class AREnvironment {
             return;
         }
 
+        if(ARConstants.arProcess == ARConstants.ARProcess.SELECTED_WALL_OBJECT) {
+            arEnvironmentShowHintDelegate.showSelectWallObjectPopup();
+            return;
+        }
+
         if(ARConstants.arProcess == ARConstants.ARProcess.MEASURE_HEIGHT_HINT) {
-            arEnvironmentDelegate.showMeasureHeightSelectPopup();
+            arEnvironmentShowHintDelegate.showMeasureHeightSelectPopup();
         }
         else if(ARConstants.arProcess == ARConstants.ARProcess.MEASURE_HEIGHT) {
 
@@ -231,9 +246,11 @@ public class AREnvironment {
 //                        ARConstants.arProcess = ARConstants.ARProcess.DRAW_WALL_OBJECT;
                         ARConstants.arProcess = ARConstants.ARProcess.SELECTED_WALL_OBJECT;
 
+
                         ARBuilder.instance.autoCloseFloorSegment(activity);
                         ARBuilder.instance.createRoom(activity);
 
+                        arEnvironmentShowHintDelegate.showSelectWallObjectPopup();
                         return;
                     }
 
@@ -424,7 +441,6 @@ public class AREnvironment {
                             });
                 }
             }
-
         }
         else {
 

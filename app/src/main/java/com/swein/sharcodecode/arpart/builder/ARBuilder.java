@@ -45,6 +45,7 @@ public class ARBuilder {
     public interface ARBuilderDelegate {
         void onCalculate(float height, float area, float circumference, float wallArea, float volume);
         void backToMeasureHeight();
+        void backToSelectWallObject();
     }
 
 
@@ -668,7 +669,6 @@ public class ARBuilder {
                 clearGuide();
 
                 floorFixedY = 0;
-
             }
             else if(floorGuideList.size() > 1) {
 
@@ -696,6 +696,13 @@ public class ARBuilder {
                 currentGuideIndex = -1;
                 currentWallIndex = -1;
 
+                clearWallObject();
+                clearGuide();
+
+                ARConstants.arProcess = ARConstants.ARProcess.SELECTED_WALL_OBJECT;
+
+                arBuilderDelegate.backToSelectWallObject();
+
                 return;
             }
 
@@ -713,7 +720,6 @@ public class ARBuilder {
             clearRoomBean();
 
             isReadyToAutoClose = false;
-
         }
     }
 

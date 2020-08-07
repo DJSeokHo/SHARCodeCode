@@ -14,6 +14,10 @@ public class ARConstants {
         DETECT_PLANE, MEASURE_HEIGHT_HINT, MEASURE_HEIGHT, MEASURE_ROOM, SELECTED_WALL_OBJECT, DRAW_WALL_OBJECT
     }
 
+    public enum WallObjectType {
+        NONE, WINDOW, DOOR
+    }
+
     // measure height way
     public static ARConstants.MeasureHeightWay measureHeightWay = ARConstants.MeasureHeightWay.NONE;
 
@@ -22,4 +26,6 @@ public class ARConstants {
 
     // build process state
     public static ARConstants.ARProcess arProcess = ARConstants.ARProcess.DETECT_PLANE;
+
+    public static WallObjectType wallObjectType = WallObjectType.NONE;
 }

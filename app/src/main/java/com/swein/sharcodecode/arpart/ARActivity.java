@@ -121,22 +121,6 @@ public class ARActivity extends FragmentActivity {
             }
 
             @Override
-            public void onDetectTargetMinimumPlaneAreaSizeFinished() {
-                clearHint();
-                showMeasureHeightPopup();
-            }
-
-            @Override
-            public void showDetectFloorHint() {
-                showDetectFloorPopup();
-            }
-
-            @Override
-            public void showMeasureHeightSelectPopup() {
-                showMeasureHeightPopup();
-            }
-
-            @Override
             public void onMeasureHeight(float height) {
 
                 showRealTimeHeight(height);
@@ -172,7 +156,28 @@ public class ARActivity extends FragmentActivity {
                 textViewHeightRealTime.setText("");
                 textViewHint.setText("");
                 textViewHint.setVisibility(View.GONE);
-                showMeasureHeightPopup();
+                ARActivity.this.showMeasureHeightSelectPopup();
+            }
+        }, new AREnvironment.AREnvironmentShowHintDelegate() {
+            @Override
+            public void onDetectTargetMinimumPlaneAreaSizeFinished() {
+                clearHint();
+                ARActivity.this.showMeasureHeightSelectPopup();
+            }
+
+            @Override
+            public void showDetectFloorHint() {
+                ARActivity.this.showDetectFloorHint();
+            }
+
+            @Override
+            public void showMeasureHeightSelectPopup() {
+                ARActivity.this.showMeasureHeightSelectPopup();
+            }
+
+            @Override
+            public void showSelectWallObjectPopup() {
+                ARActivity.this.showSelectWallObjectPopup();
             }
         });
     }
@@ -202,6 +207,7 @@ public class ARActivity extends FragmentActivity {
 
             ARConstants.arProcess = ARConstants.ARProcess.DETECT_PLANE;
             ARConstants.measureHeightWay = ARConstants.MeasureHeightWay.NONE;
+            ARConstants.wallObjectType = ARConstants.WallObjectType.NONE;
         }));
 
     }
@@ -234,8 +240,8 @@ public class ARActivity extends FragmentActivity {
         textViewHeightRealTime.setText("");
     }
 
-    private void showDetectFloorPopup() {
-        arHintPopupViewHolder = new ARHintPopupViewHolder(this, this::closeDetectFloorPopup);
+    private void showDetectFloorHint() {
+        arHintPopupViewHolder = new ARHintPopupViewHolder(this, this::closeDetectFloorHint);
 
         arHintPopupViewHolder.setTitle(getString(R.string.ar_scan_floor));
         arHintPopupViewHolder.setMessage(getString(R.string.ar_scan_ready_hint));
@@ -244,7 +250,7 @@ public class ARActivity extends FragmentActivity {
         frameLayoutPopup.setVisibility(View.VISIBLE);
     }
 
-    private boolean closeDetectFloorPopup() {
+    private boolean closeDetectFloorHint() {
 
         if(arHintPopupViewHolder != null) {
             frameLayoutPopup.setVisibility(View.GONE);
@@ -257,13 +263,56 @@ public class ARActivity extends FragmentActivity {
         return false;
     }
 
-    private void showMeasureHeightPopup() {
+    private void showSelectWallObjectPopup() {
+        arDrawObjectViewHolder = new ARDrawObjectViewHolder(this, ARConstants.wallObjectType, new ARDrawObjectViewHolder.ARDrawObjectViewHolderDelegate() {
+
+            @Override
+            public void onDrawObject(ARConstants.WallObjectType wallObjectType) {
+                ARConstants.wallObjectType = wallObjectType;
+                closeSelectWallObjectPopup();
+
+                ARConstants.arProcess = ARConstants.ARProcess.DRAW_WALL_OBJECT;
+            }
+
+            @Override
+            public void onSave() {
+                closeSelectWallObjectPopup();
+                closeMeasureRoom();
+                closeDetectFloorHint();
+                closeMeasureHeightSelectPopup();
+                finish();
+            }
+
+            @Override
+            public void onClose() {
+                closeSelectWallObjectPopup();
+            }
+        });
+
+        frameLayoutPopup.addView(arDrawObjectViewHolder.getView());
+        frameLayoutPopup.setVisibility(View.VISIBLE);
+    }
+
+    private boolean closeSelectWallObjectPopup() {
+
+        if(arDrawObjectViewHolder != null) {
+            frameLayoutPopup.setVisibility(View.GONE);
+            frameLayoutPopup.removeAllViews();
+            arDrawObjectViewHolder = null;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private void showMeasureHeightSelectPopup() {
         arMeasureHeightHintViewHolder = new ARMeasureHeightHintViewHolder(this, new ARMeasureHeightHintViewHolder.ARMeasureHeightHintViewHolderDelegate() {
             @Override
             public void onConfirm(ARConstants.MeasureHeightWay measureHeightWay) {
 
                 ARConstants.measureHeightWay = measureHeightWay;
-                closeMeasureHeightPopup();
+                closeMeasureHeightSelectPopup();
 
                 switch (ARConstants.measureHeightWay) {
                     case AUTO:
@@ -280,7 +329,7 @@ public class ARActivity extends FragmentActivity {
 
             @Override
             public void onClose() {
-                closeMeasureHeightPopup();
+                closeMeasureHeightSelectPopup();
             }
 
             @Override
@@ -288,7 +337,7 @@ public class ARActivity extends FragmentActivity {
 
                 AREnvironment.instance.setInputHeight(height);
 
-                closeMeasureHeightPopup();
+                closeMeasureHeightSelectPopup();
 
                 ARConstants.arProcess = ARConstants.ARProcess.MEASURE_ROOM;
 
@@ -303,7 +352,7 @@ public class ARActivity extends FragmentActivity {
         frameLayoutPopup.setVisibility(View.VISIBLE);
     }
 
-    private boolean closeMeasureHeightPopup() {
+    private boolean closeMeasureHeightSelectPopup() {
         if(arMeasureHeightHintViewHolder != null) {
             frameLayoutPopup.setVisibility(View.GONE);
             frameLayoutPopup.removeAllViews();
@@ -386,15 +435,19 @@ public class ARActivity extends FragmentActivity {
     @Override
     public void onBackPressed() {
 
+        if(closeSelectWallObjectPopup()) {
+            return;
+        }
+
         if(closeMeasureRoom()) {
             return;
         }
 
-        if(closeDetectFloorPopup()) {
+        if(closeDetectFloorHint()) {
             return;
         }
 
-        if(closeMeasureHeightPopup()) {
+        if(closeMeasureHeightSelectPopup()) {
             return;
         }
 

@@ -1,42 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@color/white"
+    android:layout_height="match_parent"
+    android:background="@color/transparent"
     android:clickable="true"
     android:focusable="true">
 
     <LinearLayout
-        android:layout_margin="20dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@color/white"
+        android:layout_gravity="bottom"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical">
 
-        <TextView
-            android:background="@color/black"
-            android:padding="10dp"
-            android:gravity="center"
-            android:text="@string/ar_draw_window_button"
-            android:id="@+id/textViewWindow"
-            android:textSize="7pt"
-            android:textColor="@color/white"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"/>
+        <ImageView
+            android:padding="5dp"
+            android:src="@drawable/ti_close_black"
+            android:scaleType="fitCenter"
+            android:id="@+id/imageViewClose"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="20dp"
+            android:layout_gravity="end"
+            android:layout_width="30dp"
+            android:layout_height="30dp"/>
 
-        <TextView
-            android:background="@color/black"
-            android:padding="10dp"
-            android:gravity="center"
-            android:text="@string/ar_draw_door_button"
-            android:id="@+id/textViewDoor"
-            android:layout_marginStart="20dp"
-            android:textSize="6pt"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="20dp">
+
+            <TextView
+                android:background="@color/black"
+                android:padding="10dp"
+                android:gravity="center"
+                android:text="@string/ar_draw_window_button"
+                android:id="@+id/textViewWindow"
+                android:textSize="7pt"
+                android:textColor="@color/white"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:background="@color/black"
+                android:padding="10dp"
+                android:gravity="center"
+                android:text="@string/ar_draw_door_button"
+                android:id="@+id/textViewDoor"
+                android:layout_marginStart="20dp"
+                android:textSize="7pt"
+                android:textColor="@color/white"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
+        <Button
+            android:textSize="6.75pt"
             android:textColor="@color/white"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"/>
+            android:text="@string/ar_save"
+            android:id="@+id/buttonSave"
+            android:layout_marginTop="26.3dp"
+            android:background="@color/black"
+            android:layout_width="match_parent"
+            android:layout_height="47dp"/>
 
     </LinearLayout>
+
 
 </FrameLayout>
