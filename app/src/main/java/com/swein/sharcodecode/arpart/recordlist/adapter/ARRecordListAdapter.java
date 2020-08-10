@@ -51,6 +51,10 @@ public class ARRecordListAdapter extends RecyclerView.Adapter {
         notifyItemInserted(roomBeanList.size() - 1);
     }
 
+    public void insert(RoomBean roomBean) {
+        this.roomBeanList.add(roomBean);
+        notifyItemInserted(roomBeanList.size() - 1);
+    }
 
     public void reloadList(List<RoomBean> roomBeanList) {
 

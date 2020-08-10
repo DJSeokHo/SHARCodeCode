@@ -11,8 +11,8 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.ar.core.ArCoreApk;
-import com.swein.sharcodecode.arpart.ARActivity;
 import com.swein.sharcodecode.arpart.constants.ARConstants;
+import com.swein.sharcodecode.arpart.recordlist.ARRecordListActivity;
 import com.swein.sharcodecode.framework.module.basicpermission.BasicPermissionActivity;
 import com.swein.sharcodecode.framework.module.basicpermission.PermissionManager;
 import com.swein.sharcodecode.framework.module.basicpermission.RequestPermission;
@@ -103,7 +103,7 @@ public class MainActivity extends BasicPermissionActivity {
 
         if (availability.isSupported()) {
             ILog.iLogDebug(TAG, "ar is ok");
-            ActivityUtil.startNewActivityWithoutFinish(this, ARActivity.class);
+            ActivityUtil.startNewActivityWithoutFinish(this, ARRecordListActivity.class);
         }
         else {
             ILog.iLogDebug(TAG, "ar is not ok");

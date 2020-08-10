@@ -25,6 +25,8 @@ public class ARMaterial {
     public Material wallPointMaterial;
     public Material wallSegmentMaterial;
 
+    // node shadow
+    public boolean nodeShadow = true;
 
     public void init(Context context) {
 

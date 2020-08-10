@@ -15,6 +15,7 @@ import androidx.fragment.app.FragmentActivity;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.HitTestResult;
 import com.swein.sharcodecode.R;
+import com.swein.sharcodecode.arpart.builder.ARBuilder;
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 import com.swein.sharcodecode.arpart.constants.ARConstants;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
@@ -24,6 +25,11 @@ import com.swein.sharcodecode.popup.ARDrawObjectViewHolder;
 import com.swein.sharcodecode.popup.ARHintPopupViewHolder;
 import com.swein.sharcodecode.popup.ARMeasureHeightHintViewHolder;
 import com.swein.sharcodecode.popup.ARSelectUnitViewHolder;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
 
 public class ARActivity extends FragmentActivity {
 
@@ -287,6 +293,18 @@ public class ARActivity extends FragmentActivity {
 
             @Override
             public void onSave() {
+
+                try {
+                    JSONObject roomBeanJSONObject = ARBuilder.instance.roomBean.toJSONObject();
+                    HashMap<String, Object> hashMap = new HashMap<>();
+                    hashMap.put("roomBeanJSONObject", roomBeanJSONObject);
+
+                    EventCenter.instance.sendEvent(ARESSArrows.SAVE_ROOM_INFO, this, hashMap);
+                }
+                catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
                 closeSelectWallObjectPopup();
                 closeMeasureRoom();
                 closeDetectFloorHint();

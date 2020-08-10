@@ -52,9 +52,6 @@ public class ARBuilder {
     // check floor build
     public boolean isReadyToAutoClose;
 
-    // node shadow
-    public boolean nodeShadow = true;
-
     // guide line
     public Node guideSegmentNode;
 
@@ -125,7 +122,7 @@ public class ARBuilder {
             guidePointNode.setWorldPosition(new Vector3(hitResult.getHitPose().tx(), floorFixedY, hitResult.getHitPose().tz()));
         }
         else {
-            guidePointNode = ARTool.createWorldNode(hitResult.getHitPose().tx(), floorFixedY, hitResult.getHitPose().tz(), ARMaterial.instance.pointMaterial, nodeShadow);
+            guidePointNode = ARTool.createWorldNode(hitResult.getHitPose().tx(), floorFixedY, hitResult.getHitPose().tz(), ARMaterial.instance.pointMaterial, ARMaterial.instance.nodeShadow);
             guidePointNode.setParent(arSceneView.getScene());
         }
     }
@@ -161,7 +158,7 @@ public class ARBuilder {
     public void createGuideFloorNode(HitResult hitResult, Activity activity) {
         Node node;
         if(floorGuideList.isEmpty()) {
-            node = ARTool.createLocalNode(0, 0, 0, ARMaterial.instance.pointMaterial, nodeShadow);
+            node = ARTool.createLocalNode(0, 0, 0, ARMaterial.instance.pointMaterial, ARMaterial.instance.nodeShadow);
         }
         else {
 //            Quaternion localRotation = new Quaternion(hitResult.getHitPose().qx(), hitResult.getHitPose().qy(), hitResult.getHitPose().qz(), hitResult.getHitPose().qw());
@@ -169,7 +166,7 @@ public class ARBuilder {
             Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
             Vector3 localPosition = MathTool.transformWorldPositionToLocalPositionOfParent(anchorNode, hitWorldPosition);
 
-            node = ARTool.createLocalNode(localPosition.x, localPosition.y, localPosition.z, ARMaterial.instance.pointMaterial, nodeShadow);
+            node = ARTool.createLocalNode(localPosition.x, localPosition.y, localPosition.z, ARMaterial.instance.pointMaterial, ARMaterial.instance.nodeShadow);
         }
 
         node.setParent(anchorNode);
@@ -198,7 +195,7 @@ public class ARBuilder {
         Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
         Vector3 localPosition = MathTool.transformWorldPositionToLocalPositionOfParent(anchorNode, hitWorldPosition);
 
-        Node node = ARTool.createLocalNode(localPosition.x, localPosition.y, localPosition.z, ARMaterial.instance.pointMaterial, nodeShadow);
+        Node node = ARTool.createLocalNode(localPosition.x, localPosition.y, localPosition.z, ARMaterial.instance.pointMaterial, ARMaterial.instance.nodeShadow);
 
         node.setParent(anchorNode);
 
@@ -213,7 +210,7 @@ public class ARBuilder {
     }
 
     public void createMeasureHeightAutoNode(Activity activity) {
-        Node node = ARTool.createLocalNode(0, 0, 0, ARMaterial.instance.pointMaterial, nodeShadow);
+        Node node = ARTool.createLocalNode(0, 0, 0, ARMaterial.instance.pointMaterial, ARMaterial.instance.nodeShadow);
         node.setParent(anchorNode);
         DeviceUtil.vibrate(activity, 5);
 
@@ -232,8 +229,8 @@ public class ARBuilder {
         Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
 
         ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), ARMaterial.instance.segmentMaterial);
-        lineMode.setShadowCaster(nodeShadow);
-        lineMode.setShadowReceiver(nodeShadow);
+        lineMode.setShadowCaster(ARMaterial.instance.nodeShadow);
+        lineMode.setShadowReceiver(ARMaterial.instance.nodeShadow);
 
         if(guideSegmentNode == null) {
             guideSegmentNode = new Node();
@@ -270,7 +267,7 @@ public class ARBuilder {
 
     public void drawSegment(Context context, Node startNode, Node endNode) {
 
-        Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.segmentMaterial, nodeShadow);
+        Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.segmentMaterial, ARMaterial.instance.nodeShadow);
 
         float length = MathTool.getLengthOfTwoNode(startNode, endNode);
         ARTool.setSegmentSizeTextView(context, length, ARConstants.arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
@@ -280,7 +277,7 @@ public class ARBuilder {
 
     public void drawWallObjectSegment(Context context, Node startNode, Node endNode, float textHeight, boolean showSizeText) {
 
-        Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.objectSegmentMaterial, nodeShadow);
+        Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.objectSegmentMaterial, ARMaterial.instance.nodeShadow);
 
         if(showSizeText) {
             float length = MathTool.getLengthOfTwoNode(startNode, endNode);
@@ -298,7 +295,7 @@ public class ARBuilder {
             Node startNode = ARBuilder.instance.floorGuideList.get(ARBuilder.instance.floorGuideList.size() - 1);
             Node endNode = ARBuilder.instance.floorGuideList.get(0);
 
-            Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.segmentMaterial, nodeShadow);
+            Node lineNode = ARTool.drawSegment(startNode, endNode, ARMaterial.instance.segmentMaterial, ARMaterial.instance.nodeShadow);
 
             float length = MathTool.getLengthOfTwoNode(startNode, endNode);
             ARTool.setSegmentSizeTextView(activity, length, ARConstants.arUnit, lineNode, (viewRenderable, faceToCameraNode) -> {
@@ -364,7 +361,7 @@ public class ARBuilder {
                     floorGuideList.get(i).getLocalPosition().x,
                     floorGuideList.get(i).getLocalPosition().y,
                     floorGuideList.get(i).getLocalPosition().z,
-                    ARMaterial.instance.pointMaterial, nodeShadow
+                    ARMaterial.instance.pointMaterial, ARMaterial.instance.nodeShadow
             );
 
             pointBean.point.setParent(anchorNode);
@@ -379,7 +376,7 @@ public class ARBuilder {
                     floorGuideList.get(i).getLocalPosition().x,
                     floorGuideList.get(i).getLocalPosition().y + height,
                     floorGuideList.get(i).getLocalPosition().z,
-                    ARMaterial.instance.pointMaterial, nodeShadow
+                    ARMaterial.instance.pointMaterial, ARMaterial.instance.nodeShadow
             );
 
             pointBean.point.setParent(anchorNode);
@@ -453,8 +450,8 @@ public class ARBuilder {
         if(tempLineNode != null) {
 
             ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), ARMaterial.instance.wallSegmentMaterial);
-            lineMode.setShadowCaster(nodeShadow);
-            lineMode.setShadowReceiver(nodeShadow);
+            lineMode.setShadowCaster(ARMaterial.instance.nodeShadow);
+            lineMode.setShadowReceiver(ARMaterial.instance.nodeShadow);
 
             tempLineNode.setRenderable(lineMode);
             tempLineNode.setWorldPosition(Vector3.add(startVector3, endVector3).scaled(0.5f));
@@ -462,8 +459,8 @@ public class ARBuilder {
         }
         else {
             ModelRenderable lineMode = ShapeFactory.makeCube(new Vector3(0.005f, 0.005f, difference.length()), Vector3.zero(), ARMaterial.instance.wallSegmentMaterial);
-            lineMode.setShadowCaster(nodeShadow);
-            lineMode.setShadowReceiver(nodeShadow);
+            lineMode.setShadowCaster(ARMaterial.instance.nodeShadow);
+            lineMode.setShadowReceiver(ARMaterial.instance.nodeShadow);
 
             tempLineNode = new Node();
             tempLineNode.setParent(startNode);

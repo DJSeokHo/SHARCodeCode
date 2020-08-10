@@ -6,6 +6,10 @@ import com.swein.sharcodecode.arpart.bean.basic.PlaneBean;
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 import com.swein.sharcodecode.arpart.constants.ARConstants;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -116,4 +120,73 @@ public class RoomBean {
         wallArea = 0;
         volume = 0;
     }
+
+    public JSONObject toJSONObject() throws JSONException {
+        JSONObject jsonObject = new JSONObject();
+
+        jsonObject.put("normalVectorOfPlaneX", String.valueOf(normalVectorOfPlane.x));
+        jsonObject.put("normalVectorOfPlaneY", String.valueOf(normalVectorOfPlane.y));
+        jsonObject.put("normalVectorOfPlaneZ", String.valueOf(normalVectorOfPlane.z));
+
+        jsonObject.put("floor", floor.toJSONObject());
+        jsonObject.put("ceiling", ceiling.toJSONObject());
+
+        JSONArray wallArray = new JSONArray();
+        for(int i = 0; i < wallList.size(); i++) {
+            wallArray.put(wallList.get(i).toJSONObject());
+        }
+        jsonObject.put("wallArray", wallArray);
+
+        JSONArray wallObjectArray = new JSONArray();
+        for(int i = 0; i < wallObjectList.size(); i++) {
+            wallObjectArray.put(wallObjectList.get(i).toJSONObject());
+        }
+        jsonObject.put("wallObjectArray", wallObjectArray);
+
+        jsonObject.put("height", String.valueOf(height));
+        jsonObject.put("floorFixedY", String.valueOf(floorFixedY));
+        jsonObject.put("area", String.valueOf(area));
+        jsonObject.put("circumference", String.valueOf(circumference));
+        jsonObject.put("wallArea", String.valueOf(wallArea));
+        jsonObject.put("volume", String.valueOf(volume));
+
+        return jsonObject;
+    }
+
+    public void init(JSONObject jsonObject) throws JSONException {
+
+        normalVectorOfPlane.set(new Vector3(
+                Float.parseFloat(jsonObject.getString("normalVectorOfPlaneX")),
+                Float.parseFloat(jsonObject.getString("normalVectorOfPlaneY")),
+                Float.parseFloat(jsonObject.getString("normalVectorOfPlaneZ"))
+        ));
+
+        floor.init(jsonObject.getJSONObject("floor"));
+        ceiling.init(jsonObject.getJSONObject("ceiling"));
+
+        JSONArray wallArray = jsonObject.getJSONArray("wallArray");
+
+        PlaneBean planeBean;
+        for(int i = 0; i < wallArray.length(); i++) {
+            planeBean = new PlaneBean();
+            planeBean.init(wallArray.getJSONObject(i));
+            wallList.add(planeBean);
+        }
+
+        JSONArray wallObjectArray = jsonObject.getJSONArray("wallObjectArray");
+        for(int i = 0; i < wallObjectArray.length(); i++) {
+            planeBean = new PlaneBean();
+            planeBean.init(wallObjectArray.getJSONObject(i));
+            wallObjectList.add(planeBean);
+        }
+
+        height = Float.parseFloat(jsonObject.getString("height"));
+        floorFixedY = Float.parseFloat(jsonObject.getString("floorFixedY"));
+
+        area = Float.parseFloat(jsonObject.getString("area"));
+        circumference = Float.parseFloat(jsonObject.getString("circumference"));
+        wallArea = Float.parseFloat(jsonObject.getString("wallArea"));
+        volume = Float.parseFloat(jsonObject.getString("volume"));
+    }
+
 }

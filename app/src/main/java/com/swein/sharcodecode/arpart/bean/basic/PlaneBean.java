@@ -2,6 +2,10 @@ package com.swein.sharcodecode.arpart.bean.basic;
 
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,5 +58,46 @@ public class PlaneBean {
         segmentList.clear();
 
         type = "";
+    }
+
+    public JSONObject toJSONObject() throws JSONException {
+        JSONObject jsonObject = new JSONObject();
+
+        JSONArray pointArray = new JSONArray();
+        for(int i = 0; i < pointList.size(); i++) {
+            pointArray.put(pointList.get(i).toJSONObject());
+        }
+        jsonObject.put("pointArray", pointArray);
+
+        JSONArray segmentArray = new JSONArray();
+        for(int i = 0; i < segmentList.size(); i++) {
+            segmentArray.put(segmentList.get(i).toJSONObject());
+        }
+        jsonObject.put("segmentArray", segmentArray);
+
+        jsonObject.put("type", type);
+        return jsonObject;
+    }
+
+    public void init(JSONObject jsonObject) throws JSONException {
+
+        JSONArray pointArray = jsonObject.getJSONArray("pointArray");
+        JSONArray segmentArray = jsonObject.getJSONArray("segmentArray");
+
+        PointBean pointBean;
+        for(int i = 0; i < pointArray.length(); i++) {
+            pointBean = new PointBean();
+            pointBean.init(pointArray.getJSONObject(i));
+            pointList.add(pointBean);
+        }
+
+        SegmentBean segmentBean;
+        for(int i = 0; i < segmentArray.length(); i++) {
+            segmentBean = new SegmentBean();
+            segmentBean.init(segmentArray.getJSONObject(i));
+            segmentList.add(segmentBean);
+        }
+
+        type = jsonObject.getString("type");
     }
 }

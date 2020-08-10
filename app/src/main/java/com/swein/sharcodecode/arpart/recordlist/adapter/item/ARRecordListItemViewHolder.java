@@ -1,5 +1,6 @@
 package com.swein.sharcodecode.arpart.recordlist.adapter.item;
 
+import android.text.SpannableStringBuilder;
 import android.view.View;
 import android.widget.TextView;
 
@@ -8,6 +9,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.bean.RoomBean;
+import com.swein.sharcodecode.arpart.builder.tool.MathTool;
+import com.swein.sharcodecode.arpart.constants.ARConstants;
 
 import java.lang.ref.WeakReference;
 
@@ -38,7 +41,23 @@ public class ARRecordListItemViewHolder extends RecyclerView.ViewHolder {
     }
 
     public void updateView() {
+        textViewHeight.setText(view.get().getContext().getString(R.string.ar_area_height_title) + " " +
+                String.format("%.2f", MathTool.getLengthByUnit(ARConstants.arUnit, roomBean.height)) + MathTool.getLengthUnitString(ARConstants.arUnit));
 
+        textViewCircumference.setText(view.get().getContext().getString(R.string.ar_area_circumference_title) + " " +
+                String.format("%.2f", MathTool.getLengthByUnit(ARConstants.arUnit, roomBean.circumference)) + MathTool.getLengthUnitString(ARConstants.arUnit));
+
+        SpannableStringBuilder wallAreaString = new SpannableStringBuilder(view.get().getContext().getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", roomBean.wallArea));
+        wallAreaString.append(MathTool.getAreaUnitString(ARConstants.arUnit));
+        textViewWallArea.setText(wallAreaString);
+
+        SpannableStringBuilder areaString = new SpannableStringBuilder(view.get().getContext().getString(R.string.ar_area_title) + " " + String.format("%.2f", roomBean.area));
+        areaString.append(MathTool.getAreaUnitString(ARConstants.arUnit));
+        textViewArea.setText(areaString);
+
+        SpannableStringBuilder volumeString = new SpannableStringBuilder(view.get().getContext().getString(R.string.ar_volume_title) + " " + String.format("%.2f", roomBean.volume));
+        volumeString.append(MathTool.getVolumeUnitString(ARConstants.arUnit));
+        textViewVolume.setText(volumeString);
     }
 
 }
