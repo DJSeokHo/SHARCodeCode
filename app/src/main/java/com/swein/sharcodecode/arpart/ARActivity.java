@@ -171,15 +171,15 @@ public class ARActivity extends FragmentActivity {
                 textViewCircumference.setText(getString(R.string.ar_area_circumference_title) + " " +
                         String.format("%.2f", MathTool.getLengthByUnit(ARConstants.arUnit, circumference)) + MathTool.getLengthUnitString(ARConstants.arUnit));
 
-                SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", wallArea));
+                SpannableStringBuilder wallAreaString = new SpannableStringBuilder(getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", MathTool.getAreaByUnit(ARConstants.arUnit, wallArea)));
                 wallAreaString.append(MathTool.getAreaUnitString(ARConstants.arUnit));
                 textViewWallArea.setText(wallAreaString);
 
-                SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", area));
+                SpannableStringBuilder areaString = new SpannableStringBuilder(getString(R.string.ar_area_title) + " " + String.format("%.2f", MathTool.getAreaByUnit(ARConstants.arUnit, area)));
                 areaString.append(MathTool.getAreaUnitString(ARConstants.arUnit));
                 textViewArea.setText(areaString);
 
-                SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", volume));
+                SpannableStringBuilder volumeString = new SpannableStringBuilder(getString(R.string.ar_volume_title) + " " + String.format("%.2f", MathTool.getVolumeByUnit(ARConstants.arUnit, volume)));
                 volumeString.append(MathTool.getVolumeUnitString(ARConstants.arUnit));
                 textViewVolume.setText(volumeString);
 

@@ -4,7 +4,6 @@ import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
 import com.swein.sharcodecode.arpart.bean.basic.PlaneBean;
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
-import com.swein.sharcodecode.arpart.constants.ARConstants;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -69,27 +68,30 @@ public class RoomBean {
 
     public void calculate() {
 
-        // 둘레
+        // 둘레 m
         circumference = 0;
         for(int i = 0; i < floor.segmentList.size(); i++) {
             circumference += floor.segmentList.get(i).length;
         }
 
-        // 벽 면적
+        // 벽 면적 m2
         wallArea = 0;
         for(int i = 0; i < floor.segmentList.size(); i++) {
-            wallArea += MathTool.getLengthByUnit(ARConstants.arUnit, floor.segmentList.get(i).length) * MathTool.getLengthByUnit(ARConstants.arUnit, height);
+//            wallArea += MathTool.getLengthByUnit(ARConstants.arUnit, floor.segmentList.get(i).length) * MathTool.getLengthByUnit(ARConstants.arUnit, height);
+            wallArea += floor.segmentList.get(i).length * height;
         }
 
-        // 면적
+        // 면적 m2
         List<Node> list = new ArrayList<>();
         for(int i = 0; i < floor.pointList.size(); i++) {
             list.add(floor.pointList.get(i).point);
         }
-        area = MathTool.getAreaByUnit(ARConstants.arUnit, MathTool.calculateArea(list, normalVectorOfPlane));
+//        area = MathTool.getAreaByUnit(ARConstants.arUnit, MathTool.calculateArea(list, normalVectorOfPlane));
+        area = MathTool.calculateArea(list, normalVectorOfPlane);
 
-        // 체적
-        volume = MathTool.getLengthByUnit(ARConstants.arUnit, height) * area;
+        // 체적 m3
+//        volume = MathTool.getLengthByUnit(ARConstants.arUnit, height) * area;
+        volume = height * area;
     }
 
     public void clear() {

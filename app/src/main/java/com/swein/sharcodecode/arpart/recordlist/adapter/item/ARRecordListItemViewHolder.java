@@ -58,15 +58,15 @@ public class ARRecordListItemViewHolder extends RecyclerView.ViewHolder {
         textViewCircumference.setText(view.get().getContext().getString(R.string.ar_area_circumference_title) + " " +
                 String.format("%.2f", MathTool.getLengthByUnit(arUnit, roomBean.circumference)) + MathTool.getLengthUnitString(arUnit));
 
-        SpannableStringBuilder wallAreaString = new SpannableStringBuilder(view.get().getContext().getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", roomBean.wallArea));
+        SpannableStringBuilder wallAreaString = new SpannableStringBuilder(view.get().getContext().getString(R.string.ar_wall_area_title) + " " + String.format("%.2f", MathTool.getAreaByUnit(arUnit, roomBean.wallArea)));
         wallAreaString.append(MathTool.getAreaUnitString(arUnit));
         textViewWallArea.setText(wallAreaString);
 
-        SpannableStringBuilder areaString = new SpannableStringBuilder(view.get().getContext().getString(R.string.ar_area_title) + " " + String.format("%.2f", roomBean.area));
+        SpannableStringBuilder areaString = new SpannableStringBuilder(view.get().getContext().getString(R.string.ar_area_title) + " " + String.format("%.2f", MathTool.getAreaByUnit(arUnit, roomBean.area)));
         areaString.append(MathTool.getAreaUnitString(arUnit));
         textViewArea.setText(areaString);
 
-        SpannableStringBuilder volumeString = new SpannableStringBuilder(view.get().getContext().getString(R.string.ar_volume_title) + " " + String.format("%.2f", roomBean.volume));
+        SpannableStringBuilder volumeString = new SpannableStringBuilder(view.get().getContext().getString(R.string.ar_volume_title) + " " + String.format("%.2f", MathTool.getVolumeByUnit(arUnit, roomBean.volume)));
         volumeString.append(MathTool.getVolumeUnitString(arUnit));
         textViewVolume.setText(volumeString);
     }

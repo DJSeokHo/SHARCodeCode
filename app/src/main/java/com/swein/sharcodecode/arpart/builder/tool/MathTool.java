@@ -360,6 +360,19 @@ public class MathTool {
         }
     }
 
+    public static float getVolumeByUnit(ARConstants.ARUnit ARUnit, float volume) {
+        switch (ARUnit) {
+            case CM:
+                return volume * 1000000;
+
+            case M:
+                return volume;
+
+            default:
+                return 0;
+        }
+    }
+
     public static SpannableString getM2() {
         SpannableString m2 = new SpannableString("m2");
         m2.setSpan(new RelativeSizeSpan(0.5f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
