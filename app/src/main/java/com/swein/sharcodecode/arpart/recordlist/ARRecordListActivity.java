@@ -19,7 +19,7 @@ import com.swein.sharcodecode.arpart.recordlist.adapter.ARRecordListAdapter;
 import com.swein.sharcodecode.framework.util.activity.ActivityUtil;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
-import com.swein.sharcodecode.popup.ARSelectUnitViewHolder;
+import com.swein.sharcodecode.arpart.popup.ARSelectUnitViewHolder;
 
 import org.json.JSONException;
 import org.json.JSONObject;
