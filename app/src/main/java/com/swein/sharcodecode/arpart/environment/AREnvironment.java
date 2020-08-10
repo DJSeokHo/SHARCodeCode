@@ -96,6 +96,7 @@ public class AREnvironment {
 
         ARConstants.arProcess = ARConstants.ARProcess.DETECT_PLANE;
         ARConstants.measureHeightWay = ARConstants.MeasureHeightWay.NONE;
+        ARConstants.planeType = ARConstants.PLANE_TYPE_NONE;
     }
 
     private void initARBuilder() {
@@ -116,7 +117,7 @@ public class AREnvironment {
 
             @Override
             public void backToSelectWallObject() {
-                ARConstants.wallObjectType = ARConstants.WallObjectType.NONE;
+                ARConstants.planeType = ARConstants.PLANE_TYPE_NONE;
                 arEnvironmentShowHintDelegate.showSelectWallObjectPopup();
             }
         });
@@ -290,7 +291,7 @@ public class AREnvironment {
         }
         else if(ARConstants.arProcess == ARConstants.ARProcess.DRAW_WALL_OBJECT) {
 
-            if(ARConstants.wallObjectType == ARConstants.WallObjectType.NONE) {
+            if(ARConstants.planeType == ARConstants.PLANE_TYPE_NONE) {
                 ARConstants.arProcess = ARConstants.ARProcess.SELECTED_WALL_OBJECT;
                 arEnvironmentShowHintDelegate.showSelectWallObjectPopup();
                 return;
@@ -510,10 +511,10 @@ public class AREnvironment {
 
                 ARBuilder.instance.roomBean.wallObjectList.add(planeBean);
 
-                if(ARConstants.wallObjectType == ARConstants.WallObjectType.WINDOW) {
+                if(ARConstants.planeType.equals(ARConstants.PLANE_TYPE_WINDOW)) {
                     planeBean.type = "WINDOW";
                 }
-                else {
+                else if(ARConstants.planeType.equals(ARConstants.PLANE_TYPE_DOOR)) {
                     planeBean.type = "DOOR";
                 }
 

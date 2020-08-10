@@ -368,6 +368,7 @@ public class ARBuilder {
             roomBean.floor.pointList.add(pointBean);
         }
         roomBean.floor.createSegment();
+        roomBean.floor.type = ARConstants.PLANE_TYPE_FLOOR;
 
         // create ceiling
         for(int i = 0; i < floorGuideList.size(); i++) {
@@ -383,6 +384,7 @@ public class ARBuilder {
             roomBean.ceiling.pointList.add(pointBean);
         }
         roomBean.ceiling.createSegment();
+        roomBean.ceiling.type = ARConstants.PLANE_TYPE_CEILING;
 
         // connect floor and ceiling and vertical
         for(int i = 0; i < roomBean.floor.pointList.size() - 1; i++) {
@@ -421,6 +423,7 @@ public class ARBuilder {
             }
 
             planeBean.createSegment();
+            planeBean.type = ARConstants.PLANE_TYPE_WALL;
             roomBean.wallList.add(planeBean);
         }
 

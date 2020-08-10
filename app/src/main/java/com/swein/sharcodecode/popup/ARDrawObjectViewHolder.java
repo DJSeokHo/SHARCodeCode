@@ -12,10 +12,10 @@ import com.swein.sharcodecode.framework.util.view.ViewUtil;
 
 public class ARDrawObjectViewHolder {
 
-    public ARConstants.WallObjectType wallObjectType;
+    public String planeType;
 
     public interface ARDrawObjectViewHolderDelegate {
-        void onDrawObject(ARConstants.WallObjectType wallObjectType);
+        void onDrawObject(String planeType);
         void onSave();
         void onClose();
     }
@@ -30,9 +30,9 @@ public class ARDrawObjectViewHolder {
 
     private ImageView imageViewClose;
 
-    public ARDrawObjectViewHolder(Context context, ARConstants.WallObjectType wallObjectType, ARDrawObjectViewHolderDelegate arDrawObjectViewHolderDelegate) {
+    public ARDrawObjectViewHolder(Context context, String planeType, ARDrawObjectViewHolderDelegate arDrawObjectViewHolderDelegate) {
         this.arDrawObjectViewHolderDelegate = arDrawObjectViewHolderDelegate;
-        this.wallObjectType = wallObjectType;
+        this.planeType = planeType;
 
         view = ViewUtil.inflateView(context, R.layout.view_holder_draw_object_popup, null);
 
@@ -49,12 +49,12 @@ public class ARDrawObjectViewHolder {
 
     private void setListener() {
         textViewWindow.setOnClickListener(view -> {
-            wallObjectType = ARConstants.WallObjectType.WINDOW;
-            arDrawObjectViewHolderDelegate.onDrawObject(wallObjectType);
+            planeType = ARConstants.PLANE_TYPE_WINDOW;
+            arDrawObjectViewHolderDelegate.onDrawObject(planeType);
         });
         textViewDoor.setOnClickListener(view -> {
-            wallObjectType = ARConstants.WallObjectType.DOOR;
-            arDrawObjectViewHolderDelegate.onDrawObject(wallObjectType);
+            planeType = ARConstants.PLANE_TYPE_DOOR;
+            arDrawObjectViewHolderDelegate.onDrawObject(planeType);
         });
 
         buttonSave.setOnClickListener(view -> arDrawObjectViewHolderDelegate.onSave());

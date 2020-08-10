@@ -14,9 +14,12 @@ public class ARConstants {
         DETECT_PLANE, MEASURE_HEIGHT_HINT, MEASURE_HEIGHT, MEASURE_ROOM, SELECTED_WALL_OBJECT, DRAW_WALL_OBJECT
     }
 
-    public enum WallObjectType {
-        NONE, WINDOW, DOOR
-    }
+    public final static String PLANE_TYPE_NONE = "NONE";
+    public final static String PLANE_TYPE_WINDOW = "WINDOW";
+    public final static String PLANE_TYPE_DOOR = "DOOR";
+    public final static String PLANE_TYPE_FLOOR = "FLOOR";
+    public final static String PLANE_TYPE_CEILING = "CEILING";
+    public final static String PLANE_TYPE_WALL = "WALL";
 
     // measure height way
     public static ARConstants.MeasureHeightWay measureHeightWay = ARConstants.MeasureHeightWay.NONE;
@@ -27,5 +30,5 @@ public class ARConstants {
     // build process state
     public static ARConstants.ARProcess arProcess = ARConstants.ARProcess.DETECT_PLANE;
 
-    public static WallObjectType wallObjectType = WallObjectType.NONE;
+    public static String planeType = PLANE_TYPE_NONE;
 }

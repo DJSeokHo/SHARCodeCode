@@ -246,7 +246,7 @@ public class ARActivity extends FragmentActivity {
 
             ARConstants.arProcess = ARConstants.ARProcess.DETECT_PLANE;
             ARConstants.measureHeightWay = ARConstants.MeasureHeightWay.NONE;
-            ARConstants.wallObjectType = ARConstants.WallObjectType.NONE;
+            ARConstants.planeType = ARConstants.PLANE_TYPE_NONE;
         }));
 
     }
@@ -303,19 +303,19 @@ public class ARActivity extends FragmentActivity {
     }
 
     private void showSelectWallObjectPopup() {
-        arDrawObjectViewHolder = new ARDrawObjectViewHolder(this, ARConstants.wallObjectType, new ARDrawObjectViewHolder.ARDrawObjectViewHolderDelegate() {
+        arDrawObjectViewHolder = new ARDrawObjectViewHolder(this, ARConstants.planeType, new ARDrawObjectViewHolder.ARDrawObjectViewHolderDelegate() {
 
             @Override
-            public void onDrawObject(ARConstants.WallObjectType wallObjectType) {
-                ARConstants.wallObjectType = wallObjectType;
+            public void onDrawObject(String planeType) {
+                ARConstants.planeType = planeType;
                 closeSelectWallObjectPopup();
 
                 ARConstants.arProcess = ARConstants.ARProcess.DRAW_WALL_OBJECT;
 
-                if(ARConstants.wallObjectType == ARConstants.WallObjectType.WINDOW) {
+                if(ARConstants.planeType.equals(ARConstants.PLANE_TYPE_WINDOW)) {
                     showHint(getString(R.string.ar_draw_window));
                 }
-                else {
+                else if(ARConstants.planeType.equals(ARConstants.PLANE_TYPE_DOOR)) {
                     showHint(getString(R.string.ar_draw_door));
                 }
             }
