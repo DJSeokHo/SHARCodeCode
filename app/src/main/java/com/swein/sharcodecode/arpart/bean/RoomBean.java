@@ -12,6 +12,9 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 모든 치수 다 m(미터) 단위로 저장합니다.
+ */
 public class RoomBean {
 
     private final static String TAG = "RoomBean";
