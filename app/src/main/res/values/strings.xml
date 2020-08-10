@@ -9,12 +9,15 @@
     values-round/strings.xml for round devices.
     -->
 
+    <string name="ar_popup_input_name_title">젝목 입력</string>
+    <string name="ar_popup_input_area">방 대략 면적 입력</string>
+
     <string name="ar_popup_confirm">확인</string>
 
     <string name="ar_unit_m">m</string>
     <string name="ar_unit_cm">cm</string>
 
-    <string name="ar_input_length_unit">단위</string>
+    <string name="ar_input_length_unit">단위선택</string>
     <string name="ar_measure_height_title">높이 측정</string>
     <string name="ar_measure_height_auto">자동 측정</string>
     <string name="ar_measure_height_draw">직접 측정</string>

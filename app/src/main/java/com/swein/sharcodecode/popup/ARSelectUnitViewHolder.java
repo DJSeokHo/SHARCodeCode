@@ -5,12 +5,14 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Spinner;
 
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 import com.swein.sharcodecode.arpart.constants.ARConstants;
+import com.swein.sharcodecode.framework.util.animation.AnimationUtil;
 import com.swein.sharcodecode.framework.util.view.ViewUtil;
 
 import java.util.ArrayList;
@@ -20,7 +22,7 @@ public class ARSelectUnitViewHolder {
 
 
     public interface ARSelectUnitViewHolderDelegate {
-        void onSelectUnit(String unit);
+        void onSelectUnit(String unit, String name, float area);
         void onClose();
     }
 
@@ -31,12 +33,17 @@ public class ARSelectUnitViewHolder {
 
     private List<String> unitList = new ArrayList<>();
     private String unit;
+    private String name;
+    private String area;
 
     private Button buttonConfirm;
 
     private FrameLayout frameLayoutRoot;
 
     private ARConstants.ARUnit arUnit;
+
+    private EditText editTextArea;
+    private EditText editTextName;
 
     public ARSelectUnitViewHolder(Context context, ARConstants.ARUnit arUnit, ARSelectUnitViewHolderDelegate arSelectUnitViewHolderDelegate) {
         this.arSelectUnitViewHolderDelegate = arSelectUnitViewHolderDelegate;
@@ -61,6 +68,8 @@ public class ARSelectUnitViewHolder {
         spinnerUnit = view.findViewById(R.id.spinnerUnit);
         buttonConfirm = view.findViewById(R.id.buttonConfirm);
         frameLayoutRoot = view.findViewById(R.id.frameLayoutRoot);
+        editTextArea = view.findViewById(R.id.editTextArea);
+        editTextName = view.findViewById(R.id.editTextName);
     }
 
     private void initSpinner() {
@@ -98,7 +107,31 @@ public class ARSelectUnitViewHolder {
     }
 
     private void setListener() {
-        buttonConfirm.setOnClickListener(view -> arSelectUnitViewHolderDelegate.onSelectUnit(unit));
+        buttonConfirm.setOnClickListener(view -> {
+            name = editTextName.getText().toString().trim();
+            if(name.equals("")) {
+                AnimationUtil.shakeView(view.getContext(), editTextName);
+                return;
+            }
+
+            area = editTextArea.getText().toString().trim();
+            if(area.equals("")) {
+                AnimationUtil.shakeView(view.getContext(), editTextArea);
+                return;
+            }
+
+            float areaFloat = 0;
+            try {
+                areaFloat = Float.parseFloat(area);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+                AnimationUtil.shakeView(view.getContext(), editTextArea);
+                return;
+            }
+
+            arSelectUnitViewHolderDelegate.onSelectUnit(unit, name, areaFloat);
+        });
         frameLayoutRoot.setOnClickListener(view -> arSelectUnitViewHolderDelegate.onClose());
     }
 

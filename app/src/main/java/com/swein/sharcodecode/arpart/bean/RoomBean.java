@@ -43,6 +43,9 @@ public class RoomBean {
     public float wallArea; // 벽면적
     public float volume; // 체적
 
+    public String name;
+    public String unit;
+
     public RoomBean() {
 
         normalVectorOfPlane = new Vector3();
@@ -59,6 +62,9 @@ public class RoomBean {
         circumference = 0;
         wallArea = 0;
         volume = 0;
+
+        name = "";
+        unit = "";
     }
 
     public void calculate() {
@@ -119,6 +125,9 @@ public class RoomBean {
         circumference = 0;
         wallArea = 0;
         volume = 0;
+
+        name = null;
+        unit = null;
     }
 
     public JSONObject toJSONObject() throws JSONException {
@@ -149,6 +158,9 @@ public class RoomBean {
         jsonObject.put("circumference", String.valueOf(circumference));
         jsonObject.put("wallArea", String.valueOf(wallArea));
         jsonObject.put("volume", String.valueOf(volume));
+
+        jsonObject.put("name", name);
+        jsonObject.put("unit", unit);
 
         return jsonObject;
     }
@@ -187,6 +199,9 @@ public class RoomBean {
         circumference = Float.parseFloat(jsonObject.getString("circumference"));
         wallArea = Float.parseFloat(jsonObject.getString("wallArea"));
         volume = Float.parseFloat(jsonObject.getString("volume"));
+
+        name = jsonObject.getString("name");
+        unit = jsonObject.getString("unit");
     }
 
 }

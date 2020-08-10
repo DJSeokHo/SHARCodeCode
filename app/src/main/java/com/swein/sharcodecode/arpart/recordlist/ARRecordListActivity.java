@@ -1,6 +1,8 @@
 package com.swein.sharcodecode.arpart.recordlist;
 
 import android.os.Bundle;
+import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import androidx.fragment.app.FragmentActivity;
@@ -11,11 +13,13 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.ARActivity;
 import com.swein.sharcodecode.arpart.bean.RoomBean;
+import com.swein.sharcodecode.arpart.constants.ARConstants;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
 import com.swein.sharcodecode.arpart.recordlist.adapter.ARRecordListAdapter;
 import com.swein.sharcodecode.framework.util.activity.ActivityUtil;
 import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
+import com.swein.sharcodecode.popup.ARSelectUnitViewHolder;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -36,6 +40,9 @@ public class ARRecordListActivity extends FragmentActivity {
 
     private List<RoomBean> roomBeanList = new ArrayList<>();
 
+    private ARSelectUnitViewHolder arSelectUnitViewHolder;
+
+    private FrameLayout frameLayoutPopup;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,11 +77,12 @@ public class ARRecordListActivity extends FragmentActivity {
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
         recyclerView = findViewById(R.id.recyclerView);
         imageViewAR = findViewById(R.id.imageViewAR);
+        frameLayoutPopup = findViewById(R.id.frameLayoutPopup);
     }
 
     private void setListener() {
         imageViewAR.setOnClickListener(view -> {
-            ActivityUtil.startNewActivityWithoutFinish(this, ARActivity.class);
+            showSelectUnitPopup();
         });
     }
 
@@ -120,8 +128,55 @@ public class ARRecordListActivity extends FragmentActivity {
 
     }
 
+    private void showSelectUnitPopup() {
+        arSelectUnitViewHolder = new ARSelectUnitViewHolder(this, ARConstants.arUnit, new ARSelectUnitViewHolder.ARSelectUnitViewHolderDelegate() {
+            @Override
+            public void onSelectUnit(String unit, String name, float area) {
+
+                closeSelectUnitPopup();
+
+                Bundle bundle = new Bundle();
+                bundle.putString("name", name);
+                bundle.putFloat("area", area);
+                bundle.putString("unit", unit);
+                ActivityUtil.startNewActivityWithoutFinish(ARRecordListActivity.this, ARActivity.class, bundle);
+            }
+
+            @Override
+            public void onClose() {
+                closeSelectUnitPopup();
+            }
+        });
+
+        frameLayoutPopup.addView(arSelectUnitViewHolder.getView());
+        frameLayoutPopup.setVisibility(View.VISIBLE);
+    }
+
+    public boolean closeSelectUnitPopup() {
+
+        if(arSelectUnitViewHolder != null) {
+            frameLayoutPopup.removeAllViews();
+            arSelectUnitViewHolder = null;
+
+            return true;
+        }
+
+        return false;
+    }
+
     private void removeESS() {
         EventCenter.instance.removeAllObserver(this);
+    }
+
+
+    @Override
+    public void onBackPressed() {
+
+        if(closeSelectUnitPopup()) {
+            return;
+        }
+
+        finish();
     }
 
     @Override

@@ -74,7 +74,7 @@ public class AREnvironment {
     public float hitPointY;
 
     // 감지 필요한 최소 cloud point 면적
-    public int targetMinimumAreaSize = 0;
+    public float targetMinimumAreaSize = 0;
 
 
     private AREnvironmentDelegate arEnvironmentDelegate;
@@ -88,8 +88,6 @@ public class AREnvironment {
 
         initARBuilder();
 
-        // 감지 필요한 최소 cloud point 면적
-        targetMinimumAreaSize = 3;
 
         hitPointX = DeviceUtil.getScreenCenterX(activity);
         hitPointY = DeviceUtil.getScreenCenterY(activity);
@@ -190,6 +188,15 @@ public class AREnvironment {
     }
 
     public void setInputHeight(float height) {
+        switch (ARConstants.arUnit) {
+            case M:
+                height = 1 * height;
+                break;
+
+            case CM:
+                height = 0.01f * height;
+                break;
+        }
         ARBuilder.instance.height = height;
     }
 
@@ -206,7 +213,6 @@ public class AREnvironment {
             // if frame disable
             return;
         }
-
 
         if(ARConstants.arProcess == ARConstants.ARProcess.DETECT_PLANE) {
             return;

@@ -12,6 +12,9 @@ import com.swein.sharcodecode.arpart.constants.ARConstants;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.swein.sharcodecode.arpart.constants.ARConstants.ARUnit.CM;
+import static com.swein.sharcodecode.arpart.constants.ARConstants.ARUnit.M;
+
 public class MathTool {
 
     public static Vector3 getNormalVectorOfThreeVectors(Vector3 original, Vector3 a, Vector3 b) {
@@ -264,6 +267,19 @@ public class MathTool {
 
 
         return isIn;
+    }
+
+    public static ARConstants.ARUnit getUnit(String unit) {
+        switch (unit) {
+            case "m":
+                return M;
+
+            case "cm":
+                return CM;
+
+            default:
+                return M;
+        }
     }
 
     public static String getLengthUnitString(ARConstants.ARUnit ARUnit) {

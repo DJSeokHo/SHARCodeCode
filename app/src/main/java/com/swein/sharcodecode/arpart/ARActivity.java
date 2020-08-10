@@ -20,11 +20,11 @@ import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 import com.swein.sharcodecode.arpart.constants.ARConstants;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
 import com.swein.sharcodecode.arpart.environment.AREnvironment;
+import com.swein.sharcodecode.framework.util.activity.ActivityUtil;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
 import com.swein.sharcodecode.popup.ARDrawObjectViewHolder;
 import com.swein.sharcodecode.popup.ARHintPopupViewHolder;
 import com.swein.sharcodecode.popup.ARMeasureHeightHintViewHolder;
-import com.swein.sharcodecode.popup.ARSelectUnitViewHolder;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -55,23 +55,50 @@ public class ARActivity extends FragmentActivity {
     private ImageView imageViewBack;
     private ImageView imageViewReset;
 
-    private ARSelectUnitViewHolder arSelectUnitViewHolder;
     private ARMeasureHeightHintViewHolder arMeasureHeightHintViewHolder;
     private ARDrawObjectViewHolder arDrawObjectViewHolder;
     private ARHintPopupViewHolder arHintPopupViewHolder;
     private FrameLayout frameLayoutPopup;
+
+    private String name;
+    private String unit;
+    private float area;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_a_r);
 
+        checkBundle();
         initESS();
 
         findView();
         setListener();
 
         initAR();
+    }
+
+    private void checkBundle() {
+        Bundle bundle = getIntent().getBundleExtra(ActivityUtil.BUNDLE_KEY);
+        if(bundle != null) {
+            name = bundle.getString("name");
+            unit = bundle.getString("unit");
+
+            switch (unit) {
+                case "m":
+                    ARConstants.arUnit = ARConstants.ARUnit.M;
+                    break;
+
+                case "cm":
+                    ARConstants.arUnit = ARConstants.ARUnit.CM;
+                    break;
+            }
+
+            area = bundle.getFloat("area");
+        }
+        else {
+            finish();
+        }
     }
 
     private void initESS() {
@@ -190,6 +217,8 @@ public class ARActivity extends FragmentActivity {
             }
 
         });
+
+        AREnvironment.instance.targetMinimumAreaSize = area;
     }
 
     @SuppressLint("RestrictedApi")
@@ -293,6 +322,9 @@ public class ARActivity extends FragmentActivity {
 
             @Override
             public void onSave() {
+
+                ARBuilder.instance.roomBean.name = name;
+                ARBuilder.instance.roomBean.unit = MathTool.getLengthUnitString(ARConstants.arUnit);
 
                 try {
                     JSONObject roomBeanJSONObject = ARBuilder.instance.roomBean.toJSONObject();
@@ -416,50 +448,6 @@ public class ARActivity extends FragmentActivity {
 
         return false;
     }
-
-//    private void showSelectUnitPopup() {
-//        arSelectUnitViewHolder = new ARSelectUnitViewHolder(this, ARBuilder.instance.arUnit, new ARSelectUnitViewHolder.ARSelectUnitViewHolderDelegate() {
-//            @Override
-//            public void onSelectUnit(String unit) {
-//
-//
-//                switch (unit) {
-//                    case "m":
-//                        ARBuilder.instance.arUnit = ARBuilder.ARUnit.M;
-//                        break;
-//
-//                    case "cm":
-//                        ARBuilder.instance.arUnit = ARBuilder.ARUnit.CM;
-//                        break;
-//                }
-//
-//                closeSelectUnitPopup();
-//
-//                // update all text view
-//                EventCenter.instance.sendEvent(ARESSArrows.CHANGE_UNIT, this, null);
-//            }
-//
-//            @Override
-//            public void onClose() {
-//                closeSelectUnitPopup();
-//            }
-//        });
-//
-//        frameLayoutPopup.addView(arSelectUnitViewHolder.getView());
-//        frameLayoutPopup.setVisibility(View.VISIBLE);
-//    }
-//
-//    private boolean closeSelectUnitPopup() {
-//
-//        if(arSelectUnitViewHolder != null) {
-//            frameLayoutPopup.removeAllViews();
-//            arSelectUnitViewHolder = null;
-//
-//            return true;
-//        }
-//
-//        return false;
-//    }
 
     @Override
     public void onBackPressed() {
