@@ -114,20 +114,19 @@ public class ARSelectUnitViewHolder {
                 return;
             }
 
+            float areaFloat = 0;
+
             area = editTextArea.getText().toString().trim();
             if(area.equals("")) {
-                AnimationUtil.shakeView(view.getContext(), editTextArea);
-                return;
+                areaFloat = 0;
             }
-
-            float areaFloat = 0;
-            try {
-                areaFloat = Float.parseFloat(area);
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-                AnimationUtil.shakeView(view.getContext(), editTextArea);
-                return;
+            else {
+                try {
+                    areaFloat = Float.parseFloat(area);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
             arSelectUnitViewHolderDelegate.onSelectUnit(unit, name, areaFloat);

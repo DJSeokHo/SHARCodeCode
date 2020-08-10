@@ -334,6 +334,19 @@ public class MathTool {
         }
     }
 
+    public static float getHeightByUnit(ARConstants.ARUnit ARUnit, float height) {
+        switch (ARUnit) {
+            case CM:
+                return height * 0.01f;
+
+            case M:
+                return height;
+
+            default:
+                return 0;
+        }
+    }
+
     public static float getAreaByUnit(ARConstants.ARUnit ARUnit, float area) {
         switch (ARUnit) {
             case CM:

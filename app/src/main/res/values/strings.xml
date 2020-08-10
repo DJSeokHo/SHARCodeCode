@@ -10,7 +10,7 @@
     -->
 
     <string name="ar_popup_input_name_title">젝목 입력</string>
-    <string name="ar_popup_input_area">방 대략 면적 입력</string>
+    <string name="ar_popup_input_area">(옵션) 방 대략 면적(제곱미터) 입력</string>
 
     <string name="ar_popup_confirm">확인</string>
 
