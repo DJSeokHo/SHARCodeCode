@@ -67,6 +67,8 @@ public class ARTool {
             material.setFloat3(PlaneRenderer.MATERIAL_COLOR, new Color(1f, 1f, 1f, 1f));
         });
 
+        planeRenderer.setShadowReceiver(false);
+
 //        // Build texture sampler
 //        Texture.Sampler sampler = Texture.Sampler.builder()
 //                .setMinFilter(Texture.Sampler.MinFilter.LINEAR)

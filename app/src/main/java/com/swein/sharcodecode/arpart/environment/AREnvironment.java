@@ -1,5 +1,6 @@
 package com.swein.sharcodecode.arpart.environment;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 
 import com.google.ar.core.ArCoreApk;
@@ -60,6 +61,7 @@ public class AREnvironment {
 
     private final static String TAG = "AREnvironment";
 
+    @SuppressLint("StaticFieldLeak")
     public static AREnvironment instance = new AREnvironment();
 
     private AREnvironment() {}
@@ -125,10 +127,6 @@ public class AREnvironment {
 
     public boolean checkCameraEnable(Frame frame) {
         return frame.getCamera().getTrackingState() == TrackingState.TRACKING;
-    }
-
-    public boolean checkFrameEnable(Frame frame) {
-        return frame != null;
     }
 
     public void checkUpdatedPlaneSize(Collection<Plane> planeCollection) {
@@ -205,15 +203,15 @@ public class AREnvironment {
 
         Frame frame = arSceneView.getArFrame();
 
+        if(frame == null) {
+            return;
+        }
+
         if(!AREnvironment.instance.checkCameraEnable(frame)) {
             // if camera disable
             return;
         }
 
-        if(!AREnvironment.instance.checkFrameEnable(frame)) {
-            // if frame disable
-            return;
-        }
 
         if(ARConstants.arProcess == ARConstants.ARProcess.DETECT_PLANE) {
             return;
@@ -244,7 +242,9 @@ public class AREnvironment {
             List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
             for (HitResult hitResult : hitTestResultList) {
                 Trackable trackable = hitResult.getTrackable();
-                if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+//                if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+                if (trackable instanceof Plane) {
+//                if (trackable.getTrackingState() == TrackingState.TRACKING) {
 
                     // if ready to auto close
                     if(ARBuilder.instance.isReadyToAutoClose) {
@@ -286,12 +286,13 @@ public class AREnvironment {
 
                     ARBuilder.instance.clearGuideSegment();
 
+                    return;
                 }
             }
         }
         else if(ARConstants.arProcess == ARConstants.ARProcess.DRAW_WALL_OBJECT) {
 
-            if(ARConstants.planeType == ARConstants.PLANE_TYPE_NONE) {
+            if(ARConstants.planeType.equals(ARConstants.PLANE_TYPE_NONE)) {
                 ARConstants.arProcess = ARConstants.ARProcess.SELECTED_WALL_OBJECT;
                 arEnvironmentShowHintDelegate.showSelectWallObjectPopup();
                 return;
@@ -301,19 +302,20 @@ public class AREnvironment {
         }
     }
 
+    /**
+     * real-time frame
+     */
     public void onUpdateFrame(ArSceneView arSceneView) {
 
         Frame frame = arSceneView.getArFrame();
 
+        if(frame == null) {
+            return;
+        }
 
         /* =============== real-time part =============== */
         if(!AREnvironment.instance.checkCameraEnable(frame)) {
             // if camera disable
-            return;
-        }
-
-        if(!AREnvironment.instance.checkFrameEnable(frame)) {
-            // if frame disable
             return;
         }
 
@@ -344,14 +346,19 @@ public class AREnvironment {
         else if(ARConstants.arProcess == ARConstants.ARProcess.MEASURE_ROOM) {
 
             List<HitResult> hitTestResultList = frame.hitTest(hitPointX, hitPointY);
+
             for (HitResult hitResult : hitTestResultList) {
+
                 Trackable trackable = hitResult.getTrackable();
-                if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+//                if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose())) {
+                if (trackable instanceof Plane) {
+//                if (trackable.getTrackingState() == TrackingState.TRACKING) {
 
                     ARBuilder.instance.checkDistanceBetweenCameraAndPlane(hitResult.getDistance());
+
                     ARBuilder.instance.showGuidePoint(hitResult, arSceneView, true);
 
-                    if(ARBuilder.instance.checkFloorGuideEmpty()) {
+                    if (ARBuilder.instance.checkFloorGuideEmpty()) {
                         return;
                     }
 
@@ -364,6 +371,23 @@ public class AREnvironment {
                     return;
                 }
             }
+
+            //======================= test
+
+//            float approximateDistanceMeters = 99.0f;
+//            List<HitResult> results = frame.hitTestInstantPlacement(hitPointX, hitPointY, approximateDistanceMeters);
+//            for (HitResult hit : results) {
+//                InstantPlacementPoint point = (InstantPlacementPoint) hit.getTrackable();
+////                if (point.getTrackingMethod() == InstantPlacementPoint.TrackingMethod.SCREENSPACE_WITH_APPROXIMATE_DISTANCE) {
+//                    float distance = (float) MathTool.getNodesDistanceMeters(point.getPose(), frame.getCamera().getPose());
+//                    ILog.iLogDebug(TAG, "distance " + distance);
+//
+//                    ARBuilder.instance.checkDistanceBetweenCameraAndPlane(distance);
+//                    ARBuilder.instance.showGuidePoint(point, arSceneView, true);
+////                }
+//                return;
+//            }
+
         }
         else if(ARConstants.arProcess == ARConstants.ARProcess.DRAW_WALL_OBJECT) {
             drawWallObjectWhenUpdate(arSceneView);
@@ -953,6 +977,8 @@ public class AREnvironment {
         else {
             config.setLightEstimationMode(Config.LightEstimationMode.DISABLED);
         }
+
+        config.setInstantPlacementMode(Config.InstantPlacementMode.LOCAL_Y_UP);
 
         session.configure(config);
         return session;

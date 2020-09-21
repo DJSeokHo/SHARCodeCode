@@ -5,6 +5,7 @@ import android.text.Spanned;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.SuperscriptSpan;
 
+import com.google.ar.core.Pose;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
 import com.swein.sharcodecode.arpart.constants.ARConstants;
@@ -42,6 +43,22 @@ public class MathTool {
         float dz = startNode.getWorldPosition().z - endNode.getWorldPosition().z;
 
         return Math.sqrt(dx * dx + dz * dz);
+    }
+
+    public static double getNodesDistanceMeters(Pose startPose, Pose endPose) {
+        float dx = startPose.tx() - endPose.tx();
+        float dy = startPose.ty() - endPose.ty();
+        float dz = startPose.tz() - endPose.tz();
+
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    public static double getNodesDistanceMeters(Node startNode, Node endNode) {
+        float dx = startNode.getWorldPosition().x - endNode.getWorldPosition().x;
+        float dy = startNode.getWorldPosition().y - endNode.getWorldPosition().y;
+        float dz = startNode.getWorldPosition().z - endNode.getWorldPosition().z;
+
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     /**

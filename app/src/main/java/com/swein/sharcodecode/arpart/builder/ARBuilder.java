@@ -6,7 +6,9 @@ import android.widget.TextView;
 
 import com.google.ar.core.Anchor;
 import com.google.ar.core.HitResult;
+import com.google.ar.core.InstantPlacementPoint;
 import com.google.ar.core.Plane;
+import com.google.ar.core.Pose;
 import com.google.ar.core.Trackable;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
@@ -68,7 +70,7 @@ public class ARBuilder {
 
 
     public List<Node> floorGuideList = new ArrayList<>();
-    public float floorFixedY = 0;
+    public float floorFixedY = -999;
 
     public Node measureHeightFloorNode;
     public Node measureHeightCeilingNode;
@@ -127,6 +129,40 @@ public class ARBuilder {
         }
     }
 
+    public void showGuidePoint(Pose pose, ArSceneView arSceneView, boolean limitY) {
+
+        floorFixedY = pose.ty();
+
+        if(anchorNode != null && limitY) {
+            floorFixedY = anchorNode.getWorldPosition().y;
+        }
+
+        if(guidePointNode != null) {
+            guidePointNode.setWorldPosition(new Vector3(pose.tx(), floorFixedY, pose.tz()));
+        }
+        else {
+            guidePointNode = ARTool.createWorldNode(pose.tx(), floorFixedY, pose.tz(), ARMaterial.instance.pointMaterial, ARMaterial.instance.nodeShadow);
+            guidePointNode.setParent(arSceneView.getScene());
+        }
+    }
+
+    public void showGuidePoint(InstantPlacementPoint instantPlacementPoint, ArSceneView arSceneView, boolean limitY) {
+
+        floorFixedY = instantPlacementPoint.getPose().ty();
+
+        if(anchorNode != null && limitY) {
+            floorFixedY = anchorNode.getWorldPosition().y;
+        }
+
+        if(guidePointNode != null) {
+            guidePointNode.setWorldPosition(new Vector3(instantPlacementPoint.getPose().tx(), floorFixedY, instantPlacementPoint.getPose().tz()));
+        }
+        else {
+            guidePointNode = ARTool.createWorldNode(instantPlacementPoint.getPose().tx(), floorFixedY, instantPlacementPoint.getPose().tz(), ARMaterial.instance.pointMaterial, ARMaterial.instance.nodeShadow);
+            guidePointNode.setParent(arSceneView.getScene());
+        }
+    }
+
     public void createDetectedPlaneNormalVector(Trackable trackable) {
         if(normalVectorOfPlane == null) {
             // calculate normal vector of detected plane
@@ -163,7 +199,9 @@ public class ARBuilder {
         else {
 //            Quaternion localRotation = new Quaternion(hitResult.getHitPose().qx(), hitResult.getHitPose().qy(), hitResult.getHitPose().qz(), hitResult.getHitPose().qw());
 //            localRotation = Quaternion.multiply(this.anchorNode.getWorldRotation().inverted(), Preconditions.checkNotNull(localRotation));
-            Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
+
+//            Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), hitResult.getHitPose().ty(), hitResult.getHitPose().tz());
+            Vector3 hitWorldPosition = new Vector3(hitResult.getHitPose().tx(), floorFixedY, hitResult.getHitPose().tz());
             Vector3 localPosition = MathTool.transformWorldPositionToLocalPositionOfParent(anchorNode, hitWorldPosition);
 
             node = ARTool.createLocalNode(localPosition.x, localPosition.y, localPosition.z, ARMaterial.instance.pointMaterial, ARMaterial.instance.nodeShadow);
@@ -681,7 +719,7 @@ public class ARBuilder {
                 clearGuideSegment();
                 clearGuide();
 
-                floorFixedY = 0;
+                floorFixedY = -999;
             }
             else if(floorGuideList.size() > 1) {
 
@@ -773,7 +811,7 @@ public class ARBuilder {
         clearRoomBean();
 
         height = 0;
-        floorFixedY = 0;
+        floorFixedY = -999;
         normalVectorOfPlane = null;
 
         isReadyToAutoClose = false;
