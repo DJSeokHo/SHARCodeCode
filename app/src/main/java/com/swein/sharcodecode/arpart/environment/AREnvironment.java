@@ -541,6 +541,7 @@ public class AREnvironment {
                 else if(ARConstants.planeType.equals(ARConstants.PLANE_TYPE_DOOR)) {
                     planeBean.type = "DOOR";
                 }
+                planeBean.objectOnIndex = ARBuilder.instance.currentWallIndex;
 
                 for(int i = 0; i < planeBean.pointList.size() - 1; i++) {
                     if(i == 0 || i == 1) {

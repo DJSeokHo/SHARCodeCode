@@ -16,6 +16,8 @@ public class PlaneBean {
 
     public String type;
 
+    public int objectOnIndex = -1;
+
     public PlaneBean() {
         pointList.clear();
         segmentList.clear();
@@ -76,6 +78,8 @@ public class PlaneBean {
         jsonObject.put("segmentArray", segmentArray);
 
         jsonObject.put("type", type);
+
+        jsonObject.put("objectOnIndex", objectOnIndex);
         return jsonObject;
     }
 
@@ -99,5 +103,6 @@ public class PlaneBean {
         }
 
         type = jsonObject.getString("type");
+        objectOnIndex = jsonObject.getInt("objectOnIndex");
     }
 }
