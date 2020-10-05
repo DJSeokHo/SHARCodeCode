@@ -16,12 +16,13 @@ public class PlaneBean {
 
     public String type;
 
-    public int objectOnIndex = -1;
+    public int objectOnIndex;
 
     public PlaneBean() {
         pointList.clear();
         segmentList.clear();
         type = "";
+        objectOnIndex = -1;
     }
 
     public void createSegment() {
@@ -60,6 +61,7 @@ public class PlaneBean {
         segmentList.clear();
 
         type = "";
+        objectOnIndex = -1;
     }
 
     public JSONObject toJSONObject() throws JSONException {
