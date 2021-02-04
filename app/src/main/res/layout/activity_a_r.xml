@@ -74,7 +74,7 @@
 
     <ImageView
         android:padding="5dp"
-        android:background="@color/half_20_transparent"
+        android:background="@drawable/circle_half_20_transparent"
         android:layout_marginStart="10dp"
         android:layout_marginBottom="34dp"
         android:src="@drawable/ti_ar_back"
@@ -86,7 +86,7 @@
 
     <ImageView
         android:padding="5dp"
-        android:background="@color/half_20_transparent"
+        android:background="@drawable/circle_half_20_transparent"
         android:layout_marginEnd="10dp"
         android:layout_marginBottom="34dp"
         android:id="@+id/imageViewReset"
@@ -99,7 +99,7 @@
     <LinearLayout
         android:visibility="gone"
         android:padding="10dp"
-        android:background="@color/half_20_transparent"
+        android:background="@drawable/round_corner_half_30_transparent"
         android:layout_margin="15dp"
         android:layout_gravity="end"
         android:id="@+id/linearLayoutInfo"
@@ -158,4 +158,5 @@
         android:id="@+id/frameLayoutPopup"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
+
 </FrameLayout>

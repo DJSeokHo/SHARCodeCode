@@ -21,15 +21,25 @@ import com.swein.sharcodecode.arpart.constants.ARConstants;
 import com.swein.sharcodecode.arpart.constants.ARESSArrows;
 import com.swein.sharcodecode.arpart.environment.AREnvironment;
 import com.swein.sharcodecode.framework.util.activity.ActivityUtil;
+import com.swein.sharcodecode.framework.util.debug.ILog;
 import com.swein.sharcodecode.framework.util.eventsplitshot.eventcenter.EventCenter;
 import com.swein.sharcodecode.arpart.popup.ARDrawObjectViewHolder;
 import com.swein.sharcodecode.arpart.popup.ARHintPopupViewHolder;
 import com.swein.sharcodecode.arpart.popup.ARMeasureHeightHintViewHolder;
+import com.swein.sharcodecode.framework.util.okhttp.OKHttpWrapper;
+import com.swein.sharcodecode.framework.util.thread.ThreadUtil;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
+
+import okhttp3.Call;
+import okhttp3.Response;
 
 public class ARActivity extends FragmentActivity {
 
@@ -326,22 +336,65 @@ public class ARActivity extends FragmentActivity {
                 ARBuilder.instance.roomBean.name = name;
                 ARBuilder.instance.roomBean.unit = MathTool.getLengthUnitString(ARConstants.arUnit);
 
-                try {
-                    JSONObject roomBeanJSONObject = ARBuilder.instance.roomBean.toJSONObject();
-                    HashMap<String, Object> hashMap = new HashMap<>();
-                    hashMap.put("roomBeanJSONObject", roomBeanJSONObject);
 
-                    EventCenter.instance.sendEvent(ARESSArrows.SAVE_ROOM_INFO, this, hashMap);
+
+                HashMap<String, String> hashMap = new HashMap<>();
+                hashMap.put("X-AUTH-TOKEN", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI4NDkiLCJyb2xlcyI6WyJST0xFX1VTRVIiLCJST0xFX0FETUlOIl0sImlhdCI6MTYxMjQxMTQxNCwiZXhwIjoxNjQzOTQ3NDE0fQ.euw0iWIfXFFzyGse1w0jI1eY7kAMwEQ7EXV3nDpREQI");
+
+                HashMap<String, String> formData = new HashMap<>();
+                formData.put("name", name);
+                try {
+                    ILog.iLogDebug(TAG, ARBuilder.instance.roomBean.toJSONObject().toString());
+                    formData.put("jsonObj", URLEncoder.encode(ARBuilder.instance.roomBean.toJSONObject().toString(), "UTF-8"));
                 }
-                catch (JSONException e) {
+                catch (Exception e) {
                     e.printStackTrace();
                 }
 
-                closeSelectWallObjectPopup();
-                closeMeasureRoom();
-                closeDetectFloorHint();
-                closeMeasureHeightSelectPopup();
-                finish();
+
+                OKHttpWrapper.instance.requestPostWithFormDataAndFiles("http://13.124.112.44/v1/model/new", hashMap, formData, new ArrayList<>(), new ArrayList<>(), new OKHttpWrapper.OKHttpWrapperDelegate() {
+                    @Override
+                    public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                        OKHttpWrapper.instance.cancelCall(call);
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onResponse(@NotNull Call call, @NotNull Response response) {
+                        try {
+                            String responseString = OKHttpWrapper.instance.getStringResponse(response);
+
+                            ThreadUtil.startUIThread(0, () -> {
+
+                                try {
+                                    JSONObject roomBeanJSONObject = ARBuilder.instance.roomBean.toJSONObject();
+                                    HashMap<String, Object> hashMap = new HashMap<>();
+                                    hashMap.put("roomBeanJSONObject", roomBeanJSONObject);
+
+                                    EventCenter.instance.sendEvent(ARESSArrows.SAVE_ROOM_INFO, this, hashMap);
+                                }
+                                catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+
+                                closeSelectWallObjectPopup();
+                                closeMeasureRoom();
+                                closeDetectFloorHint();
+                                closeMeasureHeightSelectPopup();
+                                finish();
+
+                            });
+                        }
+                        catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        finally {
+                            OKHttpWrapper.instance.cancelCall(call);
+                        }
+                    }
+                });
+
+
             }
 
             @Override

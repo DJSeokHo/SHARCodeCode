@@ -11,12 +11,13 @@ import com.swein.sharcodecode.R;
 import com.swein.sharcodecode.arpart.bean.RoomBean;
 import com.swein.sharcodecode.arpart.builder.tool.MathTool;
 import com.swein.sharcodecode.arpart.constants.ARConstants;
+import com.swein.sharcodecode.framework.util.debug.ILog;
 
 import java.lang.ref.WeakReference;
 
 public class ARRecordListItemViewHolder extends RecyclerView.ViewHolder {
 
-    private WeakReference<View> view;
+    private final WeakReference<View> view;
 
     public RoomBean roomBean;
 
@@ -32,6 +33,7 @@ public class ARRecordListItemViewHolder extends RecyclerView.ViewHolder {
         super(itemView);
         view = new WeakReference<>(itemView);
         findView();
+        setListener();
     }
 
     private void findView() {
@@ -42,6 +44,17 @@ public class ARRecordListItemViewHolder extends RecyclerView.ViewHolder {
         textViewCircumference = view.get().findViewById(R.id.textViewCircumference);
         textViewWallArea = view.get().findViewById(R.id.textViewWallArea);
         textViewVolume = view.get().findViewById(R.id.textViewVolume);
+    }
+
+    private void setListener() {
+
+        try {
+            ILog.iLogDebug("???", roomBean.toJSONObject().toString());
+
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void updateView() {

@@ -1,13 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#6200EE</color>
-    <color name="colorPrimaryDark">#3700B3</color>
-    <color name="colorAccent">#03DAC5</color>
+    <color name="app_basic_color">#6443b5</color>
+    <color name="splash_color">#fcca5b</color>
+    <color name="black">#000000</color>
+    <color name="gray">#909090</color>
+    <color name="white">#ffffff</color>
+    <color name="light_gray">#D7D7D7</color>
+    <color name="dim_gray">#282828</color>
     <color name="toast_custom_background">#6443b5</color>
     <color name="too_close_bg">#4DFF0000</color>
 
     <color name="half_20_transparent">#33000000</color>
     <color name="transparent">#00000000</color>
-    <color name="white">#ffffff</color>
-    <color name="black">#000000</color>
+    <color name="red">#ff0000</color>
+    <color name="black_5_transparent">#0D000000</color>
+    <color name="black_10_transparent">#1A000000</color>
+    <color name="black_15_transparent">#26000000</color>
+    <color name="black_20_transparent">#33000000</color>
+    <color name="black_30_transparent">#4C000000</color>
+    <color name="black_50_transparent">#80000000</color>
+    <color name="half_transparent">#33000000</color>
+
+    <color name="upload_before_image_color">#ED6A6A</color>
+    <color name="upload_after_image_color">#A57CE8</color>
+
+    <color name="tab_layout_un_select">#848484</color>
+    <color name="tab_layout_select">#6443b5</color>
+    <color name="tab_layout_indicator">#6443b5</color>
+
+    <color name="pale_grey">#eff2f7</color>
+    <color name="greyish_brown_two">#464646</color>
+    <color name="very_light_pink_three">#ededed</color>
+    <color name="silver">#ced3d8</color>
+    <color name="brown_grey">#797979</color>
+
+    <color name="face_book_button_color">#3b5998</color>
+    <color name="face_book_text_color">#f4f4f4</color>
+
+    <color name="kakao_button_color">#f7e600</color>
+    <color name="kakao_text_color">#381e1f</color>
+
+    <color name="naver_button_color">#2db400</color>
+    <color name="naver_text_color">#f4f4f4</color>
+
+    <color name="color_999999">#999999</color>
+    <color name="color_111111">#111111</color>
+    <color name="color_6444b1">#6444b1</color>
+    <color name="color_ff1d58">#ff1d58</color>
+    <color name="color_ab88ff">#ab88ff</color>
+    <color name="color_f2f2f2">#f2f2f2</color>
+    <color name="color_fafafa">#fafafa</color>
+    <color name="color_fcca5b">#fcca5b</color>
+    <color name="color_aaaaaa">#aaaaaa</color>
+    <color name="color_595858">#595858</color>
+    <color name="color_dddddd">#dddddd</color>
+    <color name="color_e2d5ff">#e2d5ff</color>
+    <color name="color_b3000000">#b3000000</color>
+    <color name="color_80fcca5b">#80fcca5b</color>
+    <color name="color_e6111111">#e6111111</color>
+
+    <!-- loading -->
+    <color name="loading_bg">#6443b5</color>
 </resources>

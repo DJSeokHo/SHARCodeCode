@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".arpart.recordlist.ARRecordListActivity">
+    tools:context=".arpart.recordlist.ARRecordListActivity"
+    android:background="@color/white">
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"
@@ -20,7 +21,9 @@
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <ImageView
-        android:background="@color/black"
+        android:translationZ="5dp"
+        android:background="@drawable/circle_white_bg"
+        android:src="@drawable/ti_ar"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
